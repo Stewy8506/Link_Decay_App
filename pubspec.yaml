@@ -1,0 +1,58 @@
+name: link_decay_app
+description: "ReadDecay — a local-first reading list with time-based freshness decay."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+
+  # Database — Drift ORM
+  drift: ^2.22.1
+  drift_flutter: ^0.2.4
+  path_provider: ^2.1.5
+  sqlite3_flutter_libs: ^0.5.28
+
+  # State Management — Riverpod
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Networking & Metadata
+  http: ^1.4.0
+  html: ^0.15.5
+
+  # Notifications
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+
+  # Share Intent
+  receive_sharing_intent: ^1.8.0
+
+  # Utilities
+  url_launcher: ^6.3.1
+  uuid: ^4.5.1
+  timeago: ^3.7.0
+  shared_preferences: ^2.3.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code generation
+  drift_dev: ^2.22.1
+  build_runner: ^2.4.15
+  riverpod_generator: ^2.6.5
+  riverpod_lint: ^2.6.5
+  custom_lint: ^0.7.5
+
+flutter:
+  uses-material-design: true
