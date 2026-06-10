@@ -4,10 +4,10 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 /// Listens to incoming shared text/URLs from the Android share sheet.
 class ShareIntentService {
-  ShareIntentService._();
-  static const ShareIntentService instance = ShareIntentService._();
+  ShareIntentService._internal();
+  static final ShareIntentService instance = ShareIntentService._internal();
 
-  StreamSubscription<String>? _streamSub;
+  StreamSubscription<List<SharedMediaFile>>? _streamSub;
 
   /// Start listening for shared URLs. [onUrl] is called with each URL received.
   void startListening({required void Function(String url) onUrl}) {

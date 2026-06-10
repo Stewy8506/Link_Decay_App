@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
@@ -22,19 +23,13 @@ final settingsProvider = StreamProvider<AppSetting?>((ref) {
 
 /// A helper to get the current half-life, falling back to default.
 final halfLifeDaysProvider = Provider<double>((ref) {
-  return ref
-          .watch(settingsProvider)
-          .valueOrNull
-          ?.halfLifeDays ??
+  return ref.watch(settingsProvider).valueOrNull?.halfLifeDays ??
       kDefaultHalfLifeDays;
 });
 
 /// A helper to get the notification threshold.
 final notificationThresholdProvider = Provider<double>((ref) {
-  return ref
-          .watch(settingsProvider)
-          .valueOrNull
-          ?.notificationThreshold ??
+  return ref.watch(settingsProvider).valueOrNull?.notificationThreshold ??
       kDefaultNotificationThreshold;
 });
 
@@ -123,7 +118,9 @@ class LinkActionsNotifier extends Notifier<void> {
     await _db.upsertSettings(
       AppSettingsCompanion.insert(
         id: const Value(1),
-        halfLifeDays: Value(halfLifeDays ?? current?.halfLifeDays ?? kDefaultHalfLifeDays),
+        halfLifeDays: Value(
+          halfLifeDays ?? current?.halfLifeDays ?? kDefaultHalfLifeDays,
+        ),
         notificationThreshold: Value(
           notificationThreshold ??
               current?.notificationThreshold ??
@@ -147,14 +144,16 @@ class LinkActionsNotifier extends Notifier<void> {
   }
 }
 
-final linkActionsProvider =
-    NotifierProvider<LinkActionsNotifier, void>(LinkActionsNotifier.new);
+final linkActionsProvider = NotifierProvider<LinkActionsNotifier, void>(
+  LinkActionsNotifier.new,
+);
 
 // ─── Archive Search/Filter ─────────────────────────────────────────────────
 
 final archiveSearchQueryProvider = StateProvider<String>((ref) => '');
-final archiveStatusFilterProvider =
-    StateProvider<LinkStatus?>((ref) => null); // null = all
+final archiveStatusFilterProvider = StateProvider<LinkStatus?>(
+  (ref) => null,
+); // null = all
 final archiveTagFilterProvider = StateProvider<String?>((ref) => null);
 
 final filteredArchiveLinksProvider = Provider<List<Link>>((ref) {
@@ -167,11 +166,10 @@ final filteredArchiveLinksProvider = Provider<List<Link>>((ref) {
     if (statusFilter != null && link.status != statusFilter) return false;
     if (tagFilter != null && tagFilter.isNotEmpty) {
       final tags = link.tags.split(',').map((t) => t.trim().toLowerCase());
-      if (!tags.contains(tagFilter!.toLowerCase())) return false;
+      if (!tags.contains(tagFilter.toLowerCase())) return false;
     }
     if (query.isNotEmpty) {
-      final titleMatch =
-          link.title?.toLowerCase().contains(query) ?? false;
+      final titleMatch = link.title?.toLowerCase().contains(query) ?? false;
       final domainMatch = link.domain.toLowerCase().contains(query);
       final tagMatch = link.tags.toLowerCase().contains(query);
       if (!titleMatch && !domainMatch && !tagMatch) return false;

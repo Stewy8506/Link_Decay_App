@@ -6,11 +6,10 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../data/database.dart';
-import '../utils/constants.dart';
 
 class NotificationService {
-  NotificationService._();
-  static const NotificationService instance = NotificationService._();
+  NotificationService._internal();
+  static final NotificationService instance = NotificationService._internal();
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -109,7 +108,6 @@ class NotificationService {
       channelDescription: _channelDesc,
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
-      styleInformation: BigTextStyleInformation(''),
     );
 
     const darwinDetails = DarwinNotificationDetails(
@@ -132,6 +130,8 @@ class NotificationService {
       details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 

@@ -16,8 +16,8 @@ class LinkMetadata {
 
 /// Fetches page title and favicon URL for a given URL.
 class MetadataService {
-  MetadataService._();
-  static const MetadataService instance = MetadataService._();
+  MetadataService._internal();
+  static final MetadataService instance = MetadataService._internal();
 
   /// Extracts domain from [url], e.g. "flutter.dev".
   String extractDomain(String url) {
