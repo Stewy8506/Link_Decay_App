@@ -106,7 +106,7 @@ It's gamified procrastination therapy.
 - **Floating Actions Bar** — Bulk mark read, archive, delete, tag, or move selected links to folders.
 
 ### 😴 Snooze
-- **Quick snoozing** — Pause link decay for 1 day, 3 days, or 1 week.
+- **Customizable Snooze Presets** — Pause link decay using custom duration offsets (e.g. 2 hours, 12 hours, 3 days, 1 month) edited directly in settings.
 - Decay **pauses** for the entire snooze duration (effective age freezes).
 - Snoozed items show a `⏸ Snoozed until [Date]` badge on the card.
 - Snooze history accumulates — multiple snoozes stack correctly.
@@ -124,6 +124,7 @@ It's gamified procrastination therapy.
 - **JSON Backup** — Export and share a full database JSON backup. Import JSON backups with choice of *Merge* (keep local links) or *Overwrite* (purge tables first) restore strategies.
 
 ### ⚙️ Preferences & Health Tools
+- **Decay Curve Profiler** — Toggle between **Exponential** and **Linear** decay algorithms, dynamically recalculating and rendering freshness scores across all screens.
 - **Link Health Check Scanner** — Background scanning utility to check saved inbox URLs for broken links (404, 5xx, or network issues), flagging offline pages.
 - **Dead Link Warnings** — Unreachable or dead links are highlighted in the inbox list with a customized skull warning badge (`☠️ DEAD LINK`).
 - **Domain & Tag Lifespan Overrides** — Define custom decay rates (half-life in days) for entire websites (e.g. `youtube.com`) or tags (e.g. `#news`) directly inside Settings.
@@ -136,6 +137,8 @@ It's gamified procrastination therapy.
 ### 🎨 Appearance & Themes
 - Toggle light and dark modes.
 - Select among four minimalist, neutral theme palettes: **Warm Stone** (Default), **Cold Slate**, **Forest Moss**, and **Pitch Charcoal**.
+- **Infinite Theme Customizer** — Define your own custom accent and background colors directly using a hex color input card.
+- **Typography Selector** — Choose between four distinctive typefaces (**Inter**, **Outfit**, **Playfair Display**, and **JetBrains Mono**) to dynamically style every single component and page throughout the app.
 
 ---
 
