@@ -845,8 +845,10 @@ class _LinkPreviewDialog extends StatelessWidget {
     final color = freshnessColor(score);
     final title = link.title ?? link.domain;
 
-    return Center(
-      child: Container(
+    return Material(
+      color: Colors.transparent,
+      child: Center(
+        child: Container(
         margin: const EdgeInsets.all(kSpaceLG),
         constraints: const BoxConstraints(maxWidth: 450),
         child: ClipRRect(
@@ -1112,6 +1114,7 @@ class _LinkPreviewDialog extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
