@@ -30,7 +30,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-
   Future<void> _contactDeveloper() async {
     final emailLaunchUri = Uri(
       scheme: 'mailto',
@@ -1397,7 +1396,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 24),
                   Center(
                     child: Text(
-                      'Crafted with ☕ & 🤍',
+                      'Crafted with ☕ in Kolkata 🤍',
                       style: getFontTextStyle(
                         ref.watch(fontFamilyProvider),
                         fontSize: 11,
@@ -1405,7 +1404,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 140),
+                  const SizedBox(height: 120),
                 ]),
               );
             },
