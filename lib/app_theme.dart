@@ -104,10 +104,112 @@ const _lightPalettes = {
   ),
 };
 
+// ─── Theme Customization Helpers ─────────────────────────────────────────────
+
+Color? parseHexColor(String? hex) {
+  if (hex == null || hex.isEmpty) return null;
+  var hexColor = hex.replaceAll('#', '').toUpperCase();
+  if (hexColor.length == 6) {
+    hexColor = 'FF$hexColor';
+  }
+  final value = int.tryParse(hexColor, radix: 16);
+  if (value != null) {
+    return Color(value);
+  }
+  return null;
+}
+
+TextTheme getTextTheme(String font, TextTheme baseTextTheme) {
+  switch (font.toLowerCase()) {
+    case 'outfit':
+      return GoogleFonts.outfitTextTheme(baseTextTheme);
+    case 'playfair':
+    case 'playfair display':
+      return GoogleFonts.playfairDisplayTextTheme(baseTextTheme);
+    case 'jetbrains mono':
+    case 'mono':
+      return GoogleFonts.jetBrainsMonoTextTheme(baseTextTheme);
+    case 'inter':
+    default:
+      return GoogleFonts.interTextTheme(baseTextTheme);
+  }
+}
+
+TextStyle getFontTextStyle(
+  String font, {
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  double? letterSpacing,
+}) {
+  switch (font.toLowerCase()) {
+    case 'outfit':
+      return GoogleFonts.outfit(fontSize: fontSize, fontWeight: fontWeight, color: color, letterSpacing: letterSpacing);
+    case 'playfair':
+    case 'playfair display':
+      return GoogleFonts.playfairDisplay(fontSize: fontSize, fontWeight: fontWeight, color: color, letterSpacing: letterSpacing);
+    case 'jetbrains mono':
+    case 'mono':
+      return GoogleFonts.jetBrainsMono(fontSize: fontSize, fontWeight: fontWeight, color: color, letterSpacing: letterSpacing);
+    case 'inter':
+    default:
+      return GoogleFonts.inter(fontSize: fontSize, fontWeight: fontWeight, color: color, letterSpacing: letterSpacing);
+  }
+}
+
+TextStyle getTitleStyle(String font, {required Color color}) {
+  switch (font.toLowerCase()) {
+    case 'outfit':
+      return GoogleFonts.outfit(color: color, fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: -0.3);
+    case 'playfair':
+    case 'playfair display':
+      return GoogleFonts.playfairDisplay(color: color, fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.3);
+    case 'jetbrains mono':
+    case 'mono':
+      return GoogleFonts.jetBrainsMono(color: color, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.3);
+    case 'inter':
+    default:
+      return GoogleFonts.inter(color: color, fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: -0.3);
+  }
+}
+
 // ─── Theme Builders ─────────────────────────────────────────────────────────
 
-ThemeData buildDarkTheme(String paletteName) {
-  final p = _darkPalettes[paletteName] ?? _darkPalettes['warm_stone']!;
+ThemeData buildDarkTheme(
+  String paletteName, {
+  Color? customAccent,
+  Color? customBg,
+  String fontFamily = 'inter',
+}) {
+  final basePalette = _darkPalettes[paletteName] ?? _darkPalettes['warm_stone']!;
+  
+  // Custom accent / bg override
+  final accentColor = customAccent ?? basePalette.accent;
+  final accentMutedColor = customAccent != null 
+      ? customAccent.withValues(alpha: 0.6) 
+      : basePalette.accentMuted;
+      
+  final bg = customBg ?? basePalette.bg;
+  final surface = customBg != null 
+      ? Color.alphaBlend(Colors.white.withValues(alpha: 0.05), customBg)
+      : basePalette.surface;
+  final card = customBg != null 
+      ? Color.alphaBlend(Colors.white.withValues(alpha: 0.1), customBg)
+      : basePalette.card;
+  final border = customBg != null 
+      ? Color.alphaBlend(Colors.white.withValues(alpha: 0.18), customBg)
+      : basePalette.border;
+
+  final p = PaletteColors(
+    bg: bg,
+    surface: surface,
+    card: card,
+    border: border,
+    text: basePalette.text,
+    accent: accentColor,
+    accentMuted: accentMutedColor,
+  );
+
   final base = ThemeData.dark(useMaterial3: true);
   
   return base.copyWith(
@@ -122,7 +224,7 @@ ThemeData buildDarkTheme(String paletteName) {
       onSurface: p.text,
       onPrimary: p.bg,
     ),
-    textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
+    textTheme: getTextTheme(fontFamily, base.textTheme).apply(
       bodyColor: p.text,
       displayColor: p.text,
     ),
@@ -137,19 +239,15 @@ ThemeData buildDarkTheme(String paletteName) {
         systemNavigationBarColor: p.surface,
         systemNavigationBarIconBrightness: Brightness.light,
       ),
-      titleTextStyle: GoogleFonts.inter(
-        color: p.text,
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.3,
-      ),
+      titleTextStyle: getTitleStyle(fontFamily, color: p.text),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: p.surface,
       indicatorColor: p.border,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
-        return GoogleFonts.inter(
+        return getFontTextStyle(
+          fontFamily,
           fontSize: 11,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           color: selected ? p.text : p.accentMuted,
@@ -178,7 +276,7 @@ ThemeData buildDarkTheme(String paletteName) {
         borderRadius: BorderRadius.circular(kRadiusMD),
         borderSide: BorderSide(color: p.accent, width: 1.5),
       ),
-      hintStyle: GoogleFonts.inter(color: p.accentMuted, fontSize: 15),
+      hintStyle: getFontTextStyle(fontFamily, color: p.accentMuted, fontSize: 15),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: kSpaceMD,
         vertical: kSpaceMD,
@@ -200,7 +298,7 @@ ThemeData buildDarkTheme(String paletteName) {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: p.card,
-      contentTextStyle: GoogleFonts.inter(color: p.text, fontSize: 14),
+      contentTextStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 14),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
         side: BorderSide(color: p.border),
@@ -238,12 +336,14 @@ ThemeData buildDarkTheme(String paletteName) {
         borderRadius: BorderRadius.circular(kRadiusLG),
         side: BorderSide(color: p.border, width: 0.5),
       ),
-      titleTextStyle: GoogleFonts.inter(
+      titleTextStyle: getFontTextStyle(
+        fontFamily,
         color: p.text,
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
-      contentTextStyle: GoogleFonts.inter(
+      contentTextStyle: getFontTextStyle(
+        fontFamily,
         color: p.text.withValues(alpha: 0.8),
         fontSize: 14,
       ),
@@ -255,7 +355,8 @@ ThemeData buildDarkTheme(String paletteName) {
         borderRadius: BorderRadius.circular(kRadiusMD),
         side: BorderSide(color: p.border, width: 0.5),
       ),
-      textStyle: GoogleFonts.inter(
+      textStyle: getFontTextStyle(
+        fontFamily,
         color: p.text,
         fontSize: 14,
       ),
@@ -265,8 +366,8 @@ ThemeData buildDarkTheme(String paletteName) {
       disabledColor: p.surface.withValues(alpha: 0.5),
       selectedColor: p.accent,
       secondarySelectedColor: p.accent,
-      labelStyle: GoogleFonts.inter(color: p.text, fontSize: 12),
-      secondaryLabelStyle: GoogleFonts.inter(color: p.bg, fontSize: 12),
+      labelStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 12),
+      secondaryLabelStyle: getFontTextStyle(fontFamily, color: p.bg, fontSize: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: p.border, width: 0.5),
@@ -278,20 +379,51 @@ ThemeData buildDarkTheme(String paletteName) {
         backgroundColor: p.accent,
         foregroundColor: p.bg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusMD)),
-        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+        textStyle: getFontTextStyle(fontFamily, fontWeight: FontWeight.w600, fontSize: 14),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: p.accent,
-        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14),
+        textStyle: getFontTextStyle(fontFamily, fontWeight: FontWeight.w500, fontSize: 14),
       ),
     ),
   );
 }
 
-ThemeData buildLightTheme(String paletteName) {
-  final p = _lightPalettes[paletteName] ?? _lightPalettes['warm_stone']!;
+ThemeData buildLightTheme(
+  String paletteName, {
+  Color? customAccent,
+  Color? customBg,
+  String fontFamily = 'inter',
+}) {
+  final basePalette = _lightPalettes[paletteName] ?? _lightPalettes['warm_stone']!;
+  
+  // Custom accent / bg override
+  final accentColor = customAccent ?? basePalette.accent;
+  final accentMutedColor = customAccent != null 
+      ? customAccent.withValues(alpha: 0.6) 
+      : basePalette.accentMuted;
+      
+  final bg = customBg ?? basePalette.bg;
+  final card = customBg != null ? Colors.white : basePalette.card;
+  final surface = customBg != null 
+      ? Color.alphaBlend(Colors.black.withValues(alpha: 0.04), customBg)
+      : basePalette.surface;
+  final border = customBg != null 
+      ? Color.alphaBlend(Colors.black.withValues(alpha: 0.08), customBg)
+      : basePalette.border;
+
+  final p = PaletteColors(
+    bg: bg,
+    surface: surface,
+    card: card,
+    border: border,
+    text: basePalette.text,
+    accent: accentColor,
+    accentMuted: accentMutedColor,
+  );
+
   final base = ThemeData.light(useMaterial3: true);
 
   return base.copyWith(
@@ -306,7 +438,7 @@ ThemeData buildLightTheme(String paletteName) {
       onSurface: p.text,
       onPrimary: p.bg,
     ),
-    textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
+    textTheme: getTextTheme(fontFamily, base.textTheme).apply(
       bodyColor: p.text,
       displayColor: p.text,
     ),
@@ -321,19 +453,15 @@ ThemeData buildLightTheme(String paletteName) {
         systemNavigationBarColor: p.surface,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      titleTextStyle: GoogleFonts.inter(
-        color: p.text,
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.3,
-      ),
+      titleTextStyle: getTitleStyle(fontFamily, color: p.text),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: p.surface,
       indicatorColor: p.border,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
-        return GoogleFonts.inter(
+        return getFontTextStyle(
+          fontFamily,
           fontSize: 11,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           color: selected ? p.text : p.accentMuted,
@@ -362,7 +490,7 @@ ThemeData buildLightTheme(String paletteName) {
         borderRadius: BorderRadius.circular(kRadiusMD),
         borderSide: BorderSide(color: p.accent, width: 1.5),
       ),
-      hintStyle: GoogleFonts.inter(color: p.accentMuted, fontSize: 15),
+      hintStyle: getFontTextStyle(fontFamily, color: p.accentMuted, fontSize: 15),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: kSpaceMD,
         vertical: kSpaceMD,
@@ -384,7 +512,7 @@ ThemeData buildLightTheme(String paletteName) {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: p.card,
-      contentTextStyle: GoogleFonts.inter(color: p.text, fontSize: 14),
+      contentTextStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 14),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
         side: BorderSide(color: p.border),
@@ -422,12 +550,14 @@ ThemeData buildLightTheme(String paletteName) {
         borderRadius: BorderRadius.circular(kRadiusLG),
         side: BorderSide(color: p.border, width: 0.5),
       ),
-      titleTextStyle: GoogleFonts.inter(
+      titleTextStyle: getFontTextStyle(
+        fontFamily,
         color: p.text,
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
-      contentTextStyle: GoogleFonts.inter(
+      contentTextStyle: getFontTextStyle(
+        fontFamily,
         color: p.text.withValues(alpha: 0.8),
         fontSize: 14,
       ),
@@ -439,7 +569,8 @@ ThemeData buildLightTheme(String paletteName) {
         borderRadius: BorderRadius.circular(kRadiusMD),
         side: BorderSide(color: p.border, width: 0.5),
       ),
-      textStyle: GoogleFonts.inter(
+      textStyle: getFontTextStyle(
+        fontFamily,
         color: p.text,
         fontSize: 14,
       ),
@@ -449,8 +580,8 @@ ThemeData buildLightTheme(String paletteName) {
       disabledColor: p.surface.withValues(alpha: 0.5),
       selectedColor: p.accent,
       secondarySelectedColor: p.accent,
-      labelStyle: GoogleFonts.inter(color: p.text, fontSize: 12),
-      secondaryLabelStyle: GoogleFonts.inter(color: p.bg, fontSize: 12),
+      labelStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 12),
+      secondaryLabelStyle: getFontTextStyle(fontFamily, color: p.bg, fontSize: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: p.border, width: 0.5),
@@ -462,13 +593,13 @@ ThemeData buildLightTheme(String paletteName) {
         backgroundColor: p.accent,
         foregroundColor: p.bg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusMD)),
-        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+        textStyle: getFontTextStyle(fontFamily, fontWeight: FontWeight.w600, fontSize: 14),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: p.accent,
-        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14),
+        textStyle: getFontTextStyle(fontFamily, fontWeight: FontWeight.w500, fontSize: 14),
       ),
     ),
   );

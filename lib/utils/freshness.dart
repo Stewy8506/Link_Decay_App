@@ -15,6 +15,7 @@ double computeFreshness({
   required DateTime now,
   required double halfLifeDays,
   DateTime? snoozedUntil,
+  String decayCurveType = 'exponential',
 }) {
   double ageDays;
 
@@ -29,7 +30,13 @@ double computeFreshness({
   }
 
   if (halfLifeDays <= 0) return 0.0;
-  final score = pow(0.5, ageDays / halfLifeDays).toDouble();
+
+  double score;
+  if (decayCurveType == 'linear') {
+    score = 1.0 - (ageDays / (halfLifeDays * 2.0));
+  } else {
+    score = pow(0.5, ageDays / halfLifeDays).toDouble();
+  }
   return score.clamp(0.0, 1.0);
 }
 

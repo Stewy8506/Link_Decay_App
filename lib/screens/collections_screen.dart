@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../utils/google_fonts.dart';
 
 import '../data/database.dart';
 import '../models/link_status.dart';
@@ -186,6 +186,7 @@ class _FoldersTab extends ConsumerWidget {
 
         final allLinks = allLinksAsync.valueOrNull ?? [];
         final baseHalfLife = ref.watch(halfLifeDaysProvider);
+        final decayCurveType = ref.watch(decayCurveTypeProvider);
         final now = DateTime.now();
 
         // Stats calculations
@@ -200,6 +201,7 @@ class _FoldersTab extends ConsumerWidget {
               now: now,
               halfLifeDays: l.customHalfLifeDays ?? baseHalfLife,
               snoozedUntil: l.snoozedUntil,
+              decayCurveType: decayCurveType,
             );
             if (l.collectionId != null) {
               organizedCount++;
@@ -712,6 +714,7 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
     double avgFreshness = 1.0;
     if (widget.links.isNotEmpty) {
       final baseHalfLife = ref.watch(halfLifeDaysProvider);
+      final decayCurveType = ref.watch(decayCurveTypeProvider);
       final now = DateTime.now();
       double sum = 0.0;
       for (final l in widget.links) {
@@ -720,6 +723,7 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
           now: now,
           halfLifeDays: l.customHalfLifeDays ?? baseHalfLife,
           snoozedUntil: l.snoozedUntil,
+          decayCurveType: decayCurveType,
         );
       }
       avgFreshness = sum / widget.links.length;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../utils/google_fonts.dart';
 
 import '../models/link_status.dart';
 import '../providers/providers.dart';
@@ -15,6 +15,7 @@ class StatsDashboardPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final allLinksAsync = ref.watch(allLinksProvider);
     final baseHalfLife = ref.watch(halfLifeDaysProvider);
+    final decayCurveType = ref.watch(decayCurveTypeProvider);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
@@ -55,6 +56,7 @@ class StatsDashboardPanel extends ConsumerWidget {
             now: now,
             halfLifeDays: l.customHalfLifeDays ?? baseHalfLife,
             snoozedUntil: l.snoozedUntil,
+            decayCurveType: decayCurveType,
           );
           if (score > 0.66) {
             freshCount++;

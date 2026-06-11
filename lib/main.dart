@@ -92,16 +92,19 @@ class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
     final halfLife = settings?.halfLifeDays ?? 7.0;
     final threshold = settings?.notificationThreshold ?? 0.25;
     final enabled = settings?.notificationsEnabled ?? true;
+    final decayCurve = settings?.decayCurveType ?? 'exponential';
 
     if (enabled) {
       await NotificationService.instance.scheduleDailyCheck(
         db: db,
         halfLifeDays: halfLife,
         threshold: threshold,
+        decayCurveType: decayCurve,
       );
       await NotificationService.instance.scheduleWeeklyDigest(
         db: db,
         halfLifeDays: halfLife,
+        decayCurveType: decayCurve,
       );
     }
   }

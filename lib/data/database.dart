@@ -108,6 +108,13 @@ class AppSettings extends Table {
   // V3 Features
   IntColumn get dailyReadingGoal => integer().withDefault(const Constant(2))();
 
+  // V4 Customizations
+  TextColumn get snoozePresets => text().withDefault(const Constant('[1, 3, 7]'))();
+  TextColumn get fontFamily => text().withDefault(const Constant('inter'))();
+  TextColumn get customAccentColor => text().nullable()();
+  TextColumn get customBgColor => text().nullable()();
+  TextColumn get decayCurveType => text().withDefault(const Constant('exponential'))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -119,7 +126,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -154,6 +161,14 @@ class AppDatabase extends _$AppDatabase {
           // V3 Migration
           await m.addColumn(links, links.isDead);
           await m.addColumn(appSettings, appSettings.dailyReadingGoal);
+        }
+        if (from < 4) {
+          // V4 Migration
+          await m.addColumn(appSettings, appSettings.snoozePresets);
+          await m.addColumn(appSettings, appSettings.fontFamily);
+          await m.addColumn(appSettings, appSettings.customAccentColor);
+          await m.addColumn(appSettings, appSettings.customBgColor);
+          await m.addColumn(appSettings, appSettings.decayCurveType);
         }
       },
     );
@@ -285,6 +300,7 @@ class AppDatabase extends _$AppDatabase {
   Future<List<Link>> getStaleLinks({
     required double halfLifeDays,
     required double threshold,
+    String decayCurveType = 'exponential',
   }) async {
     final now = DateTime.now();
     final allInbox = await (select(links)
@@ -294,7 +310,9 @@ class AppDatabase extends _$AppDatabase {
     return allInbox.where((l) {
       final effectiveHalfLife = l.customHalfLifeDays ?? halfLifeDays;
       final ageDays = now.difference(l.createdAt).inDays.toDouble();
-      final score = pow(0.5, ageDays / effectiveHalfLife).toDouble();
+      final score = decayCurveType == 'linear'
+          ? (1.0 - (ageDays / (effectiveHalfLife * 2.0))).clamp(0.0, 1.0)
+          : pow(0.5, ageDays / effectiveHalfLife).toDouble();
       return score < threshold;
     }).toList();
   }

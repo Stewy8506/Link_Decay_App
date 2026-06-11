@@ -9,6 +9,8 @@ import 'screens/collections_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/settings_screen.dart';
 import 'utils/constants.dart';
+import 'utils/google_fonts.dart';
+import 'widgets/add_link_sheet.dart';
 
 class LinkShelfApp extends ConsumerWidget {
   const LinkShelfApp({super.key});
@@ -17,13 +19,32 @@ class LinkShelfApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = ref.watch(isDarkModeProvider);
     final activePalette = ref.watch(themePaletteProvider);
+    final fontFamily = ref.watch(fontFamilyProvider);
+    
+    // Update global font family for local GoogleFonts delegator
+    GoogleFonts.currentFont = fontFamily;
+    final customAccentHex = ref.watch(customAccentColorProvider);
+    final customBgHex = ref.watch(customBgColorProvider);
+
+    final customAccentColor = parseHexColor(customAccentHex);
+    final customBgColor = parseHexColor(customBgHex);
 
     return MaterialApp(
       title: kAppName,
       scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
-      theme: buildLightTheme(activePalette),
-      darkTheme: buildDarkTheme(activePalette),
+      theme: buildLightTheme(
+        activePalette,
+        customAccent: customAccentColor,
+        customBg: customBgColor,
+        fontFamily: fontFamily,
+      ),
+      darkTheme: buildDarkTheme(
+        activePalette,
+        customAccent: customAccentColor,
+        customBg: customBgColor,
+        fontFamily: fontFamily,
+      ),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: const _AppShell(),
     );
@@ -131,6 +152,45 @@ class _AppShellState extends ConsumerState<_AppShell> {
                   HapticFeedback.lightImpact();
                   setState(() => _selectedIndex = i);
                 },
+              ),
+            ),
+          ),
+
+          // Floating Add Link FAB (placed on top of the bottom gradient fade overlay)
+          Positioned(
+            right: 16,
+            bottom: 82 + MediaQuery.of(context).viewPadding.bottom,
+            child: AnimatedScale(
+              scale: (_selectedIndex == 0 && !isMultiSelect) ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutBack,
+              child: AnimatedOpacity(
+                opacity: (_selectedIndex == 0 && !isMultiSelect) ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 180),
+                child: IgnorePointer(
+                  ignoring: _selectedIndex != 0 || isMultiSelect,
+                  child: FloatingActionButton.extended(
+                    onPressed: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        builder: (_) => const AddLinkSheet(),
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                      );
+                    },
+                    backgroundColor: theme.colorScheme.onSurface,
+                    foregroundColor: theme.colorScheme.surface,
+                    elevation: 6,
+                    icon: const Icon(Icons.add, size: 20),
+                    label: Text(
+                      'Add link',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kRadiusXL),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -333,7 +393,7 @@ class _NavBarItemWidgetState extends State<_NavBarItemWidget> {
                 const SizedBox(height: 2),
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 200),
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 9.5,
                     fontWeight: widget.isSelected
                         ? FontWeight.w600

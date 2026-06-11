@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../utils/google_fonts.dart';
 
 import '../providers/providers.dart';
 import '../utils/constants.dart';
@@ -15,6 +15,7 @@ class SnoozeSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final presets = ref.watch(snoozePresetsProvider);
 
     return SafeArea(
       child: Padding(
@@ -53,30 +54,26 @@ class SnoozeSheet extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: kSpaceLG),
-            _SnoozeOption(
-              icon: Icons.bedtime_outlined,
-              label: '1 day',
-              sublabel: 'Back tomorrow',
-              duration: const Duration(days: 1),
-              linkId: linkId,
-            ),
-            const SizedBox(height: kSpaceSM),
-            _SnoozeOption(
-              icon: Icons.calendar_view_week_outlined,
-              label: '3 days',
-              sublabel: 'Back in 3 days',
-              duration: const Duration(days: 3),
-              linkId: linkId,
-            ),
-            const SizedBox(height: kSpaceSM),
-            _SnoozeOption(
-              icon: Icons.calendar_month_outlined,
-              label: '1 week',
-              sublabel: 'Back next week',
-              duration: const Duration(days: 7),
-              linkId: linkId,
-            ),
-            const SizedBox(height: kSpaceSM),
+            ...presets.map((days) {
+              final isOne = days == 1;
+              final label = isOne ? '1 day' : '$days days';
+              final sublabel = isOne ? 'Back tomorrow' : 'Back in $days days';
+              final icon = days <= 2
+                  ? Icons.bedtime_outlined
+                  : (days <= 6
+                      ? Icons.calendar_view_week_outlined
+                      : Icons.calendar_month_outlined);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: kSpaceSM),
+                child: _SnoozeOption(
+                  icon: icon,
+                  label: label,
+                  sublabel: sublabel,
+                  duration: Duration(days: days),
+                  linkId: linkId,
+                ),
+              );
+            }),
             _CustomSnoozeOption(
               linkId: linkId,
             ),

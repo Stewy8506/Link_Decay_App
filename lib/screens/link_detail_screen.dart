@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../utils/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/database.dart';
@@ -142,6 +142,7 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
     final baseHalfLife = ref.watch(halfLifeDaysProvider);
     final domainOverrides = ref.watch(domainHalfLifeOverridesProvider);
     final tagOverrides = ref.watch(tagHalfLifeOverridesProvider);
+    final decayCurveType = ref.watch(decayCurveTypeProvider);
 
     // Determine custom or matching half-life
     double currentHalfLife = baseHalfLife;
@@ -165,6 +166,7 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
       now: now,
       halfLifeDays: currentHalfLife,
       snoozedUntil: link.snoozedUntil,
+      decayCurveType: decayCurveType,
     );
 
     if (!_isNotesEditing && _notesController.text != (link.notes ?? '')) {

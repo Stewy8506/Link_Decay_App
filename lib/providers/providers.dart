@@ -85,6 +85,38 @@ final dailyReadingGoalProvider = Provider<int>((ref) {
   return ref.watch(settingsProvider).valueOrNull?.dailyReadingGoal ?? 2;
 });
 
+/// Snooze presets provider - parses JSON list of ints/doubles. Default is [1, 3, 7]
+final snoozePresetsProvider = Provider<List<int>>((ref) {
+  final raw = ref.watch(settingsProvider).valueOrNull?.snoozePresets;
+  if (raw == null || raw.isEmpty) return const [1, 3, 7];
+  try {
+    final List<dynamic> decoded = jsonDecode(raw);
+    return decoded.map((val) => (val as num).toInt()).toList();
+  } catch (_) {
+    return const [1, 3, 7];
+  }
+});
+
+/// Font family provider
+final fontFamilyProvider = Provider<String>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.fontFamily ?? 'inter';
+});
+
+/// Custom accent color provider (hex string, e.g. '#FF5733')
+final customAccentColorProvider = Provider<String?>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.customAccentColor;
+});
+
+/// Custom background color provider (hex string, e.g. '#FFFFFF')
+final customBgColorProvider = Provider<String?>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.customBgColor;
+});
+
+/// Decay curve type provider ('exponential' or 'linear')
+final decayCurveTypeProvider = Provider<String>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.decayCurveType ?? 'exponential';
+});
+
 // ─── Collections Providers ───────────────────────────────────────────────
 
 final collectionsProvider = StreamProvider<List<Collection>>((ref) {
@@ -144,6 +176,7 @@ final sortedFilteredInboxProvider = Provider<List<Link>>((ref) {
   final baseHalfLife = ref.watch(halfLifeDaysProvider);
   final domainOverrides = ref.watch(domainHalfLifeOverridesProvider);
   final tagOverrides = ref.watch(tagHalfLifeOverridesProvider);
+  final decayCurveType = ref.watch(decayCurveTypeProvider);
 
   final query = ref.watch(inboxSearchQueryProvider).toLowerCase().trim();
   final collectionId = ref.watch(selectedCollectionIdProvider);
@@ -178,6 +211,7 @@ final sortedFilteredInboxProvider = Provider<List<Link>>((ref) {
       now: now,
       halfLifeDays: halfLife,
       snoozedUntil: link.snoozedUntil,
+      decayCurveType: decayCurveType,
     );
     return _LinkWithScore(link, score);
   }).toList();
@@ -368,6 +402,7 @@ class LinkActionsNotifier extends Notifier<void> {
           now: DateTime.now(),
           halfLifeDays: currentHalfLife,
           snoozedUntil: link.snoozedUntil,
+          decayCurveType: settings?.decayCurveType ?? 'exponential',
         );
         if (score <= 0.0) {
           return false;
@@ -545,6 +580,11 @@ class LinkActionsNotifier extends Notifier<void> {
     String? domainHalfLifeOverrides,
     String? tagHalfLifeOverrides,
     int? dailyReadingGoal,
+    String? snoozePresets,
+    String? fontFamily,
+    Value<String?> customAccentColor = const Value.absent(),
+    Value<String?> customBgColor = const Value.absent(),
+    String? decayCurveType,
   }) async {
     final current = await _db.getSettings();
     await _db.upsertSettings(
@@ -560,6 +600,11 @@ class LinkActionsNotifier extends Notifier<void> {
         domainHalfLifeOverrides: Value(domainHalfLifeOverrides ?? current?.domainHalfLifeOverrides),
         tagHalfLifeOverrides: Value(tagHalfLifeOverrides ?? current?.tagHalfLifeOverrides),
         dailyReadingGoal: Value(dailyReadingGoal ?? current?.dailyReadingGoal ?? 2),
+        snoozePresets: Value(snoozePresets ?? current?.snoozePresets ?? '[1, 3, 7]'),
+        fontFamily: Value(fontFamily ?? current?.fontFamily ?? 'inter'),
+        customAccentColor: customAccentColor.present ? customAccentColor : Value(current?.customAccentColor),
+        customBgColor: customBgColor.present ? customBgColor : Value(current?.customBgColor),
+        decayCurveType: Value(decayCurveType ?? current?.decayCurveType ?? 'exponential'),
       ),
     );
   }
@@ -634,6 +679,7 @@ final widgetSyncProvider = Provider<void>((ref) {
   final baseHalfLife = ref.watch(halfLifeDaysProvider);
   final domainOverrides = ref.watch(domainHalfLifeOverridesProvider);
   final tagOverrides = ref.watch(tagHalfLifeOverridesProvider);
+  final decayCurveType = ref.watch(decayCurveTypeProvider);
   final now = DateTime.now();
 
   final scored = inboxLinks.map((link) {
@@ -658,6 +704,7 @@ final widgetSyncProvider = Provider<void>((ref) {
       now: now,
       halfLifeDays: halfLife,
       snoozedUntil: link.snoozedUntil,
+      decayCurveType: decayCurveType,
     );
     return _LinkWithScoreForSync(link, score);
   }).toList();

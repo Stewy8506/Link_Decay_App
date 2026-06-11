@@ -75,6 +75,7 @@ class NotificationService {
     required AppDatabase db,
     required double halfLifeDays,
     required double threshold,
+    String decayCurveType = 'exponential',
   }) async {
     if (kIsWeb) return;
 
@@ -83,6 +84,7 @@ class NotificationService {
     final staleLinks = await db.getStaleLinks(
       halfLifeDays: halfLifeDays,
       threshold: threshold,
+      decayCurveType: decayCurveType,
     );
 
     if (staleLinks.isEmpty) return;
@@ -146,6 +148,7 @@ class NotificationService {
   Future<void> scheduleWeeklyDigest({
     required AppDatabase db,
     required double halfLifeDays,
+    String decayCurveType = 'exponential',
   }) async {
     if (kIsWeb) return;
 
@@ -161,6 +164,7 @@ class NotificationService {
           now: nowTime,
           halfLifeDays: l.customHalfLifeDays ?? halfLifeDays,
           snoozedUntil: l.snoozedUntil,
+          decayCurveType: decayCurveType,
         );
         if (score < 0.25) {
           staleCount++;
@@ -261,6 +265,7 @@ class NotificationService {
     required DateTime now,
     required double halfLifeDays,
     DateTime? snoozedUntil,
+    String decayCurveType = 'exponential',
   }) {
     if (snoozedUntil != null && snoozedUntil.isAfter(now)) {
       // Pause decay while snoozed
@@ -269,6 +274,10 @@ class NotificationService {
     final ageMs = now.difference(createdAt).inMilliseconds;
     final halfLifeMs = halfLifeDays * 24 * 60 * 60 * 1000;
     if (halfLifeMs <= 0) return 0.0;
+    if (decayCurveType == 'linear') {
+      final ageDays = ageMs / (24.0 * 60.0 * 60.0 * 1000.0);
+      return (1.0 - (ageDays / (halfLifeDays * 2.0))).clamp(0.0, 1.0);
+    }
     return pow(0.5, ageMs / halfLifeMs).toDouble();
   }
 

@@ -2563,6 +2563,65 @@ class $AppSettingsTable extends AppSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(2),
   );
+  static const VerificationMeta _snoozePresetsMeta = const VerificationMeta(
+    'snoozePresets',
+  );
+  @override
+  late final GeneratedColumn<String> snoozePresets = GeneratedColumn<String>(
+    'snooze_presets',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[1, 3, 7]'),
+  );
+  static const VerificationMeta _fontFamilyMeta = const VerificationMeta(
+    'fontFamily',
+  );
+  @override
+  late final GeneratedColumn<String> fontFamily = GeneratedColumn<String>(
+    'font_family',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('inter'),
+  );
+  static const VerificationMeta _customAccentColorMeta = const VerificationMeta(
+    'customAccentColor',
+  );
+  @override
+  late final GeneratedColumn<String> customAccentColor =
+      GeneratedColumn<String>(
+        'custom_accent_color',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _customBgColorMeta = const VerificationMeta(
+    'customBgColor',
+  );
+  @override
+  late final GeneratedColumn<String> customBgColor = GeneratedColumn<String>(
+    'custom_bg_color',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _decayCurveTypeMeta = const VerificationMeta(
+    'decayCurveType',
+  );
+  @override
+  late final GeneratedColumn<String> decayCurveType = GeneratedColumn<String>(
+    'decay_curve_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('exponential'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2576,6 +2635,11 @@ class $AppSettingsTable extends AppSettings
     domainHalfLifeOverrides,
     tagHalfLifeOverrides,
     dailyReadingGoal,
+    snoozePresets,
+    fontFamily,
+    customAccentColor,
+    customBgColor,
+    decayCurveType,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2682,6 +2746,48 @@ class $AppSettingsTable extends AppSettings
         ),
       );
     }
+    if (data.containsKey('snooze_presets')) {
+      context.handle(
+        _snoozePresetsMeta,
+        snoozePresets.isAcceptableOrUnknown(
+          data['snooze_presets']!,
+          _snoozePresetsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('font_family')) {
+      context.handle(
+        _fontFamilyMeta,
+        fontFamily.isAcceptableOrUnknown(data['font_family']!, _fontFamilyMeta),
+      );
+    }
+    if (data.containsKey('custom_accent_color')) {
+      context.handle(
+        _customAccentColorMeta,
+        customAccentColor.isAcceptableOrUnknown(
+          data['custom_accent_color']!,
+          _customAccentColorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('custom_bg_color')) {
+      context.handle(
+        _customBgColorMeta,
+        customBgColor.isAcceptableOrUnknown(
+          data['custom_bg_color']!,
+          _customBgColorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('decay_curve_type')) {
+      context.handle(
+        _decayCurveTypeMeta,
+        decayCurveType.isAcceptableOrUnknown(
+          data['decay_curve_type']!,
+          _decayCurveTypeMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2735,6 +2841,26 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.int,
         data['${effectivePrefix}daily_reading_goal'],
       )!,
+      snoozePresets: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}snooze_presets'],
+      )!,
+      fontFamily: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}font_family'],
+      )!,
+      customAccentColor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_accent_color'],
+      ),
+      customBgColor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_bg_color'],
+      ),
+      decayCurveType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decay_curve_type'],
+      )!,
     );
   }
 
@@ -2756,6 +2882,11 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   final String? domainHalfLifeOverrides;
   final String? tagHalfLifeOverrides;
   final int dailyReadingGoal;
+  final String snoozePresets;
+  final String fontFamily;
+  final String? customAccentColor;
+  final String? customBgColor;
+  final String decayCurveType;
   const AppSetting({
     required this.id,
     required this.halfLifeDays,
@@ -2768,6 +2899,11 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     this.domainHalfLifeOverrides,
     this.tagHalfLifeOverrides,
     required this.dailyReadingGoal,
+    required this.snoozePresets,
+    required this.fontFamily,
+    this.customAccentColor,
+    this.customBgColor,
+    required this.decayCurveType,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2789,6 +2925,15 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       map['tag_half_life_overrides'] = Variable<String>(tagHalfLifeOverrides);
     }
     map['daily_reading_goal'] = Variable<int>(dailyReadingGoal);
+    map['snooze_presets'] = Variable<String>(snoozePresets);
+    map['font_family'] = Variable<String>(fontFamily);
+    if (!nullToAbsent || customAccentColor != null) {
+      map['custom_accent_color'] = Variable<String>(customAccentColor);
+    }
+    if (!nullToAbsent || customBgColor != null) {
+      map['custom_bg_color'] = Variable<String>(customBgColor);
+    }
+    map['decay_curve_type'] = Variable<String>(decayCurveType);
     return map;
   }
 
@@ -2809,6 +2954,15 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           ? const Value.absent()
           : Value(tagHalfLifeOverrides),
       dailyReadingGoal: Value(dailyReadingGoal),
+      snoozePresets: Value(snoozePresets),
+      fontFamily: Value(fontFamily),
+      customAccentColor: customAccentColor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customAccentColor),
+      customBgColor: customBgColor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customBgColor),
+      decayCurveType: Value(decayCurveType),
     );
   }
 
@@ -2837,6 +2991,13 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
         json['tagHalfLifeOverrides'],
       ),
       dailyReadingGoal: serializer.fromJson<int>(json['dailyReadingGoal']),
+      snoozePresets: serializer.fromJson<String>(json['snoozePresets']),
+      fontFamily: serializer.fromJson<String>(json['fontFamily']),
+      customAccentColor: serializer.fromJson<String?>(
+        json['customAccentColor'],
+      ),
+      customBgColor: serializer.fromJson<String?>(json['customBgColor']),
+      decayCurveType: serializer.fromJson<String>(json['decayCurveType']),
     );
   }
   @override
@@ -2856,6 +3017,11 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       ),
       'tagHalfLifeOverrides': serializer.toJson<String?>(tagHalfLifeOverrides),
       'dailyReadingGoal': serializer.toJson<int>(dailyReadingGoal),
+      'snoozePresets': serializer.toJson<String>(snoozePresets),
+      'fontFamily': serializer.toJson<String>(fontFamily),
+      'customAccentColor': serializer.toJson<String?>(customAccentColor),
+      'customBgColor': serializer.toJson<String?>(customBgColor),
+      'decayCurveType': serializer.toJson<String>(decayCurveType),
     };
   }
 
@@ -2871,6 +3037,11 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     Value<String?> domainHalfLifeOverrides = const Value.absent(),
     Value<String?> tagHalfLifeOverrides = const Value.absent(),
     int? dailyReadingGoal,
+    String? snoozePresets,
+    String? fontFamily,
+    Value<String?> customAccentColor = const Value.absent(),
+    Value<String?> customBgColor = const Value.absent(),
+    String? decayCurveType,
   }) => AppSetting(
     id: id ?? this.id,
     halfLifeDays: halfLifeDays ?? this.halfLifeDays,
@@ -2887,6 +3058,15 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
         ? tagHalfLifeOverrides.value
         : this.tagHalfLifeOverrides,
     dailyReadingGoal: dailyReadingGoal ?? this.dailyReadingGoal,
+    snoozePresets: snoozePresets ?? this.snoozePresets,
+    fontFamily: fontFamily ?? this.fontFamily,
+    customAccentColor: customAccentColor.present
+        ? customAccentColor.value
+        : this.customAccentColor,
+    customBgColor: customBgColor.present
+        ? customBgColor.value
+        : this.customBgColor,
+    decayCurveType: decayCurveType ?? this.decayCurveType,
   );
   AppSetting copyWithCompanion(AppSettingsCompanion data) {
     return AppSetting(
@@ -2921,6 +3101,21 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       dailyReadingGoal: data.dailyReadingGoal.present
           ? data.dailyReadingGoal.value
           : this.dailyReadingGoal,
+      snoozePresets: data.snoozePresets.present
+          ? data.snoozePresets.value
+          : this.snoozePresets,
+      fontFamily: data.fontFamily.present
+          ? data.fontFamily.value
+          : this.fontFamily,
+      customAccentColor: data.customAccentColor.present
+          ? data.customAccentColor.value
+          : this.customAccentColor,
+      customBgColor: data.customBgColor.present
+          ? data.customBgColor.value
+          : this.customBgColor,
+      decayCurveType: data.decayCurveType.present
+          ? data.decayCurveType.value
+          : this.decayCurveType,
     );
   }
 
@@ -2937,7 +3132,12 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           ..write('swipeRightAction: $swipeRightAction, ')
           ..write('domainHalfLifeOverrides: $domainHalfLifeOverrides, ')
           ..write('tagHalfLifeOverrides: $tagHalfLifeOverrides, ')
-          ..write('dailyReadingGoal: $dailyReadingGoal')
+          ..write('dailyReadingGoal: $dailyReadingGoal, ')
+          ..write('snoozePresets: $snoozePresets, ')
+          ..write('fontFamily: $fontFamily, ')
+          ..write('customAccentColor: $customAccentColor, ')
+          ..write('customBgColor: $customBgColor, ')
+          ..write('decayCurveType: $decayCurveType')
           ..write(')'))
         .toString();
   }
@@ -2955,6 +3155,11 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     domainHalfLifeOverrides,
     tagHalfLifeOverrides,
     dailyReadingGoal,
+    snoozePresets,
+    fontFamily,
+    customAccentColor,
+    customBgColor,
+    decayCurveType,
   );
   @override
   bool operator ==(Object other) =>
@@ -2970,7 +3175,12 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           other.swipeRightAction == this.swipeRightAction &&
           other.domainHalfLifeOverrides == this.domainHalfLifeOverrides &&
           other.tagHalfLifeOverrides == this.tagHalfLifeOverrides &&
-          other.dailyReadingGoal == this.dailyReadingGoal);
+          other.dailyReadingGoal == this.dailyReadingGoal &&
+          other.snoozePresets == this.snoozePresets &&
+          other.fontFamily == this.fontFamily &&
+          other.customAccentColor == this.customAccentColor &&
+          other.customBgColor == this.customBgColor &&
+          other.decayCurveType == this.decayCurveType);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
@@ -2985,6 +3195,11 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   final Value<String?> domainHalfLifeOverrides;
   final Value<String?> tagHalfLifeOverrides;
   final Value<int> dailyReadingGoal;
+  final Value<String> snoozePresets;
+  final Value<String> fontFamily;
+  final Value<String?> customAccentColor;
+  final Value<String?> customBgColor;
+  final Value<String> decayCurveType;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.halfLifeDays = const Value.absent(),
@@ -2997,6 +3212,11 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.domainHalfLifeOverrides = const Value.absent(),
     this.tagHalfLifeOverrides = const Value.absent(),
     this.dailyReadingGoal = const Value.absent(),
+    this.snoozePresets = const Value.absent(),
+    this.fontFamily = const Value.absent(),
+    this.customAccentColor = const Value.absent(),
+    this.customBgColor = const Value.absent(),
+    this.decayCurveType = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -3010,6 +3230,11 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.domainHalfLifeOverrides = const Value.absent(),
     this.tagHalfLifeOverrides = const Value.absent(),
     this.dailyReadingGoal = const Value.absent(),
+    this.snoozePresets = const Value.absent(),
+    this.fontFamily = const Value.absent(),
+    this.customAccentColor = const Value.absent(),
+    this.customBgColor = const Value.absent(),
+    this.decayCurveType = const Value.absent(),
   });
   static Insertable<AppSetting> custom({
     Expression<int>? id,
@@ -3023,6 +3248,11 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Expression<String>? domainHalfLifeOverrides,
     Expression<String>? tagHalfLifeOverrides,
     Expression<int>? dailyReadingGoal,
+    Expression<String>? snoozePresets,
+    Expression<String>? fontFamily,
+    Expression<String>? customAccentColor,
+    Expression<String>? customBgColor,
+    Expression<String>? decayCurveType,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3040,6 +3270,11 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       if (tagHalfLifeOverrides != null)
         'tag_half_life_overrides': tagHalfLifeOverrides,
       if (dailyReadingGoal != null) 'daily_reading_goal': dailyReadingGoal,
+      if (snoozePresets != null) 'snooze_presets': snoozePresets,
+      if (fontFamily != null) 'font_family': fontFamily,
+      if (customAccentColor != null) 'custom_accent_color': customAccentColor,
+      if (customBgColor != null) 'custom_bg_color': customBgColor,
+      if (decayCurveType != null) 'decay_curve_type': decayCurveType,
     });
   }
 
@@ -3055,6 +3290,11 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Value<String?>? domainHalfLifeOverrides,
     Value<String?>? tagHalfLifeOverrides,
     Value<int>? dailyReadingGoal,
+    Value<String>? snoozePresets,
+    Value<String>? fontFamily,
+    Value<String?>? customAccentColor,
+    Value<String?>? customBgColor,
+    Value<String>? decayCurveType,
   }) {
     return AppSettingsCompanion(
       id: id ?? this.id,
@@ -3070,6 +3310,11 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
           domainHalfLifeOverrides ?? this.domainHalfLifeOverrides,
       tagHalfLifeOverrides: tagHalfLifeOverrides ?? this.tagHalfLifeOverrides,
       dailyReadingGoal: dailyReadingGoal ?? this.dailyReadingGoal,
+      snoozePresets: snoozePresets ?? this.snoozePresets,
+      fontFamily: fontFamily ?? this.fontFamily,
+      customAccentColor: customAccentColor ?? this.customAccentColor,
+      customBgColor: customBgColor ?? this.customBgColor,
+      decayCurveType: decayCurveType ?? this.decayCurveType,
     );
   }
 
@@ -3115,6 +3360,21 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     if (dailyReadingGoal.present) {
       map['daily_reading_goal'] = Variable<int>(dailyReadingGoal.value);
     }
+    if (snoozePresets.present) {
+      map['snooze_presets'] = Variable<String>(snoozePresets.value);
+    }
+    if (fontFamily.present) {
+      map['font_family'] = Variable<String>(fontFamily.value);
+    }
+    if (customAccentColor.present) {
+      map['custom_accent_color'] = Variable<String>(customAccentColor.value);
+    }
+    if (customBgColor.present) {
+      map['custom_bg_color'] = Variable<String>(customBgColor.value);
+    }
+    if (decayCurveType.present) {
+      map['decay_curve_type'] = Variable<String>(decayCurveType.value);
+    }
     return map;
   }
 
@@ -3131,7 +3391,12 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
           ..write('swipeRightAction: $swipeRightAction, ')
           ..write('domainHalfLifeOverrides: $domainHalfLifeOverrides, ')
           ..write('tagHalfLifeOverrides: $tagHalfLifeOverrides, ')
-          ..write('dailyReadingGoal: $dailyReadingGoal')
+          ..write('dailyReadingGoal: $dailyReadingGoal, ')
+          ..write('snoozePresets: $snoozePresets, ')
+          ..write('fontFamily: $fontFamily, ')
+          ..write('customAccentColor: $customAccentColor, ')
+          ..write('customBgColor: $customBgColor, ')
+          ..write('decayCurveType: $decayCurveType')
           ..write(')'))
         .toString();
   }
@@ -4356,6 +4621,11 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<String?> domainHalfLifeOverrides,
       Value<String?> tagHalfLifeOverrides,
       Value<int> dailyReadingGoal,
+      Value<String> snoozePresets,
+      Value<String> fontFamily,
+      Value<String?> customAccentColor,
+      Value<String?> customBgColor,
+      Value<String> decayCurveType,
     });
 typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
@@ -4370,6 +4640,11 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<String?> domainHalfLifeOverrides,
       Value<String?> tagHalfLifeOverrides,
       Value<int> dailyReadingGoal,
+      Value<String> snoozePresets,
+      Value<String> fontFamily,
+      Value<String?> customAccentColor,
+      Value<String?> customBgColor,
+      Value<String> decayCurveType,
     });
 
 class $$AppSettingsTableFilterComposer
@@ -4433,6 +4708,31 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<int> get dailyReadingGoal => $composableBuilder(
     column: $table.dailyReadingGoal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get snoozePresets => $composableBuilder(
+    column: $table.snoozePresets,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fontFamily => $composableBuilder(
+    column: $table.fontFamily,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customAccentColor => $composableBuilder(
+    column: $table.customAccentColor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customBgColor => $composableBuilder(
+    column: $table.customBgColor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decayCurveType => $composableBuilder(
+    column: $table.decayCurveType,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4500,6 +4800,31 @@ class $$AppSettingsTableOrderingComposer
     column: $table.dailyReadingGoal,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get snoozePresets => $composableBuilder(
+    column: $table.snoozePresets,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fontFamily => $composableBuilder(
+    column: $table.fontFamily,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customAccentColor => $composableBuilder(
+    column: $table.customAccentColor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customBgColor => $composableBuilder(
+    column: $table.customBgColor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decayCurveType => $composableBuilder(
+    column: $table.decayCurveType,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -4563,6 +4888,31 @@ class $$AppSettingsTableAnnotationComposer
     column: $table.dailyReadingGoal,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get snoozePresets => $composableBuilder(
+    column: $table.snoozePresets,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fontFamily => $composableBuilder(
+    column: $table.fontFamily,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get customAccentColor => $composableBuilder(
+    column: $table.customAccentColor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get customBgColor => $composableBuilder(
+    column: $table.customBgColor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get decayCurveType => $composableBuilder(
+    column: $table.decayCurveType,
+    builder: (column) => column,
+  );
 }
 
 class $$AppSettingsTableTableManager
@@ -4607,6 +4957,11 @@ class $$AppSettingsTableTableManager
                 Value<String?> domainHalfLifeOverrides = const Value.absent(),
                 Value<String?> tagHalfLifeOverrides = const Value.absent(),
                 Value<int> dailyReadingGoal = const Value.absent(),
+                Value<String> snoozePresets = const Value.absent(),
+                Value<String> fontFamily = const Value.absent(),
+                Value<String?> customAccentColor = const Value.absent(),
+                Value<String?> customBgColor = const Value.absent(),
+                Value<String> decayCurveType = const Value.absent(),
               }) => AppSettingsCompanion(
                 id: id,
                 halfLifeDays: halfLifeDays,
@@ -4619,6 +4974,11 @@ class $$AppSettingsTableTableManager
                 domainHalfLifeOverrides: domainHalfLifeOverrides,
                 tagHalfLifeOverrides: tagHalfLifeOverrides,
                 dailyReadingGoal: dailyReadingGoal,
+                snoozePresets: snoozePresets,
+                fontFamily: fontFamily,
+                customAccentColor: customAccentColor,
+                customBgColor: customBgColor,
+                decayCurveType: decayCurveType,
               ),
           createCompanionCallback:
               ({
@@ -4633,6 +4993,11 @@ class $$AppSettingsTableTableManager
                 Value<String?> domainHalfLifeOverrides = const Value.absent(),
                 Value<String?> tagHalfLifeOverrides = const Value.absent(),
                 Value<int> dailyReadingGoal = const Value.absent(),
+                Value<String> snoozePresets = const Value.absent(),
+                Value<String> fontFamily = const Value.absent(),
+                Value<String?> customAccentColor = const Value.absent(),
+                Value<String?> customBgColor = const Value.absent(),
+                Value<String> decayCurveType = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 id: id,
                 halfLifeDays: halfLifeDays,
@@ -4645,6 +5010,11 @@ class $$AppSettingsTableTableManager
                 domainHalfLifeOverrides: domainHalfLifeOverrides,
                 tagHalfLifeOverrides: tagHalfLifeOverrides,
                 dailyReadingGoal: dailyReadingGoal,
+                snoozePresets: snoozePresets,
+                fontFamily: fontFamily,
+                customAccentColor: customAccentColor,
+                customBgColor: customBgColor,
+                decayCurveType: decayCurveType,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

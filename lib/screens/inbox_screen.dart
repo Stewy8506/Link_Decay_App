@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../utils/google_fonts.dart';
 
 import '../providers/providers.dart';
 import '../utils/constants.dart';
@@ -88,7 +88,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               // ── App Bar ──────────────────────────────────────────────────
               SliverAppBar(
                 pinned: true,
-                toolbarHeight: 64,
+                toolbarHeight: 80,
+                titleSpacing: kSpaceMD,
                 backgroundColor: theme.scaffoldBackgroundColor,
                 elevation: 0,
                 scrolledUnderElevation: 0,
@@ -105,33 +106,33 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                     ? Text(
                         '${selectedIds.length} Selected',
                         style: GoogleFonts.inter(
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.w600,
                           color: cs.onSurface,
                         ),
                       )
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             'Inbox',
                             style: GoogleFonts.inter(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
                               color: cs.onSurface,
-                              letterSpacing: -0.3,
+                              letterSpacing: -0.6,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 4),
                           Text(
                             activeFilter != null
                                 ? 'List: ${activeFilter.name} · ${links.length} links'
                                 : 'Lifespan: ${(halfLife * 2).toStringAsFixed(0)} days · ${links.length} links',
                             style: GoogleFonts.inter(
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: cs.onSurface.withValues(alpha: 0.45),
+                              color: cs.onSurface.withValues(alpha: 0.5),
                             ),
                           ),
                         ],
@@ -305,47 +306,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           const MultiSelectBar(),
         ],
       ),
-
-      // ── FAB — inverted neutral style ──────────────────────────────────
-      floatingActionButtonLocation: const _AboveNavBarFabLocation(),
-      floatingActionButton: isMultiSelectMode
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => _showAddSheet(context),
-              backgroundColor: cs.onSurface,
-              foregroundColor: cs.surface,
-              elevation: 0,
-              icon: const Icon(Icons.add, size: 20),
-              label: Text(
-                'Add link',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(kRadiusXL),
-              ),
-            ),
     );
-  }
-}
-
-// Custom location to place the FAB above the floating bottom navbar
-class _AboveNavBarFabLocation extends FloatingActionButtonLocation {
-  const _AboveNavBarFabLocation();
-
-  @override
-  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
-    final double fabX =
-        scaffoldGeometry.scaffoldSize.width -
-        scaffoldGeometry.floatingActionButtonSize.width -
-        16;
-
-    final double bottomInset = scaffoldGeometry.minInsets.bottom;
-    final double fabY =
-        scaffoldGeometry.scaffoldSize.height -
-        scaffoldGeometry.floatingActionButtonSize.height -
-        (bottomInset + 108.0);
-
-    return Offset(fabX, fabY);
   }
 }
 

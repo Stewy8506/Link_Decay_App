@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../utils/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:drift/drift.dart' show Value;
 
@@ -224,6 +224,7 @@ class _LinkCardState extends ConsumerState<LinkCard> {
     final tagOverrides = ref.watch(tagHalfLifeOverridesProvider);
     final leftAction = ref.watch(swipeLeftActionProvider);
     final rightAction = ref.watch(swipeRightActionProvider);
+    final decayCurveType = ref.watch(decayCurveTypeProvider);
 
     // Determine custom/matching half-life
     double currentHalfLife = baseHalfLife;
@@ -247,6 +248,7 @@ class _LinkCardState extends ConsumerState<LinkCard> {
       now: now,
       halfLifeDays: currentHalfLife,
       snoozedUntil: widget.link.snoozedUntil,
+      decayCurveType: decayCurveType,
     );
     final isSnoozed = widget.link.snoozedUntil != null &&
         widget.link.snoozedUntil!.isAfter(now);

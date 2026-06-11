@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../utils/google_fonts.dart';
 import '../data/database.dart';
 import '../models/link_status.dart';
 import '../providers/providers.dart';
@@ -177,12 +177,14 @@ class _ArchiveCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final halfLife = ref.watch(halfLifeDaysProvider);
+    final decayCurveType = ref.watch(decayCurveTypeProvider);
     final cs = Theme.of(context).colorScheme;
     final now = DateTime.now();
     final score = computeFreshness(
       createdAt: link.createdAt,
       now: now,
       halfLifeDays: halfLife,
+      decayCurveType: decayCurveType,
     );
 
     final title = link.title ?? link.domain;
