@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:math';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -9,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../data/database.dart';
 import '../models/link_status.dart';
+import '../utils/freshness.dart';
 
 
 class NotificationService {
@@ -164,16 +165,49 @@ class NotificationService {
     if (kIsWeb) return;
 
     final links = await db.select(db.links).get();
+    final settings = await db.getSettings();
+    Map<String, double> domainOverrides = const {};
+    Map<String, double> tagOverrides = const {};
+
+    if (settings != null) {
+      if (settings.domainHalfLifeOverrides != null && settings.domainHalfLifeOverrides!.isNotEmpty) {
+        try {
+          final Map<String, dynamic> decoded = jsonDecode(settings.domainHalfLifeOverrides!);
+          domainOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+        } catch (_) {}
+      }
+      if (settings.tagHalfLifeOverrides != null && settings.tagHalfLifeOverrides!.isNotEmpty) {
+        try {
+          final Map<String, dynamic> decoded = jsonDecode(settings.tagHalfLifeOverrides!);
+          tagOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+        } catch (_) {}
+      }
+    }
 
     // 1. Calculate stale links (freshness < 0.25)
     final nowTime = DateTime.now();
     int staleCount = 0;
     for (final l in links) {
       if (l.status == LinkStatus.inbox) {
-        final score = _computeFreshnessLocal(
+        double halfLife = halfLifeDays;
+        if (l.customHalfLifeDays != null) {
+          halfLife = l.customHalfLifeDays!;
+        } else if (domainOverrides.containsKey(l.domain.toLowerCase())) {
+          halfLife = domainOverrides[l.domain.toLowerCase()]!;
+        } else {
+          final tags = l.tags.split(',').map((t) => t.trim().toLowerCase());
+          for (final tag in tags) {
+            if (tagOverrides.containsKey(tag)) {
+              halfLife = tagOverrides[tag]!;
+              break;
+            }
+          }
+        }
+
+        final score = computeFreshness(
           createdAt: l.createdAt,
           now: nowTime,
-          halfLifeDays: l.customHalfLifeDays ?? halfLifeDays,
+          halfLifeDays: halfLife,
           snoozedUntil: l.snoozedUntil,
           decayCurveType: decayCurveType,
         );
@@ -269,27 +303,6 @@ class NotificationService {
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
-  }
-
-  double _computeFreshnessLocal({
-    required DateTime createdAt,
-    required DateTime now,
-    required double halfLifeDays,
-    DateTime? snoozedUntil,
-    String decayCurveType = 'exponential',
-  }) {
-    if (snoozedUntil != null && snoozedUntil.isAfter(now)) {
-      // Pause decay while snoozed
-      return 1.0;
-    }
-    final ageMs = now.difference(createdAt).inMilliseconds;
-    final halfLifeMs = halfLifeDays * 24 * 60 * 60 * 1000;
-    if (halfLifeMs <= 0) return 0.0;
-    if (decayCurveType == 'linear') {
-      final ageDays = ageMs / (24.0 * 60.0 * 60.0 * 1000.0);
-      return (1.0 - (ageDays / (halfLifeDays * 2.0))).clamp(0.0, 1.0);
-    }
-    return pow(0.5, ageMs / halfLifeMs).toDouble();
   }
 
   /// Push a local success notification immediately.

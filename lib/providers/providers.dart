@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/database.dart';
 import '../models/link_status.dart';
 import '../services/metadata_service.dart';
+import '../services/notification_service.dart';
 import '../utils/constants.dart';
 import '../utils/freshness.dart';
 
@@ -532,39 +533,49 @@ class LinkActionsNotifier extends Notifier<void> {
   // ── Bulk Actions ────────────────────────────────────────────────────────
 
   Future<void> bulkArchive(Set<String> ids) async {
-    for (final id in ids) {
-      await _db.updateLinkStatus(id, LinkStatus.archived);
-    }
+    await _db.transaction(() async {
+      for (final id in ids) {
+        await _db.updateLinkStatus(id, LinkStatus.archived);
+      }
+    });
   }
 
   Future<void> bulkMarkRead(Set<String> ids) async {
-    for (final id in ids) {
-      await _db.updateLinkStatus(id, LinkStatus.read);
-    }
+    await _db.transaction(() async {
+      for (final id in ids) {
+        await _db.updateLinkStatus(id, LinkStatus.read);
+      }
+    });
   }
 
   Future<void> bulkDelete(Set<String> ids) async {
-    for (final id in ids) {
-      await _db.deleteLink(id);
-    }
+    await _db.transaction(() async {
+      for (final id in ids) {
+        await _db.deleteLink(id);
+      }
+    });
   }
 
   Future<void> bulkMoveToCollection(Set<String> ids, String? collectionId) async {
-    for (final id in ids) {
-      await _db.updateLinkCollection(id, collectionId);
-    }
+    await _db.transaction(() async {
+      for (final id in ids) {
+        await _db.updateLinkCollection(id, collectionId);
+      }
+    });
   }
 
   Future<void> bulkAddTag(Set<String> ids, String tag) async {
-    for (final id in ids) {
-      final link = await (_db.select(_db.links)..where((l) => l.id.equals(id))).getSingleOrNull();
-      if (link == null) continue;
-      final existingTags = link.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
-      if (!existingTags.contains(tag)) {
-        existingTags.add(tag);
-        await _db.updateTags(id, existingTags.join(', '));
+    await _db.transaction(() async {
+      for (final id in ids) {
+        final link = await (_db.select(_db.links)..where((l) => l.id.equals(id))).getSingleOrNull();
+        if (link == null) continue;
+        final existingTags = link.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+        if (!existingTags.contains(tag)) {
+          existingTags.add(tag);
+          await _db.updateTags(id, existingTags.join(', '));
+        }
       }
-    }
+    });
   }
 
   // ── Settings ──────────────────────────────────────────────────────────
@@ -607,6 +618,29 @@ class LinkActionsNotifier extends Notifier<void> {
         decayCurveType: Value(decayCurveType ?? current?.decayCurveType ?? 'exponential'),
       ),
     );
+
+    // Reschedule notifications post-save
+    try {
+      final updated = await _db.getSettings();
+      if (updated != null) {
+        final enabled = updated.notificationsEnabled;
+        if (enabled) {
+          await NotificationService.instance.scheduleDailyCheck(
+            db: _db,
+            halfLifeDays: updated.halfLifeDays,
+            threshold: updated.notificationThreshold,
+            decayCurveType: updated.decayCurveType,
+          );
+          await NotificationService.instance.scheduleWeeklyDigest(
+            db: _db,
+            halfLifeDays: updated.halfLifeDays,
+            decayCurveType: updated.decayCurveType,
+          );
+        } else {
+          await NotificationService.instance.cancelAll();
+        }
+      }
+    } catch (_) {}
   }
 
   String _generateId() {

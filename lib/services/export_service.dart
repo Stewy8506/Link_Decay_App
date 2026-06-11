@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../data/database.dart';
 import '../models/link_status.dart';
 import '../utils/constants.dart';
+import 'notification_service.dart';
 
 class ExportService {
   ExportService._internal();
@@ -119,101 +120,126 @@ class ExportService {
     final Map<String, dynamic> data = jsonDecode(jsonContent);
     int importCount = 0;
 
-    if (!merge) {
-      // Clear current data
-      await db.delete(db.links).go();
-      await db.delete(db.collections).go();
-      await db.delete(db.customFilters).go();
-    }
+    await db.transaction(() async {
+      if (!merge) {
+        // Clear current data
+        await db.delete(db.links).go();
+        await db.delete(db.collections).go();
+        await db.delete(db.customFilters).go();
+      }
 
-    // Import Collections
-    if (data.containsKey('collections')) {
-      final List<dynamic> colls = data['collections'];
-      for (final c in colls) {
-        await db.into(db.collections).insertOnConflictUpdate(
-          CollectionsCompanion.insert(
-            id: c['id'],
-            name: c['name'],
-            emoji: Value(c['emoji']),
-            createdAt: DateTime.parse(c['createdAt']),
-            sortOrder: Value(c['sortOrder'] ?? 0),
+      // Import Collections
+      if (data.containsKey('collections')) {
+        final List<dynamic> colls = data['collections'];
+        for (final c in colls) {
+          await db.into(db.collections).insertOnConflictUpdate(
+            CollectionsCompanion.insert(
+              id: c['id'],
+              name: c['name'],
+              emoji: Value(c['emoji']),
+              createdAt: DateTime.parse(c['createdAt']),
+              sortOrder: Value(c['sortOrder'] ?? 0),
+            ),
+          );
+        }
+      }
+
+      // Import Custom Filters
+      if (data.containsKey('customFilters')) {
+        final List<dynamic> filts = data['customFilters'];
+        for (final f in filts) {
+          await db.into(db.customFilters).insertOnConflictUpdate(
+            CustomFiltersCompanion.insert(
+              id: f['id'],
+              name: f['name'],
+              icon: Value(f['icon'] ?? 'list'),
+              minFreshness: Value(f['minFreshness']),
+              maxFreshness: Value(f['maxFreshness']),
+              tags: Value(f['tags']),
+              collections: Value(f['collections']),
+              domains: Value(f['domains']),
+              minReadTime: Value(f['minReadTime']),
+              maxReadTime: Value(f['maxReadTime']),
+              snoozeFilter: Value(f['snoozeFilter']),
+              sortField: Value(f['sortField'] ?? 'freshness_asc'),
+            ),
+          );
+        }
+      }
+
+      // Import Links
+      if (data.containsKey('links')) {
+        final List<dynamic> lnks = data['links'];
+        for (final l in lnks) {
+          final status = LinkStatus.values.firstWhere(
+            (s) => s.name == l['status'],
+            orElse: () => LinkStatus.inbox,
+          );
+
+          await db.into(db.links).insertOnConflictUpdate(
+            LinksCompanion.insert(
+              id: l['id'],
+              url: l['url'],
+              title: Value(l['title']),
+              domain: l['domain'],
+              faviconUrl: Value(l['faviconUrl']),
+              createdAt: DateTime.parse(l['createdAt']),
+              snoozedUntil: Value(l['snoozedUntil'] != null ? DateTime.parse(l['snoozedUntil']) : null),
+              status: status,
+              tags: Value(l['tags'] ?? ''),
+              snoozedSeconds: Value(l['snoozedSeconds'] ?? 0),
+              collectionId: Value(l['collectionId']),
+              notes: Value(l['notes']),
+              ogImageUrl: Value(l['ogImageUrl']),
+              estimatedReadMinutes: Value(l['estimatedReadMinutes']),
+              customHalfLifeDays: Value(l['customHalfLifeDays']),
+            ),
+          );
+          importCount++;
+        }
+      }
+
+      // Import Settings (Optional override)
+      if (data.containsKey('settings') && data['settings'] != null) {
+        final s = data['settings'];
+        await db.upsertSettings(
+          AppSettingsCompanion.insert(
+            id: const Value(1),
+            halfLifeDays: Value(s['halfLifeDays'] ?? kDefaultHalfLifeDays),
+            notificationThreshold: Value(s['notificationThreshold'] ?? kDefaultNotificationThreshold),
+            notificationsEnabled: Value(s['notificationsEnabled'] ?? kDefaultNotificationsEnabled),
+            isDarkMode: Value(s['isDarkMode'] ?? true),
+            themePalette: Value(s['themePalette'] ?? 'warm_stone'),
+            swipeLeftAction: Value(s['swipeLeftAction'] ?? 'archive'),
+            swipeRightAction: Value(s['swipeRightAction'] ?? 'read'),
+            domainHalfLifeOverrides: Value(s['domainHalfLifeOverrides']),
+            tagHalfLifeOverrides: Value(s['tagHalfLifeOverrides']),
           ),
         );
       }
-    }
+    });
 
-    // Import Custom Filters
-    if (data.containsKey('customFilters')) {
-      final List<dynamic> filts = data['customFilters'];
-      for (final f in filts) {
-        await db.into(db.customFilters).insertOnConflictUpdate(
-          CustomFiltersCompanion.insert(
-            id: f['id'],
-            name: f['name'],
-            icon: Value(f['icon'] ?? 'list'),
-            minFreshness: Value(f['minFreshness']),
-            maxFreshness: Value(f['maxFreshness']),
-            tags: Value(f['tags']),
-            collections: Value(f['collections']),
-            domains: Value(f['domains']),
-            minReadTime: Value(f['minReadTime']),
-            maxReadTime: Value(f['maxReadTime']),
-            snoozeFilter: Value(f['snoozeFilter']),
-            sortField: Value(f['sortField'] ?? 'freshness_asc'),
-          ),
-        );
-      }
-    }
-
-    // Import Links
-    if (data.containsKey('links')) {
-      final List<dynamic> lnks = data['links'];
-      for (final l in lnks) {
-        final status = LinkStatus.values.firstWhere(
-          (s) => s.name == l['status'],
-          orElse: () => LinkStatus.inbox,
-        );
-
-        await db.into(db.links).insertOnConflictUpdate(
-          LinksCompanion.insert(
-            id: l['id'],
-            url: l['url'],
-            title: Value(l['title']),
-            domain: l['domain'],
-            faviconUrl: Value(l['faviconUrl']),
-            createdAt: DateTime.parse(l['createdAt']),
-            snoozedUntil: Value(l['snoozedUntil'] != null ? DateTime.parse(l['snoozedUntil']) : null),
-            status: status,
-            tags: Value(l['tags'] ?? ''),
-            snoozedSeconds: Value(l['snoozedSeconds'] ?? 0),
-            collectionId: Value(l['collectionId']),
-            notes: Value(l['notes']),
-            ogImageUrl: Value(l['ogImageUrl']),
-            estimatedReadMinutes: Value(l['estimatedReadMinutes']),
-            customHalfLifeDays: Value(l['customHalfLifeDays']),
-          ),
-        );
-        importCount++;
-      }
-    }
-
-    // Import Settings (Optional override)
+    // Reschedule notifications outside transaction if settings were imported
     if (data.containsKey('settings') && data['settings'] != null) {
-      final s = data['settings'];
-      await db.upsertSettings(
-        AppSettingsCompanion.insert(
-          id: const Value(1),
-          halfLifeDays: Value(s['halfLifeDays'] ?? kDefaultHalfLifeDays),
-          notificationThreshold: Value(s['notificationThreshold'] ?? kDefaultNotificationThreshold),
-          notificationsEnabled: Value(s['notificationsEnabled'] ?? kDefaultNotificationsEnabled),
-          isDarkMode: Value(s['isDarkMode'] ?? true),
-          themePalette: Value(s['themePalette'] ?? 'warm_stone'),
-          swipeLeftAction: Value(s['swipeLeftAction'] ?? 'archive'),
-          swipeRightAction: Value(s['swipeRightAction'] ?? 'read'),
-          domainHalfLifeOverrides: Value(s['domainHalfLifeOverrides']),
-          tagHalfLifeOverrides: Value(s['tagHalfLifeOverrides']),
-        ),
-      );
+      try {
+        final s = data['settings'];
+        final enabled = s['notificationsEnabled'] ?? kDefaultNotificationsEnabled;
+        if (enabled) {
+          await NotificationService.instance.scheduleDailyCheck(
+            db: db,
+            halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
+            threshold: (s['notificationThreshold'] ?? kDefaultNotificationThreshold).toDouble(),
+            decayCurveType: s['decayCurveType'] ?? 'exponential',
+          );
+          await NotificationService.instance.scheduleWeeklyDigest(
+            db: db,
+            halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
+            decayCurveType: s['decayCurveType'] ?? 'exponential',
+          );
+        } else {
+          await NotificationService.instance.cancelAll();
+        }
+      } catch (_) {}
     }
 
     return importCount;
@@ -228,34 +254,36 @@ class ExportService {
     final lines = htmlContent.split('\n');
     int importCount = 0;
 
-    for (final line in lines) {
-      final hrefMatch = hrefRegex.firstMatch(line);
-      if (hrefMatch == null) continue;
+    await db.transaction(() async {
+      for (final line in lines) {
+        final hrefMatch = hrefRegex.firstMatch(line);
+        if (hrefMatch == null) continue;
 
-      final url = hrefMatch.group(1)!;
-      final titleMatch = titleRegex.firstMatch(line);
-      final title = titleMatch?.group(1);
-      
-      final tagsMatch = tagsRegex.firstMatch(line);
-      final tags = tagsMatch != null ? tagsMatch.group(1) ?? '' : '';
+        final url = hrefMatch.group(1)!;
+        final titleMatch = titleRegex.firstMatch(line);
+        final title = titleMatch?.group(1);
+        
+        final tagsMatch = tagsRegex.firstMatch(line);
+        final tags = tagsMatch != null ? tagsMatch.group(1) ?? '' : '';
 
-      final domain = _extractDomain(url);
-      final id = '${DateTime.now().millisecondsSinceEpoch}_${importCount}_html';
+        final domain = _extractDomain(url);
+        final id = '${DateTime.now().millisecondsSinceEpoch}_${importCount}_html';
 
-      await db.into(db.links).insert(
-        LinksCompanion.insert(
-          id: id,
-          url: url,
-          domain: domain,
-          title: Value(title),
-          faviconUrl: Value('https://www.google.com/s2/favicons?domain=$domain&sz=64'),
-          createdAt: DateTime.now(),
-          status: LinkStatus.inbox,
-          tags: Value(tags),
-        ),
-      );
-      importCount++;
-    }
+        await db.into(db.links).insert(
+          LinksCompanion.insert(
+            id: id,
+            url: url,
+            domain: domain,
+            title: Value(title),
+            faviconUrl: Value('https://www.google.com/s2/favicons?domain=$domain&sz=64'),
+            createdAt: DateTime.now(),
+            status: LinkStatus.inbox,
+            tags: Value(tags),
+          ),
+        );
+        importCount++;
+      }
+    });
 
     return importCount;
   }

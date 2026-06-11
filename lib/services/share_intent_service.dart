@@ -9,6 +9,13 @@ class ShareIntentService {
 
   StreamSubscription<List<SharedMediaFile>>? _streamSub;
 
+  /// Extract the first HTTP/HTTPS URL from a given string, if it exists.
+  String? _extractUrl(String text) {
+    final regExp = RegExp(r'(https?://[^\s]+)', caseSensitive: false);
+    final match = regExp.firstMatch(text);
+    return match?.group(1);
+  }
+
   /// Start listening for shared URLs. [onUrl] is called with each URL received.
   void startListening({required void Function(String url) onUrl}) {
     // Handle URLs shared when the app is already open.
@@ -17,10 +24,13 @@ class ShareIntentService {
         .listen((List<SharedMediaFile> files) {
       for (final file in files) {
         final path = file.path;
-        if (_looksLikeUrl(path)) {
-          onUrl(path);
+        final url = _extractUrl(path);
+        if (url != null) {
+          onUrl(url);
         }
       }
+    }, onError: (Object err) {
+      // Catch platform stream errors silently
     });
 
     // Handle URL shared when app was closed and opened via share sheet.
@@ -29,17 +39,16 @@ class ShareIntentService {
         .then((List<SharedMediaFile> files) {
       for (final file in files) {
         final path = file.path;
-        if (_looksLikeUrl(path)) {
-          onUrl(path);
+        final url = _extractUrl(path);
+        if (url != null) {
+          onUrl(url);
         }
       }
       // Reset so we don't process the initial share twice.
       ReceiveSharingIntent.instance.reset();
+    }).catchError((Object _) {
+      // Catch initial load errors silently
     });
-  }
-
-  bool _looksLikeUrl(String value) {
-    return value.startsWith('http://') || value.startsWith('https://');
   }
 
   void dispose() {

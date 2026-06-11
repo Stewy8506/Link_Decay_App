@@ -1,9 +1,10 @@
-import 'dart:math';
+import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
 import '../models/link_status.dart';
+import '../utils/freshness.dart';
 
 part 'database.g.dart';
 
@@ -124,6 +125,7 @@ class AppSettings extends Table {
 @DriftDatabase(tables: [Links, Collections, CustomFilters, LinkHighlights, AppSettings])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+  AppDatabase.forTesting(super.connection);
 
   @override
   int get schemaVersion => 4;
@@ -307,12 +309,48 @@ class AppDatabase extends _$AppDatabase {
           ..where((l) => l.status.equalsValue(LinkStatus.inbox)))
         .get();
 
+    final settings = await getSettings();
+    Map<String, double> domainOverrides = const {};
+    Map<String, double> tagOverrides = const {};
+
+    if (settings != null) {
+      if (settings.domainHalfLifeOverrides != null && settings.domainHalfLifeOverrides!.isNotEmpty) {
+        try {
+          final Map<String, dynamic> decoded = jsonDecode(settings.domainHalfLifeOverrides!);
+          domainOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+        } catch (_) {}
+      }
+      if (settings.tagHalfLifeOverrides != null && settings.tagHalfLifeOverrides!.isNotEmpty) {
+        try {
+          final Map<String, dynamic> decoded = jsonDecode(settings.tagHalfLifeOverrides!);
+          tagOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+        } catch (_) {}
+      }
+    }
+
     return allInbox.where((l) {
-      final effectiveHalfLife = l.customHalfLifeDays ?? halfLifeDays;
-      final ageDays = now.difference(l.createdAt).inDays.toDouble();
-      final score = decayCurveType == 'linear'
-          ? (1.0 - (ageDays / (effectiveHalfLife * 2.0))).clamp(0.0, 1.0)
-          : pow(0.5, ageDays / effectiveHalfLife).toDouble();
+      double halfLife = halfLifeDays;
+      if (l.customHalfLifeDays != null) {
+        halfLife = l.customHalfLifeDays!;
+      } else if (domainOverrides.containsKey(l.domain.toLowerCase())) {
+        halfLife = domainOverrides[l.domain.toLowerCase()]!;
+      } else {
+        final tags = l.tags.split(',').map((t) => t.trim().toLowerCase());
+        for (final tag in tags) {
+          if (tagOverrides.containsKey(tag)) {
+            halfLife = tagOverrides[tag]!;
+            break;
+          }
+        }
+      }
+
+      final score = computeFreshness(
+        createdAt: l.createdAt,
+        now: now,
+        halfLifeDays: halfLife,
+        snoozedUntil: l.snoozedUntil,
+        decayCurveType: decayCurveType,
+      );
       return score < threshold;
     }).toList();
   }

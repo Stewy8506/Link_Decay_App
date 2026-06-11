@@ -7,14 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:drift/drift.dart' show Value;
 import '../app_theme.dart' show parseHexColor, getTitleStyle, getFontTextStyle;
-import '../data/database.dart';
 import '../models/link_status.dart';
 import '../providers/providers.dart';
 import '../services/export_service.dart';
 import '../utils/constants.dart';
-import 'package:http/http.dart' as http;
+
+import 'settings_section_widgets.dart';
+import 'settings_dialogs.dart';
+import 'health_check_dialog.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -63,7 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return _HealthCheckProgressDialog(links: links, db: db);
+        return HealthCheckProgressDialog(links: links, db: db);
       },
     ).then((_) {
       if (mounted) setState(() {});
@@ -194,473 +195,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  // ── Decay Overrides Editors ──────────────────────────────────────────────
-
-  void _addDomainOverrideDialog(Map<String, double> current) {
-    final domainController = TextEditingController();
-    double days = 14.0;
-
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        final cs = Theme.of(context).colorScheme;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardColor,
-              title: Text(
-                'Domain Lifespan Override',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: domainController,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. youtube.com',
-                      labelText: 'Domain Name',
-                    ),
-                    keyboardType: TextInputType.url,
-                  ),
-                  const SizedBox(height: kSpaceMD),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Link Lifespan',
-                        style: GoogleFonts.inter(fontSize: 13),
-                      ),
-                      Text(
-                        '${days.toStringAsFixed(0)} days',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                  Slider(
-                    value: days,
-                    min: 2,
-                    max: 60,
-                    divisions: 58,
-                    onChanged: (v) => setState(() => days = v),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    final dom = domainController.text.trim().toLowerCase();
-                    if (dom.isNotEmpty) {
-                      final updated = Map<String, double>.from(current)
-                        ..[dom] = days / 2.0;
-                      ref
-                          .read(linkActionsProvider.notifier)
-                          .updateSettings(
-                            domainHalfLifeOverrides: jsonEncode(updated),
-                          );
-                      Navigator.pop(context);
-                      HapticFeedback.lightImpact();
-                    }
-                  },
-                  child: Text(
-                    'Add',
-                    style: TextStyle(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _addTagOverrideDialog(Map<String, double> current) {
-    final tagController = TextEditingController();
-    double days = 14.0;
-
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        final cs = Theme.of(context).colorScheme;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardColor,
-              title: Text(
-                'Tag Lifespan Override',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: tagController,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. news',
-                      labelText: 'Tag Name',
-                    ),
-                  ),
-                  const SizedBox(height: kSpaceMD),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Link Lifespan',
-                        style: GoogleFonts.inter(fontSize: 13),
-                      ),
-                      Text(
-                        '${days.toStringAsFixed(0)} days',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                  Slider(
-                    value: days,
-                    min: 2,
-                    max: 60,
-                    divisions: 58,
-                    onChanged: (v) => setState(() => days = v),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    final t = tagController.text.trim().toLowerCase();
-                    if (t.isNotEmpty) {
-                      final updated = Map<String, double>.from(current)
-                        ..[t] = days / 2.0;
-                      ref
-                          .read(linkActionsProvider.notifier)
-                          .updateSettings(
-                            tagHalfLifeOverrides: jsonEncode(updated),
-                          );
-                      Navigator.pop(context);
-                      HapticFeedback.lightImpact();
-                    }
-                  },
-                  child: Text(
-                    'Add',
-                    style: TextStyle(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _editSnoozePresetsDialog(List<int> current) {
-    List<int> tempPresets = List<int>.from(current)..sort();
-
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        final cs = Theme.of(context).colorScheme;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).cardColor,
-              title: Text(
-                'Edit Snooze Presets',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-              ),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Select duration values (in days) that will be displayed in the link snooze panel.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: cs.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: tempPresets.map((days) {
-                        return Chip(
-                          label: Text('$days ${days == 1 ? "day" : "days"}'),
-                          onDeleted: tempPresets.length <= 1
-                              ? null
-                              : () {
-                                  setState(() {
-                                    tempPresets.remove(days);
-                                  });
-                                },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Add preset duration:',
-                            style: TextStyle(fontSize: 13, color: cs.onSurface),
-                          ),
-                        ),
-                        TextButton.icon(
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Add Day'),
-                          onPressed: () {
-                            int next = 1;
-                            while (tempPresets.contains(next)) {
-                              next++;
-                            }
-                            if (next <= 30) {
-                              setState(() {
-                                tempPresets.add(next);
-                                tempPresets.sort();
-                              });
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    ref
-                        .read(linkActionsProvider.notifier)
-                        .updateSettings(snoozePresets: jsonEncode(tempPresets));
-                    Navigator.pop(context);
-                    HapticFeedback.lightImpact();
-                  },
-                  child: Text(
-                    'Save',
-                    style: TextStyle(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _openCustomColorDialog({
-    required bool isAccent,
-    required String? currentHex,
-  }) {
-    final hexController = TextEditingController(text: currentHex ?? '');
-    final errorState = ValueNotifier<String?>(null);
-
-    final presetColors = isAccent
-        ? [
-            '#EC4899', // Rose
-            '#14B8A6', // Teal
-            '#F59E0B', // Amber
-            '#6366F1', // Indigo
-            '#3B82F6', // Blue
-            '#10B981', // Emerald
-          ]
-        : [
-            '#09090B', // Dark Zinc
-            '#0D1117', // Github Dark
-            '#0F172A', // Slate Dark
-            '#1E1E2E', // Mocha Catppuccin
-            '#FAF9F6', // Warm Alabaster
-            '#F3F4F6', // Soft Light Grey
-          ];
-
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        final cs = Theme.of(context).colorScheme;
-        return AlertDialog(
-          backgroundColor: Theme.of(context).cardColor,
-          title: Text(
-            isAccent ? 'Custom Accent Color' : 'Custom Background Color',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isAccent
-                    ? 'Select a preset or enter a custom hex color for buttons and highlights.'
-                    : 'Select a preset or enter a custom hex color for the screen background.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: cs.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-              const SizedBox(height: 16),
-              StatefulBuilder(
-                builder: (context, setDialogState) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: presetColors.map((hex) {
-                          final color = parseHexColor(hex);
-                          final isSelected =
-                              hexController.text.toUpperCase() ==
-                              hex.toUpperCase();
-                          return GestureDetector(
-                            onTap: () {
-                              setDialogState(() {
-                                hexController.text = hex;
-                              });
-                            },
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? cs.onSurface
-                                      : cs.outline.withValues(alpha: 0.3),
-                                  width: isSelected ? 2.5 : 1,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 20),
-                      ValueListenableBuilder<String?>(
-                        valueListenable: errorState,
-                        builder: (context, error, _) {
-                          return TextField(
-                            controller: hexController,
-                            decoration: InputDecoration(
-                              hintText: 'e.g. #FF5733',
-                              labelText: 'Hex Color Code',
-                              errorText: error,
-                            ),
-                            textCapitalization: TextCapitalization.characters,
-                            onChanged: (val) {
-                              setDialogState(() {});
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                if (isAccent) {
-                  ref
-                      .read(linkActionsProvider.notifier)
-                      .updateSettings(customAccentColor: const Value(null));
-                } else {
-                  ref
-                      .read(linkActionsProvider.notifier)
-                      .updateSettings(customBgColor: const Value(null));
-                }
-                Navigator.pop(context);
-                HapticFeedback.lightImpact();
-              },
-              child: const Text(
-                'Reset',
-                style: TextStyle(color: Colors.redAccent),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                final input = hexController.text.trim();
-                if (input.isEmpty) {
-                  errorState.value = 'Color code cannot be empty';
-                  return;
-                }
-                final parsed = parseHexColor(input);
-                if (parsed == null) {
-                  errorState.value = 'Invalid Hex format (e.g. #FF5733)';
-                  return;
-                }
-
-                if (isAccent) {
-                  ref
-                      .read(linkActionsProvider.notifier)
-                      .updateSettings(customAccentColor: Value(input));
-                } else {
-                  ref
-                      .read(linkActionsProvider.notifier)
-                      .updateSettings(customBgColor: Value(input));
-                }
-                Navigator.pop(context);
-                HapticFeedback.lightImpact();
-              },
-              child: Text(
-                'Apply',
-                style: TextStyle(
-                  color: cs.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
@@ -727,10 +261,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: kSpaceSM),
 
                   // ── Lifespan & Snooze Presets ──────────────────────────
-                  _SectionHeader(label: 'Lifespan & Decay'),
-                  _SettingCard(
+                  const SectionHeader(label: 'Lifespan & Decay'),
+                  SettingCard(
                     children: [
-                      _SliderRow(
+                      SliderRow(
                         icon: Icons.timer_outlined,
                         label: 'Default lifespan',
                         sublabel:
@@ -746,8 +280,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         },
                         valueLabel: '${(halfLife * 2).toStringAsFixed(0)} days',
                       ),
-                      const _Divider(),
-                      _SliderRow(
+                      const Divider(height: 0),
+                      SliderRow(
                         icon: Icons.auto_stories_outlined,
                         label: 'Daily reading goal',
                         sublabel: 'Target number of links to read per day',
@@ -763,8 +297,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         valueLabel:
                             '${(settings?.dailyReadingGoal ?? 2)} links',
                       ),
-                      const _Divider(),
-                      _DropdownRow(
+                      const Divider(height: 0),
+                      DropdownRow(
                         icon: Icons.show_chart_outlined,
                         label: 'Decay Curve Algorithm',
                         sublabel: 'How freshness score decays over time',
@@ -785,7 +319,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               .updateSettings(decayCurveType: v);
                         },
                       ),
-                      const _Divider(),
+                      const Divider(height: 0),
                       ListTile(
                         leading: Icon(
                           Icons.snooze_outlined,
@@ -811,16 +345,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           size: 20,
                           color: cs.onSurface,
                         ),
-                        onTap: () => _editSnoozePresetsDialog(snoozePresets),
+                        onTap: () => showSnoozePresetsDialog(context, ref, snoozePresets),
                       ),
                     ],
                   ),
 
                   // ── Interface & Appearance ─────────────────────────────
-                  _SectionHeader(label: 'Interface & Appearance'),
-                  _SettingCard(
+                  const SectionHeader(label: 'Interface & Appearance'),
+                  SettingCard(
                     children: [
-                      _SwitchRow(
+                      SwitchRow(
                         icon: Icons.dark_mode_outlined,
                         label: 'Dark mode',
                         sublabel: 'Easier on the eyes at night',
@@ -831,8 +365,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               .updateSettings(isDarkMode: v);
                         },
                       ),
-                      const _Divider(),
-                      _DropdownRow(
+                      const Divider(height: 0),
+                      DropdownRow(
                         icon: Icons.palette_outlined,
                         label: 'Theme Accent Palette',
                         sublabel: 'Choose neutral aesthetic palette style',
@@ -861,7 +395,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               .updateSettings(themePalette: v);
                         },
                       ),
-                      const _Divider(),
+                      const Divider(height: 0),
                       ListTile(
                         leading: Icon(
                           Icons.colorize_outlined,
@@ -908,12 +442,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ],
                         ),
-                        onTap: () => _openCustomColorDialog(
+                        onTap: () => showCustomColorDialog(
+                          context,
+                          ref,
                           isAccent: true,
                           currentHex: settings?.customAccentColor,
                         ),
                       ),
-                      const _Divider(),
+                      const Divider(height: 0),
                       ListTile(
                         leading: Icon(
                           Icons.wallpaper_outlined,
@@ -958,13 +494,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ],
                         ),
-                        onTap: () => _openCustomColorDialog(
+                        onTap: () => showCustomColorDialog(
+                          context,
+                          ref,
                           isAccent: false,
                           currentHex: settings?.customBgColor,
                         ),
                       ),
-                      const _Divider(),
-                      _DropdownRow(
+                      const Divider(height: 0),
+                      DropdownRow(
                         icon: Icons.font_download_outlined,
                         label: 'Font Family',
                         sublabel: 'Aesthetic typography style',
@@ -997,10 +535,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
 
                   // ── Interaction & Gestures ─────────────────────────────
-                  _SectionHeader(label: 'Gestures & Interaction'),
-                  _SettingCard(
+                  const SectionHeader(label: 'Gestures & Interaction'),
+                  SettingCard(
                     children: [
-                      _DropdownRow(
+                      DropdownRow(
                         icon: Icons.swipe_right_alt_outlined,
                         label: 'Swipe Right Action',
                         sublabel: 'Action on swiping right to left',
@@ -1037,8 +575,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               .updateSettings(swipeRightAction: v);
                         },
                       ),
-                      const _Divider(),
-                      _DropdownRow(
+                      const Divider(height: 0),
+                      DropdownRow(
                         icon: Icons.swipe_left_alt_outlined,
                         label: 'Swipe Left Action',
                         sublabel: 'Action on swiping left to right',
@@ -1079,10 +617,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
 
                   // ── Notifications ────────────────────────────────────
-                  _SectionHeader(label: 'Notifications & Reminders'),
-                  _SettingCard(
+                  const SectionHeader(label: 'Notifications & Reminders'),
+                  SettingCard(
                     children: [
-                      _SwitchRow(
+                      SwitchRow(
                         icon: Icons.notifications_outlined,
                         label: 'Daily reminders',
                         sublabel: 'Notified at 9 AM if links are stale',
@@ -1093,8 +631,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               .updateSettings(notificationsEnabled: v);
                         },
                       ),
-                      const _Divider(),
-                      _SliderRow(
+                      const Divider(height: 0),
+                      SliderRow(
                         icon: Icons.warning_amber_outlined,
                         label: 'Alert threshold',
                         sublabel:
@@ -1114,8 +652,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
 
                   // ── Lifespan Overrides ────────────────────────────────
-                  _SectionHeader(label: 'Lifespan Overrides'),
-                  _SettingCard(
+                  const SectionHeader(label: 'Lifespan Overrides'),
+                  SettingCard(
                     children: [
                       ListTile(
                         leading: Icon(
@@ -1142,10 +680,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           size: 20,
                           color: cs.onSurface,
                         ),
-                        onTap: () => _addDomainOverrideDialog(domainOverrides),
+                        onTap: () => showDomainOverrideDialog(context, ref, domainOverrides),
                       ),
                       if (domainOverrides.isNotEmpty) ...[
-                        const _Divider(),
+                        const Divider(height: 0),
                         ...domainOverrides.entries.map((e) {
                           return ListTile(
                             title: Text(
@@ -1186,7 +724,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           );
                         }),
                       ],
-                      const _Divider(),
+                      const Divider(height: 0),
                       ListTile(
                         leading: Icon(
                           Icons.tag,
@@ -1212,10 +750,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           size: 20,
                           color: cs.onSurface,
                         ),
-                        onTap: () => _addTagOverrideDialog(tagOverrides),
+                        onTap: () => showTagOverrideDialog(context, ref, tagOverrides),
                       ),
                       if (tagOverrides.isNotEmpty) ...[
-                        const _Divider(),
+                        const Divider(height: 0),
                         ...tagOverrides.entries.map((e) {
                           return ListTile(
                             title: Text(
@@ -1258,8 +796,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
 
                   // ── Data Tools ────────────────────────────────────────
-                  _SectionHeader(label: 'Data & Backup'),
-                  _SettingCard(
+                  const SectionHeader(label: 'Data & Backup'),
+                  SettingCard(
                     children: [
                       ListTile(
                         leading: Icon(
@@ -1276,7 +814,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         onTap: _backupJson,
                       ),
-                      const _Divider(),
+                      const Divider(height: 0),
                       ListTile(
                         leading: Icon(
                           Icons.file_download_outlined,
@@ -1292,7 +830,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         onTap: _importJson,
                       ),
-                      const _Divider(),
+                      const Divider(height: 0),
                       ListTile(
                         leading: Icon(
                           Icons.bookmark_outline,
@@ -1308,7 +846,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         onTap: _backupHtml,
                       ),
-                      const _Divider(),
+                      const Divider(height: 0),
                       ListTile(
                         leading: Icon(
                           Icons.bookmark_add_outlined,
@@ -1324,7 +862,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         onTap: _importHtml,
                       ),
-                      const _Divider(),
+                      const Divider(height: 0),
                       ListTile(
                         leading: Icon(
                           Icons.health_and_safety_outlined,
@@ -1352,17 +890,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
 
                   // ── About & Contact Developer ──────────────────────────
-                  _SectionHeader(label: 'About & Contact'),
-                  _SettingCard(
+                  const SectionHeader(label: 'About & Contact'),
+                  SettingCard(
                     children: [
-                      _InfoRow(label: 'App Name', value: kAppName),
-                      const _Divider(),
-                      _InfoRow(label: 'Version', value: kAppVersion),
-                      const _Divider(),
-                      _InfoRow(label: 'Storage', value: 'Local SQLite (Drift)'),
-                      const _Divider(),
-                      _InfoRow(label: 'License', value: 'MIT (Open Source)'),
-                      const _Divider(),
+                      const InfoRow(label: 'App Name', value: kAppName),
+                      const Divider(height: 0),
+                      const InfoRow(label: 'Version', value: kAppVersion),
+                      const Divider(height: 0),
+                      const InfoRow(label: 'Storage', value: 'Local SQLite (Drift)'),
+                      const Divider(height: 0),
+                      const InfoRow(label: 'License', value: 'MIT (Open Source)'),
+                      const Divider(height: 0),
                       ListTile(
                         leading: Icon(
                           Icons.mail_outline,
@@ -1408,481 +946,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ]),
               );
             },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────
-
-class _SectionHeader extends ConsumerWidget {
-  const _SectionHeader({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        kSpaceMD,
-        kSpaceLG,
-        kSpaceMD,
-        kSpaceSM,
-      ),
-      child: Text(
-        label.toUpperCase(),
-        style: getFontTextStyle(
-          ref.watch(fontFamilyProvider),
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: cs.onSurface.withValues(alpha: 0.3),
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingCard extends StatelessWidget {
-  const _SettingCard({required this.children});
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: kSpaceMD),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(kRadiusMD),
-        border: Border.all(color: cs.outline, width: 0.5),
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  const _Divider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Divider(height: 0);
-  }
-}
-
-class _SliderRow extends ConsumerWidget {
-  const _SliderRow({
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.divisions,
-    required this.onChanged,
-    required this.valueLabel,
-  });
-
-  final IconData icon;
-  final String label;
-  final String sublabel;
-  final double value;
-  final double min;
-  final double max;
-  final int divisions;
-  final ValueChanged<double> onChanged;
-  final String valueLabel;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    final font = ref.watch(fontFamilyProvider);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        kSpaceMD,
-        kSpaceMD,
-        kSpaceMD,
-        kSpaceSM,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: cs.onSurface.withValues(alpha: 0.45)),
-              const SizedBox(width: kSpaceSM),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: getFontTextStyle(
-                        font,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    Text(
-                      sublabel,
-                      style: getFontTextStyle(
-                        font,
-                        fontSize: 12,
-                        color: cs.onSurface.withValues(alpha: 0.45),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: cs.outline.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  valueLabel,
-                  style: getFontTextStyle(
-                    font,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Slider(
-            value: value.clamp(min, max),
-            min: min,
-            max: max,
-            divisions: divisions,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SwitchRow extends ConsumerWidget {
-  const _SwitchRow({
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String label;
-  final String sublabel;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    final font = ref.watch(fontFamilyProvider);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 14),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: cs.onSurface.withValues(alpha: 0.45)),
-          const SizedBox(width: kSpaceSM),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: getFontTextStyle(
-                    font,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: cs.onSurface,
-                  ),
-                ),
-                Text(
-                  sublabel,
-                  style: getFontTextStyle(
-                    font,
-                    fontSize: 12,
-                    color: cs.onSurface.withValues(alpha: 0.45),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(value: value, onChanged: onChanged),
-        ],
-      ),
-    );
-  }
-}
-
-class _DropdownRow extends ConsumerWidget {
-  const _DropdownRow({
-    required this.icon,
-    required this.label,
-    required this.sublabel,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String label;
-  final String sublabel;
-  final String value;
-  final List<DropdownMenuItem<String>> items;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    final font = ref.watch(fontFamilyProvider);
-    final selectedText = items
-        .firstWhere(
-          (item) => item.value == value,
-          orElse: () => DropdownMenuItem(value: value, child: Text(value)),
-        )
-        .child;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 14),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: cs.onSurface.withValues(alpha: 0.45)),
-          const SizedBox(width: kSpaceSM),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: getFontTextStyle(
-                    font,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: cs.onSurface,
-                  ),
-                ),
-                Text(
-                  sublabel,
-                  style: getFontTextStyle(
-                    font,
-                    fontSize: 12,
-                    color: cs.onSurface.withValues(alpha: 0.45),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: kSpaceSM),
-          PopupMenuButton<String>(
-            initialValue: value,
-            onSelected: onChanged,
-            itemBuilder: (context) {
-              return items.map((item) {
-                return PopupMenuItem<String>(
-                  value: item.value,
-                  child: item.child,
-                );
-              }).toList();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: cs.outline.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: cs.outline, width: 0.5),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DefaultTextStyle(
-                    style: getFontTextStyle(
-                      font,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface.withValues(alpha: 0.8),
-                    ),
-                    child: selectedText,
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_drop_down,
-                    size: 16,
-                    color: cs.onSurface.withValues(alpha: 0.6),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HealthCheckProgressDialog extends StatefulWidget {
-  const _HealthCheckProgressDialog({required this.links, required this.db});
-  final List<Link> links;
-  final AppDatabase db;
-
-  @override
-  State<_HealthCheckProgressDialog> createState() =>
-      _HealthCheckProgressDialogState();
-}
-
-class _HealthCheckProgressDialogState
-    extends State<_HealthCheckProgressDialog> {
-  int _currentIndex = 0;
-  int _deadCount = 0;
-  bool _isFinished = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _startScan();
-  }
-
-  Future<void> _startScan() async {
-    final client = http.Client();
-    for (int i = 0; i < widget.links.length; i++) {
-      if (!mounted) break;
-      setState(() {
-        _currentIndex = i + 1;
-      });
-
-      final link = widget.links[i];
-      bool isDead = false;
-
-      try {
-        final uri = Uri.parse(link.url);
-        final response = await client
-            .head(uri)
-            .timeout(const Duration(seconds: 3));
-        if (response.statusCode == 404 || response.statusCode >= 500) {
-          isDead = true;
-        }
-      } catch (_) {
-        try {
-          final uri = Uri.parse(link.url);
-          final response = await client
-              .get(uri)
-              .timeout(const Duration(seconds: 3));
-          if (response.statusCode == 404 || response.statusCode >= 500) {
-            isDead = true;
-          }
-        } catch (_) {
-          isDead = true;
-        }
-      }
-
-      if (isDead) {
-        _deadCount++;
-        await widget.db.updateLinkDeadStatus(link.id, true);
-      } else {
-        await widget.db.updateLinkDeadStatus(link.id, false);
-      }
-    }
-    client.close();
-
-    if (mounted) {
-      setState(() {
-        _isFinished = true;
-      });
-      HapticFeedback.mediumImpact();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return AlertDialog(
-      title: Text(
-        _isFinished ? 'Scan Complete' : 'Checking Link Health...',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (!_isFinished) ...[
-            const SizedBox(height: 8),
-            const CircularProgressIndicator(strokeWidth: 2),
-            const SizedBox(height: 20),
-            Text(
-              'Scanning $_currentIndex of ${widget.links.length} links...',
-              style: GoogleFonts.inter(fontSize: 14),
-            ),
-          ] else ...[
-            Text(
-              'Found $_deadCount dead or unreachable link${_deadCount == 1 ? "" : "s"} out of ${widget.links.length} links scanned.',
-              style: GoogleFonts.inter(fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Dead links have been flagged with a ☠️ badge in your inbox.',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: cs.onSurface.withValues(alpha: 0.45),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ],
-      ),
-      actions: [
-        if (_isFinished)
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Done'),
-          ),
-      ],
-    );
-  }
-}
-
-class _InfoRow extends ConsumerWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    final font = ref.watch(fontFamilyProvider);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 12),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: getFontTextStyle(
-              font,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: cs.onSurface,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: getFontTextStyle(
-              font,
-              fontSize: 13,
-              color: cs.onSurface.withValues(alpha: 0.45),
-            ),
           ),
         ],
       ),
