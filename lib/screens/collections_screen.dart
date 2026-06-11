@@ -9,6 +9,7 @@ import '../providers/providers.dart';
 import '../utils/constants.dart';
 import '../utils/freshness.dart';
 import '../widgets/link_card.dart';
+import '../widgets/add_link_sheet.dart';
 import 'archive_screen.dart';
 
 class CollectionsScreen extends ConsumerStatefulWidget {
@@ -568,6 +569,27 @@ class CollectionDetailScreen extends ConsumerWidget {
             },
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          showModalBottomSheet<void>(
+            context: context,
+            builder: (_) => AddLinkSheet(preSelectedCollectionId: collection.id),
+            isScrollControlled: true,
+            useSafeArea: true,
+          );
+        },
+        backgroundColor: cs.onSurface,
+        foregroundColor: cs.surface,
+        elevation: 0,
+        icon: const Icon(Icons.add, size: 20),
+        label: Text(
+          'Add link',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusXL),
+        ),
       ),
     );
   }

@@ -362,7 +362,8 @@ class _CardContent extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: kSpaceXS),
-                                Row(
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     Text(
                                       link.domain,

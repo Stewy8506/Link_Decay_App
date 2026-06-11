@@ -28,14 +28,14 @@ class ReadDecayApp extends ConsumerWidget {
   }
 }
 
-class _AppShell extends StatefulWidget {
+class _AppShell extends ConsumerStatefulWidget {
   const _AppShell();
 
   @override
-  State<_AppShell> createState() => _AppShellState();
+  ConsumerState<_AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<_AppShell> {
+class _AppShellState extends ConsumerState<_AppShell> {
   int _selectedIndex = 0;
 
   static const _screens = [
@@ -47,6 +47,8 @@ class _AppShellState extends State<_AppShell> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final selectedIds = ref.watch(selectedLinkIdsProvider);
+    final isMultiSelect = selectedIds.isNotEmpty;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -68,19 +70,24 @@ class _AppShellState extends State<_AppShell> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: IgnorePointer(
-              child: Container(
-                height: 120 + MediaQuery.of(context).viewPadding.bottom,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      theme.scaffoldBackgroundColor.withValues(alpha: 0.0),
-                      theme.scaffoldBackgroundColor.withValues(alpha: 0.75),
-                      theme.scaffoldBackgroundColor,
-                    ],
-                    stops: const [0.0, 0.45, 1.0],
+            child: AnimatedOpacity(
+              opacity: isMultiSelect ? 0.0 : 1.0,
+              duration: kDurationNormal,
+              curve: Curves.easeInOut,
+              child: IgnorePointer(
+                child: Container(
+                  height: 120 + MediaQuery.of(context).viewPadding.bottom,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        theme.scaffoldBackgroundColor.withValues(alpha: 0.0),
+                        theme.scaffoldBackgroundColor.withValues(alpha: 0.75),
+                        theme.scaffoldBackgroundColor,
+                      ],
+                      stops: const [0.0, 0.45, 1.0],
+                    ),
                   ),
                 ),
               ),
@@ -92,12 +99,17 @@ class _AppShellState extends State<_AppShell> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: _FloatingPillNavBar(
-              selectedIndex: _selectedIndex,
-              onTap: (i) {
-                HapticFeedback.lightImpact();
-                setState(() => _selectedIndex = i);
-              },
+            child: AnimatedSlide(
+              offset: isMultiSelect ? const Offset(0, 1.5) : Offset.zero,
+              duration: kDurationNormal,
+              curve: Curves.easeInOut,
+              child: _FloatingPillNavBar(
+                selectedIndex: _selectedIndex,
+                onTap: (i) {
+                  HapticFeedback.lightImpact();
+                  setState(() => _selectedIndex = i);
+                },
+              ),
             ),
           ),
         ],

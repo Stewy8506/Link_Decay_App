@@ -281,7 +281,7 @@ class LinkActionsNotifier extends Notifier<void> {
   AppDatabase get _db => ref.read(databaseProvider);
 
   /// Save a URL: immediately insert, then fetch rich metadata.
-  Future<String> saveLink(String rawUrl, {String? collectionId}) async {
+  Future<String> saveLink(String rawUrl, {String? collectionId, String? title}) async {
     final svc = MetadataService.instance;
     final url = svc.normalizeUrl(rawUrl);
     final domain = svc.extractDomain(url);
@@ -292,6 +292,7 @@ class LinkActionsNotifier extends Notifier<void> {
         id: id,
         url: url,
         domain: domain,
+        title: title != null && title.isNotEmpty ? Value(title) : const Value.absent(),
         createdAt: DateTime.now(),
         status: LinkStatus.inbox,
         collectionId: Value(collectionId),
@@ -302,7 +303,7 @@ class LinkActionsNotifier extends Notifier<void> {
     svc.fetch(url).then((meta) {
       _db.updateMetadata(
         id,
-        title: meta.title,
+        title: title != null && title.isNotEmpty ? null : meta.title,
         faviconUrl: meta.faviconUrl,
         ogImageUrl: meta.ogImageUrl,
         estimatedReadMinutes: meta.estimatedReadMinutes,
@@ -339,6 +340,12 @@ class LinkActionsNotifier extends Notifier<void> {
 
   Future<void> updateNotes(String id, String notes) async {
     await _db.updateNotes(id, notes);
+  }
+
+  Future<void> updateTitle(String id, String title) async {
+    await (_db.update(_db.links)..where((l) => l.id.equals(id))).write(
+      LinksCompanion(title: Value(title)),
+    );
   }
 
   Future<void> updateLinkCollection(String id, String? collectionId) async {

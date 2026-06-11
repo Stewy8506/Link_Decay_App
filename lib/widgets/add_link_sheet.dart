@@ -9,7 +9,8 @@ import '../utils/constants.dart';
 
 /// Bottom sheet for adding a new link manually, with optional folder placement.
 class AddLinkSheet extends ConsumerStatefulWidget {
-  const AddLinkSheet({super.key});
+  const AddLinkSheet({super.key, this.preSelectedCollectionId});
+  final String? preSelectedCollectionId;
 
   @override
   ConsumerState<AddLinkSheet> createState() => _AddLinkSheetState();
@@ -17,6 +18,7 @@ class AddLinkSheet extends ConsumerStatefulWidget {
 
 class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
   final _controller = TextEditingController();
+  final _titleController = TextEditingController();
   final _focusNode = FocusNode();
   bool _isLoading = false;
   String? _error;
@@ -25,6 +27,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
   @override
   void initState() {
     super.initState();
+    _selectedCollectionId = widget.preSelectedCollectionId;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -33,6 +36,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
   @override
   void dispose() {
     _controller.dispose();
+    _titleController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -66,6 +70,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
       await ref.read(linkActionsProvider.notifier).saveLink(
             url,
             collectionId: _selectedCollectionId,
+            title: _titleController.text.trim().isNotEmpty ? _titleController.text.trim() : null,
           );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -149,7 +154,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
             ),
             onChanged: (_) => setState(() => _error = null),
             onSubmitted: (_) => _submit(),
-            textInputAction: TextInputAction.go,
+            textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: kSpaceSM),
 
@@ -171,6 +176,20 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
             style: TextButton.styleFrom(
               foregroundColor: cs.onSurface.withValues(alpha: 0.4),
             ),
+          ),
+          const SizedBox(height: kSpaceMD),
+
+          // Custom Name/Title Input (Optional)
+          TextField(
+            controller: _titleController,
+            decoration: const InputDecoration(
+              labelText: 'Custom Name (Optional)',
+              hintText: 'e.g. ReadDecay Source Code',
+            ),
+            style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
+            textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.go,
+            onSubmitted: (_) => _submit(),
           ),
 
           // Collection Folder selection (Optional)

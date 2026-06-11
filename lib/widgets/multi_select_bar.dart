@@ -145,7 +145,7 @@ class MultiSelectBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIds = ref.watch(selectedLinkIdsProvider);
-    if (selectedIds.isEmpty) return const SizedBox.shrink();
+    final isVisible = selectedIds.isNotEmpty;
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -156,28 +156,34 @@ class MultiSelectBar extends ConsumerWidget {
 
     return Align(
       alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          bottom: 16 + MediaQuery.of(context).viewPadding.bottom,
-        ),
-        child: Container(
-          height: 64,
-          decoration: BoxDecoration(
-            color: barBg,
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: barBorder, width: 0.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
+      child: AnimatedSlide(
+        offset: isVisible ? Offset.zero : const Offset(0, 1.5),
+        duration: kDurationNormal,
+        curve: Curves.easeInOut,
+        child: IgnorePointer(
+          ignoring: !isVisible,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: 16 + MediaQuery.of(context).viewPadding.bottom,
+            ),
+            child: Container(
+              height: 64,
+              decoration: BoxDecoration(
+                color: barBg,
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(color: barBorder, width: 0.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: kSpaceMD),
-          child: Row(
+              padding: const EdgeInsets.symmetric(horizontal: kSpaceMD),
+              child: Row(
             children: [
               // Count Indicator
               Text(
@@ -229,8 +235,10 @@ class MultiSelectBar extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 }
 
 class _ActionButton extends StatelessWidget {

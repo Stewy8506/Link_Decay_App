@@ -46,6 +46,46 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
     }
   }
 
+  void _showEditTitleDialog(BuildContext context, Link link) {
+    final controller = TextEditingController(text: link.title ?? link.domain);
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        final cs = Theme.of(context).colorScheme;
+        return AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
+          title: Text('Rename Link', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          content: TextField(
+            controller: controller,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              hintText: 'Enter a custom name for this link…',
+            ),
+            textCapitalization: TextCapitalization.sentences,
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5))),
+            ),
+            TextButton(
+              onPressed: () {
+                final txt = controller.text.trim();
+                if (txt.isNotEmpty) {
+                  ref.read(linkActionsProvider.notifier).updateTitle(link.id, txt);
+                  Navigator.pop(context);
+                  HapticFeedback.lightImpact();
+                }
+              },
+              child: Text('Save', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showAddHighlightDialog(BuildContext context) {
     _highlightController.clear();
     showDialog<void>(
@@ -217,15 +257,28 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                link.title ?? link.domain,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      link.title ?? link.domain,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, size: 16, color: Colors.white70),
+                                    onPressed: () => _showEditTitleDialog(context, link),
+                                    constraints: const BoxConstraints(),
+                                    padding: const EdgeInsets.all(4),
+                                    tooltip: 'Rename Link',
+                                  ),
+                                ],
                               ),
                             ],
                           ),
