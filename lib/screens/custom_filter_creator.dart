@@ -94,30 +94,36 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
             _CardSection(
               title: 'General Info',
               children: [
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 70,
-                      child: TextField(
-                        controller: _iconController,
-                        decoration: const InputDecoration(labelText: 'Icon'),
-                        style: const TextStyle(fontSize: 22),
-                        maxLength: 1,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(width: kSpaceMD),
-                    Expanded(
-                      child: TextField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Smart List Name',
-                          hintText: 'e.g. Long Weekend Reads',
+                Padding(
+                  padding: const EdgeInsets.all(kSpaceMD),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 70,
+                        child: TextField(
+                          controller: _iconController,
+                          decoration: const InputDecoration(
+                            labelText: 'Icon',
+                            counterText: "",
+                          ),
+                          style: const TextStyle(fontSize: 22),
+                          maxLength: 1,
+                          textAlign: TextAlign.center,
                         ),
-                        textCapitalization: TextCapitalization.words,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: kSpaceMD),
+                      Expanded(
+                        child: TextField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Smart List Name',
+                            hintText: 'e.g. Long Weekend Reads',
+                          ),
+                          textCapitalization: TextCapitalization.words,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -377,7 +383,7 @@ class _CardSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, kSpaceMD, 4, kSpaceSM),
+          padding: const EdgeInsets.only(top: kSpaceMD, bottom: kSpaceSM),
           child: Text(
             title.toUpperCase(),
             style: GoogleFonts.inter(

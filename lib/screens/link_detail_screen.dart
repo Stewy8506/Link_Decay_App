@@ -144,6 +144,13 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
             expandedHeight: 220,
             pinned: true,
             backgroundColor: theme.scaffoldBackgroundColor,
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.black.withValues(alpha: 0.4),
+                child: const BackButton(color: Colors.white),
+              ),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -512,7 +519,15 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
 
       // ── Actions Footer Drawer / Strip ───────────────────────────────────
       bottomSheet: Container(
-        color: theme.scaffoldBackgroundColor,
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          border: Border(
+            top: BorderSide(
+              color: cs.outline.withValues(alpha: 0.5),
+              width: 0.5,
+            ),
+          ),
+        ),
         padding: const EdgeInsets.all(kSpaceMD),
         child: SafeArea(
           child: Row(

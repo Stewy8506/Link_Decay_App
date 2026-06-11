@@ -159,6 +159,7 @@ class _SmartChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isSelected ? Colors.transparent : cs.outline,
+          width: 0.5,
         ),
       ),
       child: InkWell(

@@ -73,15 +73,20 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               ),
               slivers: [
                 // ── Stats Dashboard Panel (Collapsible pull-down) ──────────
-                if (_isStatsExpanded)
-                  SliverToBoxAdapter(
-                    child: SafeArea(
-                      bottom: false,
-                      child: StatsDashboardPanel(
-                        onClose: () => setState(() => _isStatsExpanded = false),
-                      ),
-                    ),
+                SliverToBoxAdapter(
+                  child: AnimatedSize(
+                    duration: kDurationNormal,
+                    curve: Curves.easeInOut,
+                    child: _isStatsExpanded
+                        ? SafeArea(
+                            bottom: false,
+                            child: StatsDashboardPanel(
+                              onClose: () => setState(() => _isStatsExpanded = false),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
+                ),
 
                 // ── App Bar ──────────────────────────────────────────────────
                 SliverAppBar(

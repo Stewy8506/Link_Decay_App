@@ -129,28 +129,21 @@ class _FloatingPillNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
 
     // Outer pill colors — neutral, semi-transparent
-    final pillBg = isDark
-        ? const Color(0xFF1E1E1E).withValues(alpha: 0.92)
-        : const Color(0xFFF0EFED).withValues(alpha: 0.92);
-    final pillBorder = isDark
-        ? const Color(0xFF2A2A2A).withValues(alpha: 0.6)
-        : const Color(0xFFE0DFDD).withValues(alpha: 0.6);
+    final pillBg = cs.surfaceContainerHighest.withValues(alpha: 0.92);
+    final pillBorder = cs.outline.withValues(alpha: 0.6);
 
     // Selected indicator pill — darker capsule behind active item
     final indicatorColor = isDark
-        ? const Color(0xFF333333)
-        : const Color(0xFFD6D5D3);
+        ? cs.outline.withValues(alpha: 0.6)
+        : cs.outline.withValues(alpha: 0.35);
 
     // Text/icon colors
-    final selectedColor = isDark
-        ? const Color(0xFFEDEDEC)
-        : const Color(0xFF1C1917);
-    final unselectedColor = isDark
-        ? const Color(0xFF636363)
-        : const Color(0xFF9C9A97);
+    final selectedColor = cs.onSurface;
+    final unselectedColor = cs.onSurface.withValues(alpha: 0.45);
 
     final indicatorW = _indicatorWidth();
 

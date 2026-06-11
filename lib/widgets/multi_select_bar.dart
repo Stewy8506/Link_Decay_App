@@ -151,12 +151,8 @@ class MultiSelectBar extends ConsumerWidget {
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final barBg = isDark
-        ? const Color(0xFF1E1E1E).withValues(alpha: 0.95)
-        : const Color(0xFFF0EFED).withValues(alpha: 0.95);
-    final barBorder = isDark
-        ? const Color(0xFF2A2A2A).withValues(alpha: 0.6)
-        : const Color(0xFFE0DFDD).withValues(alpha: 0.6);
+    final barBg = cs.surfaceContainerHighest.withValues(alpha: 0.95);
+    final barBorder = cs.outline.withValues(alpha: 0.6);
 
     return Align(
       alignment: Alignment.bottomCenter,

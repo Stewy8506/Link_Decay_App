@@ -7,7 +7,7 @@ import '../providers/providers.dart';
 import '../services/metadata_service.dart';
 import '../utils/constants.dart';
 
-/// Bottom sheet for adding a new link manually.
+/// Bottom sheet for adding a new link manually, with optional folder placement.
 class AddLinkSheet extends ConsumerStatefulWidget {
   const AddLinkSheet({super.key});
 
@@ -20,6 +20,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
   final _focusNode = FocusNode();
   bool _isLoading = false;
   String? _error;
+  String? _selectedCollectionId;
 
   @override
   void initState() {
@@ -62,7 +63,10 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
     });
 
     try {
-      await ref.read(linkActionsProvider.notifier).saveLink(url);
+      await ref.read(linkActionsProvider.notifier).saveLink(
+            url,
+            collectionId: _selectedCollectionId,
+          );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       setState(() {
@@ -75,6 +79,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final collectionsAsync = ref.watch(collectionsProvider);
     final cs = Theme.of(context).colorScheme;
 
     return Padding(
@@ -167,9 +172,92 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
               foregroundColor: cs.onSurface.withValues(alpha: 0.4),
             ),
           ),
-          const SizedBox(height: kSpaceMD),
 
-          // Save button — inverted neutral (matches FAB style)
+          // Collection Folder selection (Optional)
+          collectionsAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (e, st) => const SizedBox.shrink(),
+            data: (folders) {
+              if (folders.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: kSpaceMD),
+                  Text(
+                    'SELECT TARGET FOLDER',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface.withValues(alpha: 0.35),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 38,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        ChoiceChip(
+                          avatar: const Text('📥'),
+                          label: const Text('Inbox'),
+                          selected: _selectedCollectionId == null,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _selectedCollectionId = null);
+                            }
+                          },
+                          backgroundColor: Colors.transparent,
+                          selectedColor: cs.onSurface,
+                          showCheckmark: false,
+                          side: BorderSide(
+                            color: _selectedCollectionId == null ? Colors.transparent : cs.outline,
+                            width: 0.5,
+                          ),
+                          labelStyle: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: _selectedCollectionId == null ? FontWeight.w600 : FontWeight.w400,
+                            color: _selectedCollectionId == null ? cs.surface : cs.onSurface.withValues(alpha: 0.65),
+                          ),
+                        ),
+                        ...folders.map((folder) {
+                          final isSelected = _selectedCollectionId == folder.id;
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: ChoiceChip(
+                              avatar: Text(folder.emoji ?? '📁'),
+                              label: Text(folder.name),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  _selectedCollectionId = selected ? folder.id : null;
+                                });
+                              },
+                              backgroundColor: Colors.transparent,
+                              selectedColor: cs.onSurface,
+                              showCheckmark: false,
+                              side: BorderSide(
+                                color: isSelected ? Colors.transparent : cs.outline,
+                                width: 0.5,
+                              ),
+                              labelStyle: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                color: isSelected ? cs.surface : cs.onSurface.withValues(alpha: 0.65),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: kSpaceLG),
+
+          // Save button — inverted neutral
           SizedBox(
             width: double.infinity,
             height: 52,
@@ -197,7 +285,6 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
                       key: const ValueKey('save'),
                       onPressed: _submit,
                       style: FilledButton.styleFrom(
-                        // Inverted neutral: onSurface bg, surface text
                         backgroundColor: cs.onSurface,
                         foregroundColor: cs.surface,
                         shape: RoundedRectangleBorder(

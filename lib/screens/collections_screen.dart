@@ -131,7 +131,9 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen>
                   indicatorSize: TabBarIndicatorSize.tab,
                   dividerColor: Colors.transparent,
                   indicator: BoxDecoration(
-                    color: isDark ? const Color(0xFF333333) : const Color(0xFFD6D5D3),
+                    color: isDark
+                        ? cs.outline.withValues(alpha: 0.6)
+                        : cs.outline.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   labelColor: cs.onSurface,
@@ -378,11 +380,11 @@ class _FolderCard extends ConsumerWidget {
           );
         },
         onLongPress: () => _showFolderOptions(context, ref),
-        borderRadius: BorderRadius.circular(kRadiusLG),
+        borderRadius: BorderRadius.circular(kRadiusMD),
         child: Container(
           decoration: BoxDecoration(
             color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(kRadiusLG),
+            borderRadius: BorderRadius.circular(kRadiusMD),
             border: Border.all(color: cs.outline, width: 0.5),
           ),
           padding: const EdgeInsets.all(kSpaceMD),
@@ -481,11 +483,11 @@ class _CreateFolderCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(kRadiusLG),
+        borderRadius: BorderRadius.circular(kRadiusMD),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(kRadiusLG),
+            borderRadius: BorderRadius.circular(kRadiusMD),
             border: Border.all(color: cs.outline, width: 1.0, style: BorderStyle.solid),
           ),
           child: Column(
