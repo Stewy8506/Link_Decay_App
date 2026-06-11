@@ -30,24 +30,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Future<void> _launchUrl(String urlString) async {
-    final uri = Uri.parse(urlString);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      _showSnackBar('Could not launch $urlString');
-    }
-  }
 
   Future<void> _contactDeveloper() async {
     final emailLaunchUri = Uri(
       scheme: 'mailto',
-      path: 'developer@linkshelf.app',
+      path: 'dasanuvab38@gmail.com',
       queryParameters: {'subject': 'LinkShelf Feedback'},
     );
-    if (await canLaunchUrl(emailLaunchUri)) {
-      await launchUrl(emailLaunchUri);
-    } else {
+    try {
+      final success = await launchUrl(emailLaunchUri);
+      if (!success) {
+        _showSnackBar('Could not open email client.');
+      }
+    } catch (e) {
       _showSnackBar('Could not open email client.');
     }
   }
@@ -1367,6 +1362,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const _Divider(),
                       _InfoRow(label: 'Storage', value: 'Local SQLite (Drift)'),
                       const _Divider(),
+                      _InfoRow(label: 'License', value: 'MIT (Open Source)'),
+                      const _Divider(),
                       ListTile(
                         leading: Icon(
                           Icons.mail_outline,
@@ -1394,37 +1391,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           color: cs.onSurface.withValues(alpha: 0.4),
                         ),
                         onTap: _contactDeveloper,
-                      ),
-                      const _Divider(),
-                      ListTile(
-                        leading: Icon(
-                          Icons.code_outlined,
-                          color: cs.onSurface.withValues(alpha: 0.6),
-                        ),
-                        title: Text(
-                          'GitHub Repository',
-                          style: getFontTextStyle(
-                            ref.watch(fontFamilyProvider),
-                            fontSize: 14,
-                            color: cs.onSurface,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'View codebase & contribute',
-                          style: getFontTextStyle(
-                            ref.watch(fontFamilyProvider),
-                            fontSize: 11,
-                            color: cs.onSurface.withValues(alpha: 0.45),
-                          ),
-                        ),
-                        trailing: Icon(
-                          Icons.launch,
-                          size: 16,
-                          color: cs.onSurface.withValues(alpha: 0.4),
-                        ),
-                        onTap: () => _launchUrl(
-                          'https://github.com/Stewy8506/Link_Decay_App',
-                        ),
                       ),
                     ],
                   ),
