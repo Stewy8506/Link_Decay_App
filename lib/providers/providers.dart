@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +6,7 @@ import '../data/database.dart';
 import '../models/link_status.dart';
 import '../services/metadata_service.dart';
 import '../utils/constants.dart';
+import '../utils/freshness.dart';
 
 // ─── Database Provider ─────────────────────────────────────────────────────
 
@@ -21,13 +23,51 @@ final settingsProvider = StreamProvider<AppSetting?>((ref) {
   return db.watchSettings();
 });
 
-/// A helper to get the current half-life, falling back to default.
-final halfLifeDaysProvider = Provider<double>((ref) {
-  return ref.watch(settingsProvider).valueOrNull?.halfLifeDays ??
-      kDefaultHalfLifeDays;
+/// Theme settings provider
+final themePaletteProvider = Provider<String>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.themePalette ?? 'warm_stone';
 });
 
-/// A helper to get the notification threshold.
+/// Swipe left settings provider
+final swipeLeftActionProvider = Provider<String>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.swipeLeftAction ?? 'archive';
+});
+
+/// Swipe right settings provider
+final swipeRightActionProvider = Provider<String>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.swipeRightAction ?? 'read';
+});
+
+/// Domain-specific half-life overrides map
+final domainHalfLifeOverridesProvider = Provider<Map<String, double>>((ref) {
+  final raw = ref.watch(settingsProvider).valueOrNull?.domainHalfLifeOverrides;
+  if (raw == null || raw.isEmpty) return const {};
+  try {
+    final Map<String, dynamic> decoded = jsonDecode(raw);
+    return decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+  } catch (_) {
+    return const {};
+  }
+});
+
+/// Tag-specific half-life overrides map
+final tagHalfLifeOverridesProvider = Provider<Map<String, double>>((ref) {
+  final raw = ref.watch(settingsProvider).valueOrNull?.tagHalfLifeOverrides;
+  if (raw == null || raw.isEmpty) return const {};
+  try {
+    final Map<String, dynamic> decoded = jsonDecode(raw);
+    return decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+  } catch (_) {
+    return const {};
+  }
+});
+
+/// Helper to get the current base half-life, falling back to default.
+final halfLifeDaysProvider = Provider<double>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.halfLifeDays ?? kDefaultHalfLifeDays;
+});
+
+/// Helper to get the notification threshold.
 final notificationThresholdProvider = Provider<double>((ref) {
   return ref.watch(settingsProvider).valueOrNull?.notificationThreshold ??
       kDefaultNotificationThreshold;
@@ -38,7 +78,26 @@ final isDarkModeProvider = Provider<bool>((ref) {
   return ref.watch(settingsProvider).valueOrNull?.isDarkMode ?? true;
 });
 
+// ─── Collections Providers ───────────────────────────────────────────────
+
+final collectionsProvider = StreamProvider<List<Collection>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db.watchCollections();
+});
+
+// ─── CustomFilters (Smart Lists) Providers ───────────────────────────────
+
+final customFiltersProvider = StreamProvider<List<CustomFilter>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db.watchCustomFilters();
+});
+
 // ─── Links Providers ────────────────────────────────────────────────────────
+
+final allLinksProvider = StreamProvider<List<Link>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db.watchAllLinks();
+});
 
 final inboxLinksProvider = StreamProvider<List<Link>>((ref) {
   final db = ref.watch(databaseProvider);
@@ -50,6 +109,169 @@ final archiveLinksProvider = StreamProvider<List<Link>>((ref) {
   return db.watchArchiveLinks();
 });
 
+// ─── Selection State Providers ─────────────────────────────────────────────
+
+/// Selected link IDs for multi-select actions
+final selectedLinkIdsProvider = StateProvider<Set<String>>((ref) => const {});
+
+/// Active filter variables
+final inboxSearchQueryProvider = StateProvider<String>((ref) => '');
+final selectedCollectionIdProvider = StateProvider<String?>((ref) => null);
+final selectedFilterIdProvider = StateProvider<String?>((ref) => null);
+final inboxSortModeProvider = StateProvider<String>((ref) => 'stalest'); // 'stalest', 'newest', 'read_time', 'domain', 'freshness_desc'
+
+// ─── Smart Lists / Custom Filters Logic ────────────────────────────────────
+
+/// Resolved active query filter parameters
+final activeFilterProvider = Provider<CustomFilter?>((ref) {
+  final selectedFilterId = ref.watch(selectedFilterIdProvider);
+  if (selectedFilterId == null) return null;
+  final filters = ref.watch(customFiltersProvider).valueOrNull ?? [];
+  return filters.firstWhere((f) => f.id == selectedFilterId);
+});
+
+// ─── Sorted/Filtered Inbox Provider ────────────────────────────────────────
+
+final sortedFilteredInboxProvider = Provider<List<Link>>((ref) {
+  final allLinks = ref.watch(inboxLinksProvider).valueOrNull ?? [];
+  final baseHalfLife = ref.watch(halfLifeDaysProvider);
+  final domainOverrides = ref.watch(domainHalfLifeOverridesProvider);
+  final tagOverrides = ref.watch(tagHalfLifeOverridesProvider);
+
+  final query = ref.watch(inboxSearchQueryProvider).toLowerCase().trim();
+  final collectionId = ref.watch(selectedCollectionIdProvider);
+  final customFilter = ref.watch(activeFilterProvider);
+  final sortMode = ref.watch(inboxSortModeProvider);
+
+  // Compute freshness scores inline
+  final now = DateTime.now();
+  final linksWithScore = allLinks.map((link) {
+    // Determine the customized half-life for this link
+    double halfLife = baseHalfLife;
+    if (link.customHalfLifeDays != null) {
+      halfLife = link.customHalfLifeDays!;
+    } else {
+      // Check domain overrides
+      if (domainOverrides.containsKey(link.domain.toLowerCase())) {
+        halfLife = domainOverrides[link.domain.toLowerCase()]!;
+      } else {
+        // Check tag overrides (match first matching tag override)
+        final tags = link.tags.split(',').map((t) => t.trim().toLowerCase());
+        for (final tag in tags) {
+          if (tagOverrides.containsKey(tag)) {
+            halfLife = tagOverrides[tag]!;
+            break;
+          }
+        }
+      }
+    }
+
+    final score = computeFreshness(
+      createdAt: link.createdAt,
+      now: now,
+      halfLifeDays: halfLife,
+      snoozedUntil: link.snoozedUntil,
+    );
+    return _LinkWithScore(link, score);
+  }).toList();
+
+  // Apply filters
+  var filtered = linksWithScore.where((item) {
+    final link = item.link;
+
+    // Collection filter
+    if (collectionId != null && link.collectionId != collectionId) {
+      return false;
+    }
+
+    // Text search query
+    if (query.isNotEmpty) {
+      final titleMatch = link.title?.toLowerCase().contains(query) ?? false;
+      final domainMatch = link.domain.toLowerCase().contains(query);
+      final tagMatch = link.tags.toLowerCase().contains(query);
+      if (!titleMatch && !domainMatch && !tagMatch) return false;
+    }
+
+    // Apply Smart Custom Filter if active
+    if (customFilter != null) {
+      // Freshness range
+      if (customFilter.minFreshness != null && item.score < customFilter.minFreshness!) {
+        return false;
+      }
+      if (customFilter.maxFreshness != null && item.score > customFilter.maxFreshness!) {
+        return false;
+      }
+
+      // Tag filter (at least one matching tag)
+      if (customFilter.tags != null && customFilter.tags!.isNotEmpty) {
+        final filterTags = customFilter.tags!.split(',').map((t) => t.trim().toLowerCase()).toSet();
+        final linkTags = link.tags.split(',').map((t) => t.trim().toLowerCase()).toSet();
+        if (linkTags.intersection(filterTags).isEmpty) return false;
+      }
+
+      // Collections filter
+      if (customFilter.collections != null && customFilter.collections!.isNotEmpty) {
+        final filterColls = customFilter.collections!.split(',').map((c) => c.trim()).toSet();
+        if (link.collectionId == null || !filterColls.contains(link.collectionId)) return false;
+      }
+
+      // Domains filter
+      if (customFilter.domains != null && customFilter.domains!.isNotEmpty) {
+        final filterDomains = customFilter.domains!.split(',').map((d) => d.trim().toLowerCase()).toSet();
+        if (!filterDomains.contains(link.domain.toLowerCase())) return false;
+      }
+
+      // Read time boundaries
+      final readTime = link.estimatedReadMinutes ?? 1;
+      if (customFilter.minReadTime != null && readTime < customFilter.minReadTime!) {
+        return false;
+      }
+      if (customFilter.maxReadTime != null && readTime > customFilter.maxReadTime!) {
+        return false;
+      }
+
+      // Snooze filter
+      final isSnoozed = link.snoozedUntil != null && link.snoozedUntil!.isAfter(now);
+      if (customFilter.snoozeFilter == 'exclude_snoozed' && isSnoozed) {
+        return false;
+      }
+      if (customFilter.snoozeFilter == 'only_snoozed' && !isSnoozed) {
+        return false;
+      }
+    }
+
+    return true;
+  }).toList();
+
+  // Determine effective sort mode (Custom Filter sort takes precedence if custom filter is active)
+  final activeSortMode = (customFilter != null) ? (customFilter.sortField) : sortMode;
+
+  // Apply sorting
+  if (activeSortMode == 'stalest' || activeSortMode == 'freshness_asc') {
+    filtered.sort((a, b) => a.score.compareTo(b.score));
+  } else if (activeSortMode == 'freshness_desc') {
+    filtered.sort((a, b) => b.score.compareTo(a.score));
+  } else if (activeSortMode == 'newest' || activeSortMode == 'created_desc') {
+    filtered.sort((a, b) => b.link.createdAt.compareTo(a.link.createdAt));
+  } else if (activeSortMode == 'created_asc') {
+    filtered.sort((a, b) => a.link.createdAt.compareTo(b.link.createdAt));
+  } else if (activeSortMode == 'read_time' || activeSortMode == 'read_time_asc') {
+    filtered.sort((a, b) => (a.link.estimatedReadMinutes ?? 1).compareTo(b.link.estimatedReadMinutes ?? 1));
+  } else if (activeSortMode == 'title_asc') {
+    filtered.sort((a, b) => (a.link.title ?? '').toLowerCase().compareTo((b.link.title ?? '').toLowerCase()));
+  } else if (activeSortMode == 'domain') {
+    filtered.sort((a, b) => a.link.domain.compareTo(b.link.domain));
+  }
+
+  return filtered.map((item) => item.link).toList();
+});
+
+class _LinkWithScore {
+  final Link link;
+  final double score;
+  _LinkWithScore(this.link, this.score);
+}
+
 // ─── Link Actions Notifier ─────────────────────────────────────────────────
 
 class LinkActionsNotifier extends Notifier<void> {
@@ -58,8 +280,8 @@ class LinkActionsNotifier extends Notifier<void> {
 
   AppDatabase get _db => ref.read(databaseProvider);
 
-  /// Save a URL: immediately insert with domain/placeholder, then fetch metadata.
-  Future<String> saveLink(String rawUrl) async {
+  /// Save a URL: immediately insert, then fetch rich metadata.
+  Future<String> saveLink(String rawUrl, {String? collectionId}) async {
     final svc = MetadataService.instance;
     final url = svc.normalizeUrl(rawUrl);
     final domain = svc.extractDomain(url);
@@ -72,12 +294,19 @@ class LinkActionsNotifier extends Notifier<void> {
         domain: domain,
         createdAt: DateTime.now(),
         status: LinkStatus.inbox,
+        collectionId: Value(collectionId),
       ),
     );
 
     // Fetch metadata asynchronously in the background.
     svc.fetch(url).then((meta) {
-      _db.updateMetadata(id, title: meta.title, faviconUrl: meta.faviconUrl);
+      _db.updateMetadata(
+        id,
+        title: meta.title,
+        faviconUrl: meta.faviconUrl,
+        ogImageUrl: meta.ogImageUrl,
+        estimatedReadMinutes: meta.estimatedReadMinutes,
+      );
     });
 
     return id;
@@ -108,36 +337,171 @@ class LinkActionsNotifier extends Notifier<void> {
     await _db.updateTags(id, tags);
   }
 
+  Future<void> updateNotes(String id, String notes) async {
+    await _db.updateNotes(id, notes);
+  }
+
+  Future<void> updateLinkCollection(String id, String? collectionId) async {
+    await _db.updateLinkCollection(id, collectionId);
+  }
+
+  Future<void> updateCustomHalfLife(String id, double? customHalfLifeDays) async {
+    await _db.updateCustomHalfLife(id, customHalfLifeDays);
+  }
+
+  // ── Collection Actions ──────────────────────────────────────────────────
+
+  Future<void> addCollection(String name, String? emoji) async {
+    final id = _generateId();
+    await _db.insertCollection(
+      CollectionsCompanion.insert(
+        id: id,
+        name: name,
+        emoji: Value(emoji),
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> updateCollection(String id, String name, String? emoji) async {
+    await _db.updateCollection(
+      CollectionsCompanion(
+        id: Value(id),
+        name: Value(name),
+        emoji: Value(emoji),
+      ),
+    );
+  }
+
+  Future<void> deleteCollection(String id) async {
+    await _db.deleteCollection(id);
+  }
+
+  // ── Custom Filter / Smart List Actions ──────────────────────────────────
+
+  Future<void> addCustomFilter({
+    required String name,
+    required String icon,
+    double? minFreshness,
+    double? maxFreshness,
+    String? tags,
+    String? collections,
+    String? domains,
+    int? minReadTime,
+    int? maxReadTime,
+    String? snoozeFilter,
+    String? sortField,
+  }) async {
+    final id = _generateId();
+    await _db.insertCustomFilter(
+      CustomFiltersCompanion.insert(
+        id: id,
+        name: name,
+        icon: Value(icon),
+        minFreshness: Value(minFreshness),
+        maxFreshness: Value(maxFreshness),
+        tags: Value(tags),
+        collections: Value(collections),
+        domains: Value(domains),
+        minReadTime: Value(minReadTime),
+        maxReadTime: Value(maxReadTime),
+        snoozeFilter: Value(snoozeFilter),
+        sortField: Value(sortField ?? 'freshness_asc'),
+      ),
+    );
+  }
+
+  Future<void> deleteCustomFilter(String id) async {
+    await _db.deleteCustomFilter(id);
+  }
+
+  // ── Highlights ──────────────────────────────────────────────────────────
+
+  Future<void> addHighlight(String linkId, String textContent) async {
+    final id = _generateId();
+    await _db.insertHighlight(
+      LinkHighlightsCompanion.insert(
+        id: id,
+        linkId: linkId,
+        content: textContent,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> deleteHighlight(String id) async {
+    await _db.deleteHighlight(id);
+  }
+
+  // ── Bulk Actions ────────────────────────────────────────────────────────
+
+  Future<void> bulkArchive(Set<String> ids) async {
+    for (final id in ids) {
+      await _db.updateLinkStatus(id, LinkStatus.archived);
+    }
+  }
+
+  Future<void> bulkMarkRead(Set<String> ids) async {
+    for (final id in ids) {
+      await _db.updateLinkStatus(id, LinkStatus.read);
+    }
+  }
+
+  Future<void> bulkDelete(Set<String> ids) async {
+    for (final id in ids) {
+      await _db.deleteLink(id);
+    }
+  }
+
+  Future<void> bulkMoveToCollection(Set<String> ids, String? collectionId) async {
+    for (final id in ids) {
+      await _db.updateLinkCollection(id, collectionId);
+    }
+  }
+
+  Future<void> bulkAddTag(Set<String> ids, String tag) async {
+    for (final id in ids) {
+      final link = await (_db.select(_db.links)..where((l) => l.id.equals(id))).getSingleOrNull();
+      if (link == null) continue;
+      final existingTags = link.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+      if (!existingTags.contains(tag)) {
+        existingTags.add(tag);
+        await _db.updateTags(id, existingTags.join(', '));
+      }
+    }
+  }
+
+  // ── Settings ──────────────────────────────────────────────────────────
+
   Future<void> updateSettings({
     double? halfLifeDays,
     double? notificationThreshold,
     bool? notificationsEnabled,
     bool? isDarkMode,
+    String? themePalette,
+    String? swipeLeftAction,
+    String? swipeRightAction,
+    String? domainHalfLifeOverrides,
+    String? tagHalfLifeOverrides,
   }) async {
     final current = await _db.getSettings();
     await _db.upsertSettings(
       AppSettingsCompanion.insert(
         id: const Value(1),
-        halfLifeDays: Value(
-          halfLifeDays ?? current?.halfLifeDays ?? kDefaultHalfLifeDays,
-        ),
-        notificationThreshold: Value(
-          notificationThreshold ??
-              current?.notificationThreshold ??
-              kDefaultNotificationThreshold,
-        ),
-        notificationsEnabled: Value(
-          notificationsEnabled ??
-              current?.notificationsEnabled ??
-              kDefaultNotificationsEnabled,
-        ),
+        halfLifeDays: Value(halfLifeDays ?? current?.halfLifeDays ?? kDefaultHalfLifeDays),
+        notificationThreshold: Value(notificationThreshold ?? current?.notificationThreshold ?? kDefaultNotificationThreshold),
+        notificationsEnabled: Value(notificationsEnabled ?? current?.notificationsEnabled ?? kDefaultNotificationsEnabled),
         isDarkMode: Value(isDarkMode ?? current?.isDarkMode ?? true),
+        themePalette: Value(themePalette ?? current?.themePalette ?? 'warm_stone'),
+        swipeLeftAction: Value(swipeLeftAction ?? current?.swipeLeftAction ?? 'archive'),
+        swipeRightAction: Value(swipeRightAction ?? current?.swipeRightAction ?? 'read'),
+        domainHalfLifeOverrides: Value(domainHalfLifeOverrides ?? current?.domainHalfLifeOverrides),
+        tagHalfLifeOverrides: Value(tagHalfLifeOverrides ?? current?.tagHalfLifeOverrides),
       ),
     );
   }
 
   String _generateId() {
-    // Simple timestamp + random suffix for unique IDs without uuid package overhead.
     final ts = DateTime.now().millisecondsSinceEpoch;
     final rand = ts % 999999;
     return '${ts}_$rand';
@@ -151,9 +515,7 @@ final linkActionsProvider = NotifierProvider<LinkActionsNotifier, void>(
 // ─── Archive Search/Filter ─────────────────────────────────────────────────
 
 final archiveSearchQueryProvider = StateProvider<String>((ref) => '');
-final archiveStatusFilterProvider = StateProvider<LinkStatus?>(
-  (ref) => null,
-); // null = all
+final archiveStatusFilterProvider = StateProvider<LinkStatus?>((ref) => null);
 final archiveTagFilterProvider = StateProvider<String?>((ref) => null);
 
 final filteredArchiveLinksProvider = Provider<List<Link>>((ref) {

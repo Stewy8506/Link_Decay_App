@@ -6,15 +6,19 @@ class LinkMetadata {
   final String? title;
   final String? faviconUrl;
   final String domain;
+  final String? ogImageUrl;
+  final int? estimatedReadMinutes;
 
   const LinkMetadata({
     this.title,
     this.faviconUrl,
     required this.domain,
+    this.ogImageUrl,
+    this.estimatedReadMinutes,
   });
 }
 
-/// Fetches page title and favicon URL for a given URL.
+/// Fetches page title, favicon URL, OG image, and estimates reading time for a URL.
 class MetadataService {
   MetadataService._internal();
   static final MetadataService instance = MetadataService._internal();
@@ -34,7 +38,7 @@ class MetadataService {
     return 'https://www.google.com/s2/favicons?domain=$domain&sz=64';
   }
 
-  /// Fetches metadata for [url]: title and favicon.
+  /// Fetches metadata for [url]: title, favicon, OG Image, and Reading Time.
   /// Returns quickly with a domain-derived result if the HTTP fetch fails.
   Future<LinkMetadata> fetch(String url) async {
     final domain = extractDomain(url);
@@ -87,10 +91,37 @@ class MetadataService {
         }
       }
 
+      // Extract OG Image
+      String? ogImageUrl = document.head
+          ?.querySelector('meta[property="og:image"]')
+          ?.attributes['content']?.trim();
+      if (ogImageUrl == null || ogImageUrl.isEmpty) {
+        ogImageUrl = document.head
+            ?.querySelector('meta[name="twitter:image"]')
+            ?.attributes['content']?.trim();
+      }
+
+      // Estimate Reading Time from word count
+      int? readMinutes;
+      final body = document.body;
+      if (body != null) {
+        // Clone/copy body text elements and strip script, style, noscript, etc.
+        final cleanBody = body.clone(true);
+        cleanBody.querySelectorAll('script, style, noscript, iframe, header, footer, nav').forEach((e) => e.remove());
+        final text = cleanBody.text.trim();
+        final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+        if (words > 0) {
+          readMinutes = (words / 200).ceil();
+          if (readMinutes < 1) readMinutes = 1;
+        }
+      }
+
       return LinkMetadata(
         title: title?.isNotEmpty == true ? title : null,
         faviconUrl: parsedFaviconUrl ?? faviconUrl,
         domain: domain,
+        ogImageUrl: ogImageUrl?.isNotEmpty == true ? ogImageUrl : null,
+        estimatedReadMinutes: readMinutes,
       );
     } catch (_) {
       return LinkMetadata(domain: domain, faviconUrl: faviconUrl);

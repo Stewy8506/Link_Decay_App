@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_theme.dart';
 import 'providers/providers.dart';
-import 'screens/archive_screen.dart';
+import 'screens/collections_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/settings_screen.dart';
 import 'utils/constants.dart';
@@ -15,12 +15,13 @@ class ReadDecayApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = ref.watch(isDarkModeProvider);
+    final activePalette = ref.watch(themePaletteProvider);
 
     return MaterialApp(
       title: kAppName,
       debugShowCheckedModeBanner: false,
-      theme: buildLightTheme(),
-      darkTheme: buildDarkTheme(),
+      theme: buildLightTheme(activePalette),
+      darkTheme: buildDarkTheme(activePalette),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: const _AppShell(),
     );
@@ -39,7 +40,7 @@ class _AppShellState extends State<_AppShell> {
 
   static const _screens = [
     InboxScreen(),
-    ArchiveScreen(),
+    CollectionsScreen(), // Collections + Archive combined screen
     SettingsScreen(),
   ];
 
@@ -121,7 +122,7 @@ class _FloatingPillNavBar extends StatelessWidget {
 
   static const _items = [
     _NavItem(icon: Icons.inbox_outlined, selectedIcon: Icons.inbox, label: 'Inbox'),
-    _NavItem(icon: Icons.archive_outlined, selectedIcon: Icons.archive, label: 'Archive'),
+    _NavItem(icon: Icons.folder_copy_outlined, selectedIcon: Icons.folder_copy, label: 'Folders'),
     _NavItem(icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: 'Settings'),
   ];
 
@@ -156,7 +157,6 @@ class _FloatingPillNavBar extends StatelessWidget {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Padding(
-        // Float with margin from edges and bottom (respect safe area)
         padding: EdgeInsets.only(bottom: 16 + bottomPadding),
         child: SizedBox(
           width: _navBarWidth,

@@ -4,259 +4,359 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'utils/constants.dart';
 
-// ─── Theme ─────────────────────────────────────────────────────────────────
+// ─── Theme Colors Schema ────────────────────────────────────────────────────
 
-ThemeData buildDarkTheme() {
+class PaletteColors {
+  final Color bg;
+  final Color surface;
+  final Color card;
+  final Color border;
+  final Color text;
+  final Color accent;
+  final Color accentMuted;
+
+  const PaletteColors({
+    required this.bg,
+    required this.surface,
+    required this.card,
+    required this.border,
+    required this.text,
+    required this.accent,
+    required this.accentMuted,
+  });
+}
+
+const _darkPalettes = {
+  'warm_stone': PaletteColors(
+    bg: Color(0xFF0C0C0C),
+    surface: Color(0xFF161616),
+    card: Color(0xFF1E1E1E),
+    border: Color(0xFF2A2A2A),
+    text: Color(0xFFEDEDEC),
+    accent: Color(0xFFA8A29E),
+    accentMuted: Color(0xFF78716C),
+  ),
+  'cold_slate': PaletteColors(
+    bg: Color(0xFF0B0F19),
+    surface: Color(0xFF151B26),
+    card: Color(0xFF1F2937),
+    border: Color(0xFF2D3748),
+    text: Color(0xFFF9FAFB),
+    accent: Color(0xFF9CA3AF),
+    accentMuted: Color(0xFF6B7280),
+  ),
+  'forest_moss': PaletteColors(
+    bg: Color(0xFF090B09),
+    surface: Color(0xFF111411),
+    card: Color(0xFF181F18),
+    border: Color(0xFF232B23),
+    text: Color(0xFFE8ECE8),
+    accent: Color(0xFF8B9E8B),
+    accentMuted: Color(0xFF5E6D5E),
+  ),
+  'pitch_charcoal': PaletteColors(
+    bg: Color(0xFF000000),
+    surface: Color(0xFF080808),
+    card: Color(0xFF101010),
+    border: Color(0xFF1A1A1A),
+    text: Color(0xFFF3F3F3),
+    accent: Color(0xFF8A8A8A),
+    accentMuted: Color(0xFF5A5A5A),
+  ),
+};
+
+const _lightPalettes = {
+  'warm_stone': PaletteColors(
+    bg: Color(0xFFFAFAF9),
+    surface: Color(0xFFF5F5F4),
+    card: Color(0xFFFFFFFF),
+    border: Color(0xFFE7E5E4),
+    text: Color(0xFF1C1917),
+    accent: Color(0xFF78716C),
+    accentMuted: Color(0xFFA8A29E),
+  ),
+  'cold_slate': PaletteColors(
+    bg: Color(0xFFF8FAFC),
+    surface: Color(0xFFF1F5F9),
+    card: Color(0xFFFFFFFF),
+    border: Color(0xFFE2E8F0),
+    text: Color(0xFF0F172A),
+    accent: Color(0xFF64748B),
+    accentMuted: Color(0xFF94A3B8),
+  ),
+  'forest_moss': PaletteColors(
+    bg: Color(0xFFF7F9F7),
+    surface: Color(0xFFEFF2EF),
+    card: Color(0xFFFFFFFF),
+    border: Color(0xFFDFE3DF),
+    text: Color(0xFF141A14),
+    accent: Color(0xFF5D6E5D),
+    accentMuted: Color(0xFF889B88),
+  ),
+  'pitch_charcoal': PaletteColors(
+    bg: Color(0xFFFAFAFA),
+    surface: Color(0xFFF3F3F3),
+    card: Color(0xFFFFFFFF),
+    border: Color(0xFFE5E5E5),
+    text: Color(0xFF101010),
+    accent: Color(0xFF5A5A5A),
+    accentMuted: Color(0xFF8A8A8A),
+  ),
+};
+
+// ─── Theme Builders ─────────────────────────────────────────────────────────
+
+ThemeData buildDarkTheme(String paletteName) {
+  final p = _darkPalettes[paletteName] ?? _darkPalettes['warm_stone']!;
   final base = ThemeData.dark(useMaterial3: true);
+  
   return base.copyWith(
-    scaffoldBackgroundColor: kBackgroundDark,
-    colorScheme: const ColorScheme.dark(
-      surface: kSurfaceDark,
-      surfaceContainerHighest: kCardDark,
-      primary: kAccent,
-      secondary: kAccentMuted,
-      outline: kBorderDark,
-      onSurface: kTextPrimary,
-      onPrimary: kBackgroundDark,
+    scaffoldBackgroundColor: p.bg,
+    cardColor: p.card,
+    colorScheme: ColorScheme.dark(
+      surface: p.surface,
+      surfaceContainerHighest: p.card,
+      primary: p.accent,
+      secondary: p.accentMuted,
+      outline: p.border,
+      onSurface: p.text,
+      onPrimary: p.bg,
     ),
     textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
-      bodyColor: kTextPrimary,
-      displayColor: kTextPrimary,
+      bodyColor: p.text,
+      displayColor: p.text,
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: kBackgroundDark,
-      foregroundColor: kTextPrimary,
+      backgroundColor: p.bg,
+      foregroundColor: p.text,
       elevation: 0,
       scrolledUnderElevation: 0,
-      systemOverlayStyle: const SystemUiOverlayStyle(
+      systemOverlayStyle: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: kSurfaceDark,
+        systemNavigationBarColor: p.surface,
         systemNavigationBarIconBrightness: Brightness.light,
       ),
       titleTextStyle: GoogleFonts.inter(
-        color: kTextPrimary,
+        color: p.text,
         fontSize: 18,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.3,
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: kSurfaceDark,
-      // Subtle neutral indicator: no color, just a slightly lighter background
-      indicatorColor: kBorderDark,
+      backgroundColor: p.surface,
+      indicatorColor: p.border,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return GoogleFonts.inter(
           fontSize: 11,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-          color: selected ? kTextPrimary : kTextTertiary,
+          color: selected ? p.text : p.accentMuted,
         );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
-          color: selected ? kTextPrimary : kTextTertiary,
+          color: selected ? p.text : p.accentMuted,
           size: 22,
         );
       }),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: kCardDark,
+      fillColor: p.card,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        borderSide: const BorderSide(color: kBorderDark),
+        borderSide: BorderSide(color: p.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        borderSide: const BorderSide(color: kBorderDark),
+        borderSide: BorderSide(color: p.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        // Neutral focus: slightly brighter border, no accent color
-        borderSide: const BorderSide(color: kTextSecondary, width: 1.5),
+        borderSide: BorderSide(color: p.accent, width: 1.5),
       ),
-      hintStyle: GoogleFonts.inter(color: kTextTertiary, fontSize: 15),
+      hintStyle: GoogleFonts.inter(color: p.accentMuted, fontSize: 15),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: kSpaceMD,
         vertical: kSpaceMD,
       ),
     ),
     cardTheme: CardThemeData(
-      color: kCardDark,
+      color: p.card,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        side: const BorderSide(color: kBorderDark, width: 0.5),
+        side: BorderSide(color: p.border, width: 0.5),
       ),
       margin: EdgeInsets.zero,
     ),
-    dividerTheme: const DividerThemeData(
-      color: kBorderDark,
+    dividerTheme: DividerThemeData(
+      color: p.border,
       thickness: 0.5,
       space: 0,
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: kCardDark,
-      contentTextStyle: GoogleFonts.inter(color: kTextPrimary, fontSize: 14),
+      backgroundColor: p.card,
+      contentTextStyle: GoogleFonts.inter(color: p.text, fontSize: 14),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        side: const BorderSide(color: kBorderDark),
+        side: BorderSide(color: p.border),
       ),
       behavior: SnackBarBehavior.floating,
-      actionTextColor: kTextPrimary,
+      actionTextColor: p.text,
     ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: kSurfaceDark,
-      modalBackgroundColor: kSurfaceDark,
-      shape: RoundedRectangleBorder(
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: p.surface,
+      modalBackgroundColor: p.surface,
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusXL)),
       ),
     ),
     sliderTheme: SliderThemeData(
-      activeTrackColor: kAccent,
-      thumbColor: kTextPrimary,
-      inactiveTrackColor: kBorderDark,
-      overlayColor: kAccent.withValues(alpha: 0.1),
+      activeTrackColor: p.accent,
+      thumbColor: p.text,
+      inactiveTrackColor: p.border,
+      overlayColor: p.accent.withValues(alpha: 0.1),
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
-        (s) => s.contains(WidgetState.selected) ? kTextPrimary : kTextTertiary,
+        (s) => s.contains(WidgetState.selected) ? p.bg : p.accentMuted,
       ),
       trackColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected)
-            ? kAccent.withValues(alpha: 0.5)
-            : kBorderDark,
+            ? p.accent.withValues(alpha: 0.5)
+            : p.border,
       ),
     ),
   );
 }
 
-ThemeData buildLightTheme() {
+ThemeData buildLightTheme(String paletteName) {
+  final p = _lightPalettes[paletteName] ?? _lightPalettes['warm_stone']!;
   final base = ThemeData.light(useMaterial3: true);
-  const onBackground = Color(0xFF1C1917); // Stone-900
-  const textSecondary = Color(0xFF78716C); // Stone-500
-  const textTertiary = Color(0xFFD6D3D1); // Stone-300
 
   return base.copyWith(
-    scaffoldBackgroundColor: kBackgroundLight,
-    colorScheme: const ColorScheme.light(
-      surface: kSurfaceLight,
-      surfaceContainerHighest: kCardLight,
-      primary: Color(0xFF78716C),   // Stone-500 as accent in light
-      secondary: Color(0xFFA8A29E), // Stone-400
-      outline: kBorderLight,
-      onSurface: onBackground,
-      onPrimary: Color(0xFFFAFAF9),
+    scaffoldBackgroundColor: p.bg,
+    cardColor: p.card,
+    colorScheme: ColorScheme.light(
+      surface: p.surface,
+      surfaceContainerHighest: p.card,
+      primary: p.accent,
+      secondary: p.accentMuted,
+      outline: p.border,
+      onSurface: p.text,
+      onPrimary: p.bg,
     ),
     textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
-      bodyColor: onBackground,
-      displayColor: onBackground,
+      bodyColor: p.text,
+      displayColor: p.text,
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: kBackgroundLight,
-      foregroundColor: onBackground,
+      backgroundColor: p.bg,
+      foregroundColor: p.text,
       elevation: 0,
       scrolledUnderElevation: 0,
-      systemOverlayStyle: const SystemUiOverlayStyle(
+      systemOverlayStyle: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: kSurfaceLight,
+        systemNavigationBarColor: p.surface,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       titleTextStyle: GoogleFonts.inter(
-        color: onBackground,
+        color: p.text,
         fontSize: 18,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.3,
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: kSurfaceLight,
-      indicatorColor: kBorderLight,
+      backgroundColor: p.surface,
+      indicatorColor: p.border,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return GoogleFonts.inter(
           fontSize: 11,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-          color: selected ? onBackground : textSecondary,
+          color: selected ? p.text : p.accentMuted,
         );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
-          color: selected ? onBackground : textSecondary,
+          color: selected ? p.text : p.accentMuted,
           size: 22,
         );
       }),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: kCardLight,
+      fillColor: p.card,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        borderSide: const BorderSide(color: kBorderLight),
+        borderSide: BorderSide(color: p.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        borderSide: const BorderSide(color: kBorderLight),
+        borderSide: BorderSide(color: p.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        borderSide: const BorderSide(color: textSecondary, width: 1.5),
+        borderSide: BorderSide(color: p.accent, width: 1.5),
       ),
-      hintStyle: GoogleFonts.inter(color: textTertiary, fontSize: 15),
+      hintStyle: GoogleFonts.inter(color: p.accentMuted, fontSize: 15),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: kSpaceMD,
         vertical: kSpaceMD,
       ),
     ),
     cardTheme: CardThemeData(
-      color: kCardLight,
+      color: p.card,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        side: const BorderSide(color: kBorderLight, width: 0.5),
+        side: BorderSide(color: p.border, width: 0.5),
       ),
       margin: EdgeInsets.zero,
     ),
-    dividerTheme: const DividerThemeData(
-      color: kBorderLight,
+    dividerTheme: DividerThemeData(
+      color: p.border,
       thickness: 0.5,
       space: 0,
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: kCardLight,
-      contentTextStyle: GoogleFonts.inter(color: onBackground, fontSize: 14),
+      backgroundColor: p.card,
+      contentTextStyle: GoogleFonts.inter(color: p.text, fontSize: 14),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
-        side: const BorderSide(color: kBorderLight),
+        side: BorderSide(color: p.border),
       ),
       behavior: SnackBarBehavior.floating,
-      actionTextColor: onBackground,
+      actionTextColor: p.text,
     ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: kSurfaceLight,
-      modalBackgroundColor: kSurfaceLight,
-      shape: RoundedRectangleBorder(
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: p.surface,
+      modalBackgroundColor: p.surface,
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusXL)),
       ),
     ),
     sliderTheme: SliderThemeData(
-      activeTrackColor: textSecondary,
-      thumbColor: onBackground,
-      inactiveTrackColor: textTertiary,
-      overlayColor: textSecondary.withValues(alpha: 0.1),
+      activeTrackColor: p.accent,
+      thumbColor: p.text,
+      inactiveTrackColor: p.border,
+      overlayColor: p.accent.withValues(alpha: 0.1),
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
-        (s) => s.contains(WidgetState.selected) ? kBackgroundLight : textSecondary,
+        (s) => s.contains(WidgetState.selected) ? p.bg : p.accentMuted,
       ),
       trackColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected)
-            ? onBackground.withValues(alpha: 0.7)
-            : textTertiary,
+            ? p.text.withValues(alpha: 0.7)
+            : p.border,
       ),
     ),
   );
