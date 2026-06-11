@@ -185,10 +185,18 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
             pinned: true,
             backgroundColor: theme.scaffoldBackgroundColor,
             leading: Padding(
-              padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.black.withValues(alpha: 0.4),
-                child: const BackButton(color: Colors.white),
+              padding: const EdgeInsets.all(8.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                  onPressed: () => Navigator.maybePop(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
               ),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -581,78 +589,85 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
             ),
           ),
         ),
-        padding: const EdgeInsets.all(kSpaceMD),
+        padding: const EdgeInsets.symmetric(horizontal: kSpaceSM, vertical: kSpaceMD),
         child: SafeArea(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Open External URL
-              _ActionButton(
-                icon: Icons.open_in_new_outlined,
-                label: 'Open',
-                onPressed: () => _openUrl(link.url),
-              ),
-              // Folder Selector
-              _ActionButton(
-                icon: Icons.folder_outlined,
-                label: 'Folder',
-                onPressed: () {
-                  showModalBottomSheet<void>(
-                    context: context,
-                    builder: (_) => CollectionPickerSheet(
-                      linkId: link.id,
-                      currentCollectionId: link.collectionId,
-                    ),
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                  );
-                },
-              ),
-              // Snooze Option
-              _ActionButton(
-                icon: Icons.bedtime_outlined,
-                label: 'Snooze',
-                onPressed: () {
-                  showModalBottomSheet<void>(
-                    context: context,
-                    builder: (_) => SnoozeSheet(linkId: link.id),
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                  );
-                },
-              ),
-              // Toggle Read/Inbox
-              if (link.status == LinkStatus.inbox)
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Open External URL
                 _ActionButton(
-                  icon: Icons.check_circle_outline,
-                  label: 'Mark Read',
-                  onPressed: () {
-                    ref.read(linkActionsProvider.notifier).markAsRead(link.id);
-                    HapticFeedback.mediumImpact();
-                    Navigator.pop(context);
-                  },
-                )
-              else
+                  icon: Icons.open_in_new_outlined,
+                  label: 'Open',
+                  onPressed: () => _openUrl(link.url),
+                ),
+                const SizedBox(width: 12),
+                // Folder Selector
                 _ActionButton(
-                  icon: Icons.restore_page_outlined,
-                  label: 'To Inbox',
+                  icon: Icons.folder_outlined,
+                  label: 'Folder',
                   onPressed: () {
-                    ref.read(linkActionsProvider.notifier).restoreToInbox(link.id);
-                    HapticFeedback.mediumImpact();
+                    showModalBottomSheet<void>(
+                      context: context,
+                      builder: (_) => CollectionPickerSheet(
+                        linkId: link.id,
+                        currentCollectionId: link.collectionId,
+                      ),
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                    );
                   },
                 ),
-              // Delete
-              _ActionButton(
-                icon: Icons.delete_outline,
-                label: 'Delete',
-                color: kFreshnessLow,
-                onPressed: () {
-                  ref.read(linkActionsProvider.notifier).delete(link.id);
-                  HapticFeedback.heavyImpact();
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+                const SizedBox(width: 12),
+                // Snooze Option
+                _ActionButton(
+                  icon: Icons.bedtime_outlined,
+                  label: 'Snooze',
+                  onPressed: () {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      builder: (_) => SnoozeSheet(linkId: link.id),
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                    );
+                  },
+                ),
+                const SizedBox(width: 12),
+                // Toggle Read/Inbox
+                if (link.status == LinkStatus.inbox)
+                  _ActionButton(
+                    icon: Icons.check_circle_outline,
+                    label: 'Mark Read',
+                    onPressed: () {
+                      ref.read(linkActionsProvider.notifier).markAsRead(link.id);
+                      HapticFeedback.mediumImpact();
+                      Navigator.pop(context);
+                    },
+                  )
+                else
+                  _ActionButton(
+                    icon: Icons.restore_page_outlined,
+                    label: 'To Inbox',
+                    onPressed: () {
+                      ref.read(linkActionsProvider.notifier).restoreToInbox(link.id);
+                      HapticFeedback.mediumImpact();
+                    },
+                  ),
+                const SizedBox(width: 12),
+                // Delete
+                _ActionButton(
+                  icon: Icons.delete_outline,
+                  label: 'Delete',
+                  color: kFreshnessLow,
+                  onPressed: () {
+                    ref.read(linkActionsProvider.notifier).delete(link.id);
+                    HapticFeedback.heavyImpact();
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),

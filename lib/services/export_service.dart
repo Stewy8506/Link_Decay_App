@@ -268,4 +268,84 @@ class ExportService {
       return url;
     }
   }
+
+  /// Exports a collection's links as a beautiful, self-contained HTML page
+  Future<void> shareCollectionAsHtml(Collection collection, List<Link> links) async {
+    final buffer = StringBuffer()
+      ..writeln('<!DOCTYPE html>')
+      ..writeln('<html lang="en">')
+      ..writeln('<head>')
+      ..writeln('  <meta charset="UTF-8">')
+      ..writeln('  <meta name="viewport" content="width=device-width, initial-scale=1.0">')
+      ..writeln('  <title>${collection.name} - Curated List</title>')
+      ..writeln('  <link rel="preconnect" href="https://fonts.googleapis.com">')
+      ..writeln('  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
+      ..writeln('  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">')
+      ..writeln('  <style>')
+      ..writeln("    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #FAF9F6; color: #1C1917; margin: 0; padding: 40px 20px; line-height: 1.5; }")
+      ..writeln('    .container { max-width: 600px; margin: 0 auto; }')
+      ..writeln('    .header { margin-bottom: 40px; }')
+      ..writeln('    .folder-emoji { font-size: 48px; margin-bottom: 8px; }')
+      ..writeln('    h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.5px; }')
+      ..writeln('    .meta { font-size: 14px; color: #78716C; }')
+      ..writeln('    .links-list { list-style: none; padding: 0; margin: 0; }')
+      ..writeln('    .link-item { background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition: transform 0.2s ease, box-shadow 0.2s ease; }')
+      ..writeln('    .link-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }')
+      ..writeln('    .link-title { font-size: 16px; font-weight: 600; margin: 0 0 6px 0; line-height: 1.4; }')
+      ..writeln('    .link-title a { color: #1C1917; text-decoration: none; }')
+      ..writeln('    .link-title a:hover { text-decoration: underline; }')
+      ..writeln('    .link-meta { font-size: 12px; color: #78716C; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }')
+      ..writeln('    .link-domain { font-weight: 500; }')
+      ..writeln('    .bullet { color: #D6D3D1; }')
+      ..writeln('    .tag { background: #F5F5F4; color: #57534E; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; }')
+      ..writeln('    .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #A8A29E; }')
+      ..writeln('    .footer a { color: #78716C; text-decoration: none; }')
+      ..writeln('  </style>')
+      ..writeln('</head>')
+      ..writeln('<body>')
+      ..writeln('  <div class="container">')
+      ..writeln('    <div class="header">')
+      ..writeln('      <div class="folder-emoji">${collection.emoji ?? "📁"}</div>')
+      ..writeln('      <h1>${collection.name}</h1>')
+      ..writeln('      <div class="meta">${links.length} links &bull; Curated via LinkShelf</div>')
+      ..writeln('    </div>')
+      ..writeln('    <ul class="links-list">');
+
+    for (final link in links) {
+      final title = link.title ?? link.domain;
+      buffer.writeln('      <li class="link-item">');
+      buffer.writeln('        <h2 class="link-title"><a href="${link.url}" target="_blank" rel="noopener noreferrer">$title</a></h2>');
+      buffer.writeln('        <div class="link-meta">');
+      buffer.writeln('          <span class="link-domain">${link.domain}</span>');
+      if (link.estimatedReadMinutes != null) {
+        buffer.writeln('          <span class="bullet">&bull;</span>');
+        buffer.writeln('          <span>${link.estimatedReadMinutes} min read</span>');
+      }
+      if (link.tags.isNotEmpty) {
+        final tagList = link.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty);
+        for (final tag in tagList) {
+          buffer.writeln('          <span class="tag">$tag</span>');
+        }
+      }
+      buffer.writeln('        </div>');
+      buffer.writeln('      </li>');
+    }
+
+    buffer
+      ..writeln('    </ul>')
+      ..writeln('    <div class="footer">')
+      ..writeln('      Generated with <a href="https://github.com/Stewy8506/Link_Decay_App" target="_blank" rel="noopener noreferrer">LinkShelf</a>')
+      ..writeln('    </div>')
+      ..writeln('  </div>')
+      ..writeln('</body>')
+      ..writeln('</html>');
+
+    final dir = await getTemporaryDirectory();
+    final safeName = collection.name.replaceAll(RegExp(r'[^\w\s\-]'), '').trim().replaceAll(' ', '_');
+    final file = File('${dir.path}/${safeName}_read_list.html');
+    await file.writeAsString(buffer.toString());
+
+    await Share.shareXFiles([XFile(file.path)], text: '${collection.emoji ?? "📁"} ${collection.name} Read List');
+  }
 }
+

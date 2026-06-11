@@ -231,6 +231,62 @@ ThemeData buildDarkTheme(String paletteName) {
             : p.border,
       ),
     ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: p.card,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kRadiusLG),
+        side: BorderSide(color: p.border, width: 0.5),
+      ),
+      titleTextStyle: GoogleFonts.inter(
+        color: p.text,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      contentTextStyle: GoogleFonts.inter(
+        color: p.text.withValues(alpha: 0.8),
+        fontSize: 14,
+      ),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: p.card,
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kRadiusMD),
+        side: BorderSide(color: p.border, width: 0.5),
+      ),
+      textStyle: GoogleFonts.inter(
+        color: p.text,
+        fontSize: 14,
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: p.surface,
+      disabledColor: p.surface.withValues(alpha: 0.5),
+      selectedColor: p.accent,
+      secondarySelectedColor: p.accent,
+      labelStyle: GoogleFonts.inter(color: p.text, fontSize: 12),
+      secondaryLabelStyle: GoogleFonts.inter(color: p.bg, fontSize: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: p.border, width: 0.5),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: p.accent,
+        foregroundColor: p.bg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusMD)),
+        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: p.accent,
+        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14),
+      ),
+    ),
   );
 }
 
@@ -357,6 +413,62 @@ ThemeData buildLightTheme(String paletteName) {
         (s) => s.contains(WidgetState.selected)
             ? p.text.withValues(alpha: 0.7)
             : p.border,
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: p.card,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kRadiusLG),
+        side: BorderSide(color: p.border, width: 0.5),
+      ),
+      titleTextStyle: GoogleFonts.inter(
+        color: p.text,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      contentTextStyle: GoogleFonts.inter(
+        color: p.text.withValues(alpha: 0.8),
+        fontSize: 14,
+      ),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: p.card,
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kRadiusMD),
+        side: BorderSide(color: p.border, width: 0.5),
+      ),
+      textStyle: GoogleFonts.inter(
+        color: p.text,
+        fontSize: 14,
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: p.surface,
+      disabledColor: p.surface.withValues(alpha: 0.5),
+      selectedColor: p.accent,
+      secondarySelectedColor: p.accent,
+      labelStyle: GoogleFonts.inter(color: p.text, fontSize: 12),
+      secondaryLabelStyle: GoogleFonts.inter(color: p.bg, fontSize: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: p.border, width: 0.5),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: p.accent,
+        foregroundColor: p.bg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusMD)),
+        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: p.accent,
+        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14),
       ),
     ),
   );

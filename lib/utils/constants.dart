@@ -1,6 +1,9 @@
 // Core application constants — colors, spacing, default settings.
 import 'package:flutter/material.dart';
 
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
+
 // ─── Dark Surface Palette (neutral carbon/stone) ───────────────────────────
 const kBackgroundDark = Color(0xFF0C0C0C); // Near-black, neutral
 const kSurfaceDark    = Color(0xFF161616); // Carbon

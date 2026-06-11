@@ -180,6 +180,19 @@ class $LinksTable extends Links with TableInfo<$LinksTable, Link> {
         type: DriftSqlType.double,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _isDeadMeta = const VerificationMeta('isDead');
+  @override
+  late final GeneratedColumn<bool> isDead = GeneratedColumn<bool>(
+    'is_dead',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_dead" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -199,6 +212,7 @@ class $LinksTable extends Links with TableInfo<$LinksTable, Link> {
     readAt,
     archivedAt,
     customHalfLifeDays,
+    isDead,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -331,6 +345,12 @@ class $LinksTable extends Links with TableInfo<$LinksTable, Link> {
         ),
       );
     }
+    if (data.containsKey('is_dead')) {
+      context.handle(
+        _isDeadMeta,
+        isDead.isAcceptableOrUnknown(data['is_dead']!, _isDeadMeta),
+      );
+    }
     return context;
   }
 
@@ -410,6 +430,10 @@ class $LinksTable extends Links with TableInfo<$LinksTable, Link> {
         DriftSqlType.double,
         data['${effectivePrefix}custom_half_life_days'],
       ),
+      isDead: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_dead'],
+      )!,
     );
   }
 
@@ -440,6 +464,7 @@ class Link extends DataClass implements Insertable<Link> {
   final DateTime? readAt;
   final DateTime? archivedAt;
   final double? customHalfLifeDays;
+  final bool isDead;
   const Link({
     required this.id,
     required this.url,
@@ -458,6 +483,7 @@ class Link extends DataClass implements Insertable<Link> {
     this.readAt,
     this.archivedAt,
     this.customHalfLifeDays,
+    required this.isDead,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -503,6 +529,7 @@ class Link extends DataClass implements Insertable<Link> {
     if (!nullToAbsent || customHalfLifeDays != null) {
       map['custom_half_life_days'] = Variable<double>(customHalfLifeDays);
     }
+    map['is_dead'] = Variable<bool>(isDead);
     return map;
   }
 
@@ -545,6 +572,7 @@ class Link extends DataClass implements Insertable<Link> {
       customHalfLifeDays: customHalfLifeDays == null && nullToAbsent
           ? const Value.absent()
           : Value(customHalfLifeDays),
+      isDead: Value(isDead),
     );
   }
 
@@ -577,6 +605,7 @@ class Link extends DataClass implements Insertable<Link> {
       customHalfLifeDays: serializer.fromJson<double?>(
         json['customHalfLifeDays'],
       ),
+      isDead: serializer.fromJson<bool>(json['isDead']),
     );
   }
   @override
@@ -602,6 +631,7 @@ class Link extends DataClass implements Insertable<Link> {
       'readAt': serializer.toJson<DateTime?>(readAt),
       'archivedAt': serializer.toJson<DateTime?>(archivedAt),
       'customHalfLifeDays': serializer.toJson<double?>(customHalfLifeDays),
+      'isDead': serializer.toJson<bool>(isDead),
     };
   }
 
@@ -623,6 +653,7 @@ class Link extends DataClass implements Insertable<Link> {
     Value<DateTime?> readAt = const Value.absent(),
     Value<DateTime?> archivedAt = const Value.absent(),
     Value<double?> customHalfLifeDays = const Value.absent(),
+    bool? isDead,
   }) => Link(
     id: id ?? this.id,
     url: url ?? this.url,
@@ -645,6 +676,7 @@ class Link extends DataClass implements Insertable<Link> {
     customHalfLifeDays: customHalfLifeDays.present
         ? customHalfLifeDays.value
         : this.customHalfLifeDays,
+    isDead: isDead ?? this.isDead,
   );
   Link copyWithCompanion(LinksCompanion data) {
     return Link(
@@ -681,6 +713,7 @@ class Link extends DataClass implements Insertable<Link> {
       customHalfLifeDays: data.customHalfLifeDays.present
           ? data.customHalfLifeDays.value
           : this.customHalfLifeDays,
+      isDead: data.isDead.present ? data.isDead.value : this.isDead,
     );
   }
 
@@ -703,7 +736,8 @@ class Link extends DataClass implements Insertable<Link> {
           ..write('estimatedReadMinutes: $estimatedReadMinutes, ')
           ..write('readAt: $readAt, ')
           ..write('archivedAt: $archivedAt, ')
-          ..write('customHalfLifeDays: $customHalfLifeDays')
+          ..write('customHalfLifeDays: $customHalfLifeDays, ')
+          ..write('isDead: $isDead')
           ..write(')'))
         .toString();
   }
@@ -727,6 +761,7 @@ class Link extends DataClass implements Insertable<Link> {
     readAt,
     archivedAt,
     customHalfLifeDays,
+    isDead,
   );
   @override
   bool operator ==(Object other) =>
@@ -748,7 +783,8 @@ class Link extends DataClass implements Insertable<Link> {
           other.estimatedReadMinutes == this.estimatedReadMinutes &&
           other.readAt == this.readAt &&
           other.archivedAt == this.archivedAt &&
-          other.customHalfLifeDays == this.customHalfLifeDays);
+          other.customHalfLifeDays == this.customHalfLifeDays &&
+          other.isDead == this.isDead);
 }
 
 class LinksCompanion extends UpdateCompanion<Link> {
@@ -769,6 +805,7 @@ class LinksCompanion extends UpdateCompanion<Link> {
   final Value<DateTime?> readAt;
   final Value<DateTime?> archivedAt;
   final Value<double?> customHalfLifeDays;
+  final Value<bool> isDead;
   final Value<int> rowid;
   const LinksCompanion({
     this.id = const Value.absent(),
@@ -788,6 +825,7 @@ class LinksCompanion extends UpdateCompanion<Link> {
     this.readAt = const Value.absent(),
     this.archivedAt = const Value.absent(),
     this.customHalfLifeDays = const Value.absent(),
+    this.isDead = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LinksCompanion.insert({
@@ -808,6 +846,7 @@ class LinksCompanion extends UpdateCompanion<Link> {
     this.readAt = const Value.absent(),
     this.archivedAt = const Value.absent(),
     this.customHalfLifeDays = const Value.absent(),
+    this.isDead = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        url = Value(url),
@@ -832,6 +871,7 @@ class LinksCompanion extends UpdateCompanion<Link> {
     Expression<DateTime>? readAt,
     Expression<DateTime>? archivedAt,
     Expression<double>? customHalfLifeDays,
+    Expression<bool>? isDead,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -854,6 +894,7 @@ class LinksCompanion extends UpdateCompanion<Link> {
       if (archivedAt != null) 'archived_at': archivedAt,
       if (customHalfLifeDays != null)
         'custom_half_life_days': customHalfLifeDays,
+      if (isDead != null) 'is_dead': isDead,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -876,6 +917,7 @@ class LinksCompanion extends UpdateCompanion<Link> {
     Value<DateTime?>? readAt,
     Value<DateTime?>? archivedAt,
     Value<double?>? customHalfLifeDays,
+    Value<bool>? isDead,
     Value<int>? rowid,
   }) {
     return LinksCompanion(
@@ -896,6 +938,7 @@ class LinksCompanion extends UpdateCompanion<Link> {
       readAt: readAt ?? this.readAt,
       archivedAt: archivedAt ?? this.archivedAt,
       customHalfLifeDays: customHalfLifeDays ?? this.customHalfLifeDays,
+      isDead: isDead ?? this.isDead,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -956,6 +999,9 @@ class LinksCompanion extends UpdateCompanion<Link> {
     if (customHalfLifeDays.present) {
       map['custom_half_life_days'] = Variable<double>(customHalfLifeDays.value);
     }
+    if (isDead.present) {
+      map['is_dead'] = Variable<bool>(isDead.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -982,6 +1028,7 @@ class LinksCompanion extends UpdateCompanion<Link> {
           ..write('readAt: $readAt, ')
           ..write('archivedAt: $archivedAt, ')
           ..write('customHalfLifeDays: $customHalfLifeDays, ')
+          ..write('isDead: $isDead, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2504,6 +2551,18 @@ class $AppSettingsTable extends AppSettings
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _dailyReadingGoalMeta = const VerificationMeta(
+    'dailyReadingGoal',
+  );
+  @override
+  late final GeneratedColumn<int> dailyReadingGoal = GeneratedColumn<int>(
+    'daily_reading_goal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(2),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2516,6 +2575,7 @@ class $AppSettingsTable extends AppSettings
     swipeRightAction,
     domainHalfLifeOverrides,
     tagHalfLifeOverrides,
+    dailyReadingGoal,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2613,6 +2673,15 @@ class $AppSettingsTable extends AppSettings
         ),
       );
     }
+    if (data.containsKey('daily_reading_goal')) {
+      context.handle(
+        _dailyReadingGoalMeta,
+        dailyReadingGoal.isAcceptableOrUnknown(
+          data['daily_reading_goal']!,
+          _dailyReadingGoalMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2662,6 +2731,10 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.string,
         data['${effectivePrefix}tag_half_life_overrides'],
       ),
+      dailyReadingGoal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}daily_reading_goal'],
+      )!,
     );
   }
 
@@ -2682,6 +2755,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   final String swipeRightAction;
   final String? domainHalfLifeOverrides;
   final String? tagHalfLifeOverrides;
+  final int dailyReadingGoal;
   const AppSetting({
     required this.id,
     required this.halfLifeDays,
@@ -2693,6 +2767,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     required this.swipeRightAction,
     this.domainHalfLifeOverrides,
     this.tagHalfLifeOverrides,
+    required this.dailyReadingGoal,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2713,6 +2788,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     if (!nullToAbsent || tagHalfLifeOverrides != null) {
       map['tag_half_life_overrides'] = Variable<String>(tagHalfLifeOverrides);
     }
+    map['daily_reading_goal'] = Variable<int>(dailyReadingGoal);
     return map;
   }
 
@@ -2732,6 +2808,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       tagHalfLifeOverrides: tagHalfLifeOverrides == null && nullToAbsent
           ? const Value.absent()
           : Value(tagHalfLifeOverrides),
+      dailyReadingGoal: Value(dailyReadingGoal),
     );
   }
 
@@ -2759,6 +2836,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       tagHalfLifeOverrides: serializer.fromJson<String?>(
         json['tagHalfLifeOverrides'],
       ),
+      dailyReadingGoal: serializer.fromJson<int>(json['dailyReadingGoal']),
     );
   }
   @override
@@ -2777,6 +2855,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
         domainHalfLifeOverrides,
       ),
       'tagHalfLifeOverrides': serializer.toJson<String?>(tagHalfLifeOverrides),
+      'dailyReadingGoal': serializer.toJson<int>(dailyReadingGoal),
     };
   }
 
@@ -2791,6 +2870,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     String? swipeRightAction,
     Value<String?> domainHalfLifeOverrides = const Value.absent(),
     Value<String?> tagHalfLifeOverrides = const Value.absent(),
+    int? dailyReadingGoal,
   }) => AppSetting(
     id: id ?? this.id,
     halfLifeDays: halfLifeDays ?? this.halfLifeDays,
@@ -2806,6 +2886,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     tagHalfLifeOverrides: tagHalfLifeOverrides.present
         ? tagHalfLifeOverrides.value
         : this.tagHalfLifeOverrides,
+    dailyReadingGoal: dailyReadingGoal ?? this.dailyReadingGoal,
   );
   AppSetting copyWithCompanion(AppSettingsCompanion data) {
     return AppSetting(
@@ -2837,6 +2918,9 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       tagHalfLifeOverrides: data.tagHalfLifeOverrides.present
           ? data.tagHalfLifeOverrides.value
           : this.tagHalfLifeOverrides,
+      dailyReadingGoal: data.dailyReadingGoal.present
+          ? data.dailyReadingGoal.value
+          : this.dailyReadingGoal,
     );
   }
 
@@ -2852,7 +2936,8 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           ..write('swipeLeftAction: $swipeLeftAction, ')
           ..write('swipeRightAction: $swipeRightAction, ')
           ..write('domainHalfLifeOverrides: $domainHalfLifeOverrides, ')
-          ..write('tagHalfLifeOverrides: $tagHalfLifeOverrides')
+          ..write('tagHalfLifeOverrides: $tagHalfLifeOverrides, ')
+          ..write('dailyReadingGoal: $dailyReadingGoal')
           ..write(')'))
         .toString();
   }
@@ -2869,6 +2954,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     swipeRightAction,
     domainHalfLifeOverrides,
     tagHalfLifeOverrides,
+    dailyReadingGoal,
   );
   @override
   bool operator ==(Object other) =>
@@ -2883,7 +2969,8 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           other.swipeLeftAction == this.swipeLeftAction &&
           other.swipeRightAction == this.swipeRightAction &&
           other.domainHalfLifeOverrides == this.domainHalfLifeOverrides &&
-          other.tagHalfLifeOverrides == this.tagHalfLifeOverrides);
+          other.tagHalfLifeOverrides == this.tagHalfLifeOverrides &&
+          other.dailyReadingGoal == this.dailyReadingGoal);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
@@ -2897,6 +2984,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   final Value<String> swipeRightAction;
   final Value<String?> domainHalfLifeOverrides;
   final Value<String?> tagHalfLifeOverrides;
+  final Value<int> dailyReadingGoal;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.halfLifeDays = const Value.absent(),
@@ -2908,6 +2996,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.swipeRightAction = const Value.absent(),
     this.domainHalfLifeOverrides = const Value.absent(),
     this.tagHalfLifeOverrides = const Value.absent(),
+    this.dailyReadingGoal = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -2920,6 +3009,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.swipeRightAction = const Value.absent(),
     this.domainHalfLifeOverrides = const Value.absent(),
     this.tagHalfLifeOverrides = const Value.absent(),
+    this.dailyReadingGoal = const Value.absent(),
   });
   static Insertable<AppSetting> custom({
     Expression<int>? id,
@@ -2932,6 +3022,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Expression<String>? swipeRightAction,
     Expression<String>? domainHalfLifeOverrides,
     Expression<String>? tagHalfLifeOverrides,
+    Expression<int>? dailyReadingGoal,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2948,6 +3039,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
         'domain_half_life_overrides': domainHalfLifeOverrides,
       if (tagHalfLifeOverrides != null)
         'tag_half_life_overrides': tagHalfLifeOverrides,
+      if (dailyReadingGoal != null) 'daily_reading_goal': dailyReadingGoal,
     });
   }
 
@@ -2962,6 +3054,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Value<String>? swipeRightAction,
     Value<String?>? domainHalfLifeOverrides,
     Value<String?>? tagHalfLifeOverrides,
+    Value<int>? dailyReadingGoal,
   }) {
     return AppSettingsCompanion(
       id: id ?? this.id,
@@ -2976,6 +3069,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       domainHalfLifeOverrides:
           domainHalfLifeOverrides ?? this.domainHalfLifeOverrides,
       tagHalfLifeOverrides: tagHalfLifeOverrides ?? this.tagHalfLifeOverrides,
+      dailyReadingGoal: dailyReadingGoal ?? this.dailyReadingGoal,
     );
   }
 
@@ -3018,6 +3112,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
         tagHalfLifeOverrides.value,
       );
     }
+    if (dailyReadingGoal.present) {
+      map['daily_reading_goal'] = Variable<int>(dailyReadingGoal.value);
+    }
     return map;
   }
 
@@ -3033,7 +3130,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
           ..write('swipeLeftAction: $swipeLeftAction, ')
           ..write('swipeRightAction: $swipeRightAction, ')
           ..write('domainHalfLifeOverrides: $domainHalfLifeOverrides, ')
-          ..write('tagHalfLifeOverrides: $tagHalfLifeOverrides')
+          ..write('tagHalfLifeOverrides: $tagHalfLifeOverrides, ')
+          ..write('dailyReadingGoal: $dailyReadingGoal')
           ..write(')'))
         .toString();
   }
@@ -3079,6 +3177,7 @@ typedef $$LinksTableCreateCompanionBuilder =
       Value<DateTime?> readAt,
       Value<DateTime?> archivedAt,
       Value<double?> customHalfLifeDays,
+      Value<bool> isDead,
       Value<int> rowid,
     });
 typedef $$LinksTableUpdateCompanionBuilder =
@@ -3100,6 +3199,7 @@ typedef $$LinksTableUpdateCompanionBuilder =
       Value<DateTime?> readAt,
       Value<DateTime?> archivedAt,
       Value<double?> customHalfLifeDays,
+      Value<bool> isDead,
       Value<int> rowid,
     });
 
@@ -3194,6 +3294,11 @@ class $$LinksTableFilterComposer extends Composer<_$AppDatabase, $LinksTable> {
 
   ColumnFilters<double> get customHalfLifeDays => $composableBuilder(
     column: $table.customHalfLifeDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDead => $composableBuilder(
+    column: $table.isDead,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3291,6 +3396,11 @@ class $$LinksTableOrderingComposer
     column: $table.customHalfLifeDays,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isDead => $composableBuilder(
+    column: $table.isDead,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LinksTableAnnotationComposer
@@ -3368,6 +3478,9 @@ class $$LinksTableAnnotationComposer
     column: $table.customHalfLifeDays,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get isDead =>
+      $composableBuilder(column: $table.isDead, builder: (column) => column);
 }
 
 class $$LinksTableTableManager
@@ -3415,6 +3528,7 @@ class $$LinksTableTableManager
                 Value<DateTime?> readAt = const Value.absent(),
                 Value<DateTime?> archivedAt = const Value.absent(),
                 Value<double?> customHalfLifeDays = const Value.absent(),
+                Value<bool> isDead = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LinksCompanion(
                 id: id,
@@ -3434,6 +3548,7 @@ class $$LinksTableTableManager
                 readAt: readAt,
                 archivedAt: archivedAt,
                 customHalfLifeDays: customHalfLifeDays,
+                isDead: isDead,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3455,6 +3570,7 @@ class $$LinksTableTableManager
                 Value<DateTime?> readAt = const Value.absent(),
                 Value<DateTime?> archivedAt = const Value.absent(),
                 Value<double?> customHalfLifeDays = const Value.absent(),
+                Value<bool> isDead = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LinksCompanion.insert(
                 id: id,
@@ -3474,6 +3590,7 @@ class $$LinksTableTableManager
                 readAt: readAt,
                 archivedAt: archivedAt,
                 customHalfLifeDays: customHalfLifeDays,
+                isDead: isDead,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4238,6 +4355,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<String> swipeRightAction,
       Value<String?> domainHalfLifeOverrides,
       Value<String?> tagHalfLifeOverrides,
+      Value<int> dailyReadingGoal,
     });
 typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
@@ -4251,6 +4369,7 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<String> swipeRightAction,
       Value<String?> domainHalfLifeOverrides,
       Value<String?> tagHalfLifeOverrides,
+      Value<int> dailyReadingGoal,
     });
 
 class $$AppSettingsTableFilterComposer
@@ -4309,6 +4428,11 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<String> get tagHalfLifeOverrides => $composableBuilder(
     column: $table.tagHalfLifeOverrides,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get dailyReadingGoal => $composableBuilder(
+    column: $table.dailyReadingGoal,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4371,6 +4495,11 @@ class $$AppSettingsTableOrderingComposer
     column: $table.tagHalfLifeOverrides,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get dailyReadingGoal => $composableBuilder(
+    column: $table.dailyReadingGoal,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -4429,6 +4558,11 @@ class $$AppSettingsTableAnnotationComposer
     column: $table.tagHalfLifeOverrides,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get dailyReadingGoal => $composableBuilder(
+    column: $table.dailyReadingGoal,
+    builder: (column) => column,
+  );
 }
 
 class $$AppSettingsTableTableManager
@@ -4472,6 +4606,7 @@ class $$AppSettingsTableTableManager
                 Value<String> swipeRightAction = const Value.absent(),
                 Value<String?> domainHalfLifeOverrides = const Value.absent(),
                 Value<String?> tagHalfLifeOverrides = const Value.absent(),
+                Value<int> dailyReadingGoal = const Value.absent(),
               }) => AppSettingsCompanion(
                 id: id,
                 halfLifeDays: halfLifeDays,
@@ -4483,6 +4618,7 @@ class $$AppSettingsTableTableManager
                 swipeRightAction: swipeRightAction,
                 domainHalfLifeOverrides: domainHalfLifeOverrides,
                 tagHalfLifeOverrides: tagHalfLifeOverrides,
+                dailyReadingGoal: dailyReadingGoal,
               ),
           createCompanionCallback:
               ({
@@ -4496,6 +4632,7 @@ class $$AppSettingsTableTableManager
                 Value<String> swipeRightAction = const Value.absent(),
                 Value<String?> domainHalfLifeOverrides = const Value.absent(),
                 Value<String?> tagHalfLifeOverrides = const Value.absent(),
+                Value<int> dailyReadingGoal = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 id: id,
                 halfLifeDays: halfLifeDays,
@@ -4507,6 +4644,7 @@ class $$AppSettingsTableTableManager
                 swipeRightAction: swipeRightAction,
                 domainHalfLifeOverrides: domainHalfLifeOverrides,
                 tagHalfLifeOverrides: tagHalfLifeOverrides,
+                dailyReadingGoal: dailyReadingGoal,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

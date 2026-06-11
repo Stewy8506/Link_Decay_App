@@ -56,8 +56,28 @@ class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
 
   void _setupShareIntent() {
     ShareIntentService.instance.startListening(
-      onUrl: (url) {
-        ref.read(linkActionsProvider.notifier).saveLink(url);
+      onUrl: (url) async {
+        await ref.read(linkActionsProvider.notifier).saveLink(url);
+        final isForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+        if (isForeground) {
+          scaffoldMessengerKey.currentState?.showSnackBar(
+            SnackBar(
+              content: Text('Saved link: $url'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else {
+          String domain = url;
+          try {
+            final uri = Uri.parse(url);
+            domain = uri.host.replaceFirst('www.', '');
+          } catch (_) {}
+
+          await NotificationService.instance.showImmediateNotification(
+            'Link Saved',
+            'Saved $domain to your Inbox.',
+          );
+        }
       },
     );
   }
@@ -79,8 +99,13 @@ class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
         halfLifeDays: halfLife,
         threshold: threshold,
       );
+      await NotificationService.instance.scheduleWeeklyDigest(
+        db: db,
+        halfLifeDays: halfLife,
+      );
     }
   }
+
 
   @override
   void dispose() {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -6,6 +7,8 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../data/database.dart';
+import '../models/link_status.dart';
+
 
 class NotificationService {
   NotificationService._internal();
@@ -138,4 +141,170 @@ class NotificationService {
   Future<void> cancelAll() async {
     await _plugin.cancelAll();
   }
+
+  /// Schedule a weekly digest notification on Sunday at 6 PM.
+  Future<void> scheduleWeeklyDigest({
+    required AppDatabase db,
+    required double halfLifeDays,
+  }) async {
+    if (kIsWeb) return;
+
+    final links = await db.select(db.links).get();
+
+    // 1. Calculate stale links (freshness < 0.25)
+    final nowTime = DateTime.now();
+    int staleCount = 0;
+    for (final l in links) {
+      if (l.status == LinkStatus.inbox) {
+        final score = _computeFreshnessLocal(
+          createdAt: l.createdAt,
+          now: nowTime,
+          halfLifeDays: l.customHalfLifeDays ?? halfLifeDays,
+          snoozedUntil: l.snoozedUntil,
+        );
+        if (score < 0.25) {
+          staleCount++;
+        }
+      }
+    }
+
+    // 2. Read links in last 7 days
+    final sevenDaysAgo = nowTime.subtract(const Duration(days: 7));
+    final readLast7Days = links.where((l) => l.readAt != null && l.readAt!.isAfter(sevenDaysAgo)).length;
+
+    // 3. Current reading streak
+    final readDates = links
+        .where((l) => l.readAt != null)
+        .map((l) => DateTime(l.readAt!.year, l.readAt!.month, l.readAt!.day))
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    int currentStreak = 0;
+    if (readDates.isNotEmpty) {
+      final today = DateTime(nowTime.year, nowTime.month, nowTime.day);
+      final yesterday = today.subtract(const Duration(days: 1));
+      
+      if (readDates.contains(today) || readDates.contains(yesterday)) {
+        currentStreak = 1;
+        var checkDate = readDates.contains(today) ? today : yesterday;
+        
+        while (true) {
+          checkDate = checkDate.subtract(const Duration(days: 1));
+          if (readDates.contains(checkDate)) {
+            currentStreak++;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    // Compose notification content
+    final title = 'Your Weekly LinkShelf Digest';
+    final body = 'You read $readLast7Days links this week! 🔥 Current streak: $currentStreak days. $staleCount links are getting stale and need your attention.';
+
+    // Schedule for next Sunday at 6 PM
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      18, // 6 PM
+    );
+
+    // Find the next Sunday (Sunday is day 7 in timezone/datetime library)
+    while (scheduledDate.weekday != DateTime.sunday) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 7));
+    }
+
+    const androidDetails = AndroidNotificationDetails(
+      'linkshelf_weekly',
+      'Weekly Digest',
+      channelDescription: 'Weekly summary of your reading stats.',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+    );
+
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: false,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+      macOS: darwinDetails,
+    );
+
+    await _plugin.zonedSchedule(
+      1002, // Weekly ID
+      title,
+      body,
+      scheduledDate,
+      details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  double _computeFreshnessLocal({
+    required DateTime createdAt,
+    required DateTime now,
+    required double halfLifeDays,
+    DateTime? snoozedUntil,
+  }) {
+    if (snoozedUntil != null && snoozedUntil.isAfter(now)) {
+      // Pause decay while snoozed
+      return 1.0;
+    }
+    final ageMs = now.difference(createdAt).inMilliseconds;
+    final halfLifeMs = halfLifeDays * 24 * 60 * 60 * 1000;
+    if (halfLifeMs <= 0) return 0.0;
+    return pow(0.5, ageMs / halfLifeMs).toDouble();
+  }
+
+  /// Push a local success notification immediately.
+  Future<void> showImmediateNotification(String title, String body) async {
+    if (kIsWeb) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      'linkshelf_share',
+      'Share Intent Adds',
+      channelDescription: 'Notifies when links are saved from share sheet.',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+      macOS: darwinDetails,
+    );
+
+    // Use a unique ID for each immediate notification
+    final notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
+
+    await _plugin.show(
+      notificationId,
+      title,
+      body,
+      details,
+    );
+  }
 }
+

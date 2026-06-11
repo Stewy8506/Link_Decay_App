@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 import '../data/database.dart';
 import '../models/link_status.dart';
@@ -76,6 +78,11 @@ final notificationThresholdProvider = Provider<double>((ref) {
 /// Whether dark mode is enabled.
 final isDarkModeProvider = Provider<bool>((ref) {
   return ref.watch(settingsProvider).valueOrNull?.isDarkMode ?? true;
+});
+
+/// Daily reading goal setting provider
+final dailyReadingGoalProvider = Provider<int>((ref) {
+  return ref.watch(settingsProvider).valueOrNull?.dailyReadingGoal ?? 2;
 });
 
 // ─── Collections Providers ───────────────────────────────────────────────
@@ -287,6 +294,30 @@ class LinkActionsNotifier extends Notifier<void> {
     final domain = svc.extractDomain(url);
     final id = _generateId();
 
+    // Domain auto-tagging intelligence
+    String autoTag = '';
+    final domainLower = domain.toLowerCase();
+    if (domainLower.contains('youtube.com') ||
+        domainLower.contains('vimeo.com') ||
+        domainLower.contains('tiktok.com')) {
+      autoTag = 'Video';
+    } else if (domainLower.contains('medium.com') ||
+        domainLower.contains('substack.com') ||
+        domainLower.contains('dev.to') ||
+        domainLower.contains('github.blog')) {
+      autoTag = 'Article';
+    } else if (domainLower.contains('github.com') ||
+        domainLower.contains('gitlab.com')) {
+      autoTag = 'Code';
+    } else if (domainLower.contains('news.ycombinator.com') ||
+        domainLower.contains('reddit.com') ||
+        domainLower.contains('twitter.com') ||
+        domainLower.contains('x.com')) {
+      autoTag = 'Social';
+    } else if (domainLower.contains('stackoverflow.com')) {
+      autoTag = 'Dev';
+    }
+
     await _db.insertLink(
       LinksCompanion.insert(
         id: id,
@@ -296,6 +327,7 @@ class LinkActionsNotifier extends Notifier<void> {
         createdAt: DateTime.now(),
         status: LinkStatus.inbox,
         collectionId: Value(collectionId),
+        tags: Value(autoTag),
       ),
     );
 
@@ -358,7 +390,7 @@ class LinkActionsNotifier extends Notifier<void> {
 
   // ── Collection Actions ──────────────────────────────────────────────────
 
-  Future<void> addCollection(String name, String? emoji) async {
+  Future<String> addCollection(String name, String? emoji) async {
     final id = _generateId();
     await _db.insertCollection(
       CollectionsCompanion.insert(
@@ -368,6 +400,7 @@ class LinkActionsNotifier extends Notifier<void> {
         createdAt: DateTime.now(),
       ),
     );
+    return id;
   }
 
   Future<void> updateCollection(String id, String name, String? emoji) async {
@@ -490,6 +523,7 @@ class LinkActionsNotifier extends Notifier<void> {
     String? swipeRightAction,
     String? domainHalfLifeOverrides,
     String? tagHalfLifeOverrides,
+    int? dailyReadingGoal,
   }) async {
     final current = await _db.getSettings();
     await _db.upsertSettings(
@@ -504,6 +538,7 @@ class LinkActionsNotifier extends Notifier<void> {
         swipeRightAction: Value(swipeRightAction ?? current?.swipeRightAction ?? 'read'),
         domainHalfLifeOverrides: Value(domainHalfLifeOverrides ?? current?.domainHalfLifeOverrides),
         tagHalfLifeOverrides: Value(tagHalfLifeOverrides ?? current?.tagHalfLifeOverrides),
+        dailyReadingGoal: Value(dailyReadingGoal ?? current?.dailyReadingGoal ?? 2),
       ),
     );
   }
@@ -562,3 +597,67 @@ final allTagsProvider = Provider<List<String>>((ref) {
   }
   return tagSet.toList()..sort();
 });
+
+class _LinkWithScoreForSync {
+  final Link link;
+  final double score;
+  _LinkWithScoreForSync(this.link, this.score);
+}
+
+final widgetSyncProvider = Provider<void>((ref) {
+  final inboxLinks = ref.watch(inboxLinksProvider).valueOrNull ?? [];
+  if (inboxLinks.isEmpty) {
+    _syncTopStaleLinks([]);
+    return;
+  }
+  final baseHalfLife = ref.watch(halfLifeDaysProvider);
+  final domainOverrides = ref.watch(domainHalfLifeOverridesProvider);
+  final tagOverrides = ref.watch(tagHalfLifeOverridesProvider);
+  final now = DateTime.now();
+
+  final scored = inboxLinks.map((link) {
+    double halfLife = baseHalfLife;
+    if (link.customHalfLifeDays != null) {
+      halfLife = link.customHalfLifeDays!;
+    } else {
+      if (domainOverrides.containsKey(link.domain.toLowerCase())) {
+        halfLife = domainOverrides[link.domain.toLowerCase()]!;
+      } else {
+        final tags = link.tags.split(',').map((t) => t.trim().toLowerCase());
+        for (final tag in tags) {
+          if (tagOverrides.containsKey(tag)) {
+            halfLife = tagOverrides[tag]!;
+            break;
+          }
+        }
+      }
+    }
+    final score = computeFreshness(
+      createdAt: link.createdAt,
+      now: now,
+      halfLifeDays: halfLife,
+      snoozedUntil: link.snoozedUntil,
+    );
+    return _LinkWithScoreForSync(link, score);
+  }).toList();
+
+  scored.sort((a, b) => a.score.compareTo(b.score));
+  final top3 = scored.take(3).toList();
+  _syncTopStaleLinks(top3);
+});
+
+Future<void> _syncTopStaleLinks(List<_LinkWithScoreForSync> scoredItems) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final data = scoredItems.map((item) => {
+      'id': item.link.id,
+      'title': item.link.title ?? item.link.domain,
+      'url': item.link.url,
+      'domain': item.link.domain,
+      'createdAt': item.link.createdAt.toIso8601String(),
+      'freshnessScore': item.score,
+    }).toList();
+    await prefs.setString('widget_stale_links', jsonEncode(data));
+  } catch (_) {}
+}
+

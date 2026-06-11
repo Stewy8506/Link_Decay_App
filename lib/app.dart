@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,7 @@ class LinkShelfApp extends ConsumerWidget {
 
     return MaterialApp(
       title: kAppName,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       theme: buildLightTheme(activePalette),
       darkTheme: buildDarkTheme(activePalette),
@@ -46,8 +48,10 @@ class _AppShellState extends ConsumerState<_AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(widgetSyncProvider);
     final theme = Theme.of(context);
     final selectedIds = ref.watch(selectedLinkIdsProvider);
+
     final isMultiSelect = selectedIds.isNotEmpty;
 
     return Scaffold(
@@ -63,13 +67,16 @@ class _AppShellState extends ConsumerState<_AppShell> {
               return FadeTransition(
                 opacity: animation,
                 child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.0, 0.03),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  )),
+                  position:
+                      Tween<Offset>(
+                        begin: const Offset(0.0, 0.03),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
                   child: child,
                 ),
               );
@@ -91,17 +98,17 @@ class _AppShellState extends ConsumerState<_AppShell> {
               curve: Curves.easeInOut,
               child: IgnorePointer(
                 child: Container(
-                  height: 120 + MediaQuery.of(context).viewPadding.bottom,
+                  height: 140 + MediaQuery.of(context).viewPadding.bottom,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
                         theme.scaffoldBackgroundColor.withValues(alpha: 0.0),
-                        theme.scaffoldBackgroundColor.withValues(alpha: 0.75),
+                        theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
                         theme.scaffoldBackgroundColor,
                       ],
-                      stops: const [0.0, 0.45, 1.0],
+                      stops: const [0.0, 0.4, 1.0],
                     ),
                   ),
                 ),
@@ -136,10 +143,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
 // ─── Floating Pill Navigation Bar ─────────────────────────────────────────
 
 class _FloatingPillNavBar extends StatelessWidget {
-  const _FloatingPillNavBar({
-    required this.selectedIndex,
-    required this.onTap,
-  });
+  const _FloatingPillNavBar({required this.selectedIndex, required this.onTap});
 
   final int selectedIndex;
   final ValueChanged<int> onTap;
@@ -148,9 +152,21 @@ class _FloatingPillNavBar extends StatelessWidget {
   static const _horizontalPadding = 6.0;
 
   static const _items = [
-    _NavItem(icon: Icons.inbox_outlined, selectedIcon: Icons.inbox, label: 'Inbox'),
-    _NavItem(icon: Icons.folder_copy_outlined, selectedIcon: Icons.folder_copy, label: 'Folders'),
-    _NavItem(icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: 'Settings'),
+    _NavItem(
+      icon: Icons.inbox_outlined,
+      selectedIcon: Icons.inbox,
+      label: 'Inbox',
+    ),
+    _NavItem(
+      icon: Icons.folder_copy_outlined,
+      selectedIcon: Icons.folder_copy,
+      label: 'Folders',
+    ),
+    _NavItem(
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings,
+      label: 'Settings',
+    ),
   ];
 
   @override
@@ -160,13 +176,13 @@ class _FloatingPillNavBar extends StatelessWidget {
     final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
 
     // Outer pill colors — neutral, semi-transparent
-    final pillBg = cs.surfaceContainerHighest.withValues(alpha: 0.92);
-    final pillBorder = cs.outline.withValues(alpha: 0.6);
+    final pillBg = cs.surfaceContainerHighest.withValues(alpha: 0.75);
+    final pillBorder = cs.outline.withValues(alpha: 0.45);
 
     // Selected indicator pill — darker capsule behind active item
     final indicatorColor = isDark
-        ? cs.outline.withValues(alpha: 0.6)
-        : cs.outline.withValues(alpha: 0.35);
+        ? cs.outline.withValues(alpha: 0.4)
+        : cs.outline.withValues(alpha: 0.25);
 
     // Text/icon colors
     final selectedColor = cs.onSurface;
@@ -177,63 +193,72 @@ class _FloatingPillNavBar extends StatelessWidget {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Padding(
-        padding: EdgeInsets.only(bottom: 16 + bottomPadding),
+        padding: EdgeInsets.only(bottom: 8 + bottomPadding),
         child: SizedBox(
           width: _navBarWidth,
           height: 58,
           child: Container(
             decoration: BoxDecoration(
-              color: pillBg,
               borderRadius: BorderRadius.circular(29),
-              border: Border.all(color: pillBorder, width: 0.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                  spreadRadius: 0,
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(29),
-              child: Stack(
-                children: [
-                  // Animated indicator pill
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOutCubic,
-                    left: _indicatorLeft(),
-                    top: 5,
-                    bottom: 5,
-                    width: indicatorW,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: indicatorColor,
-                        borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: pillBg,
+                    borderRadius: BorderRadius.circular(29),
+                    border: Border.all(color: pillBorder, width: 0.5),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Animated indicator pill
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 280),
+                        curve: Curves.easeOutCubic,
+                        left: _indicatorLeft(),
+                        top: 5,
+                        bottom: 5,
+                        width: indicatorW,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: indicatorColor,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
 
-                  // Nav items row
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
-                    child: Row(
-                      children: List.generate(_items.length, (i) {
-                        final item = _items[i];
-                        final isSelected = i == selectedIndex;
+                      // Nav items row
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: _horizontalPadding,
+                        ),
+                        child: Row(
+                          children: List.generate(_items.length, (i) {
+                            final item = _items[i];
+                            final isSelected = i == selectedIndex;
 
-                        return _NavBarItemWidget(
-                          item: item,
-                          isSelected: isSelected,
-                          onTap: () => onTap(i),
-                          selectedColor: selectedColor,
-                          unselectedColor: unselectedColor,
-                        );
-                      }),
-                    ),
+                            return _NavBarItemWidget(
+                              item: item,
+                              isSelected: isSelected,
+                              onTap: () => onTap(i),
+                              selectedColor: selectedColor,
+                              unselectedColor: unselectedColor,
+                            );
+                          }),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -295,10 +320,14 @@ class _NavBarItemWidgetState extends State<_NavBarItemWidget> {
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: Icon(
-                    widget.isSelected ? widget.item.selectedIcon : widget.item.icon,
+                    widget.isSelected
+                        ? widget.item.selectedIcon
+                        : widget.item.icon,
                     key: ValueKey('${widget.isSelected}'),
                     size: 20,
-                    color: widget.isSelected ? widget.selectedColor : widget.unselectedColor,
+                    color: widget.isSelected
+                        ? widget.selectedColor
+                        : widget.unselectedColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -306,8 +335,12 @@ class _NavBarItemWidgetState extends State<_NavBarItemWidget> {
                   duration: const Duration(milliseconds: 200),
                   style: TextStyle(
                     fontSize: 9.5,
-                    fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color: widget.isSelected ? widget.selectedColor : widget.unselectedColor,
+                    fontWeight: widget.isSelected
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                    color: widget.isSelected
+                        ? widget.selectedColor
+                        : widget.unselectedColor,
                     letterSpacing: 0.1,
                   ),
                   child: Text(widget.item.label),

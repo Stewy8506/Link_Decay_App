@@ -50,62 +50,69 @@ class MultiSelectBar extends ConsumerWidget {
     final collectionsAsync = ref.watch(collectionsProvider);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: theme.scaffoldBackgroundColor,
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(kSpaceMD),
-                child: Text(
-                  'Move Selected to Folder',
-                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurface),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: screenHeight * 0.65,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(kSpaceMD),
+                  child: Text(
+                    'Move Selected to Folder',
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurface),
+                  ),
                 ),
-              ),
-              const Divider(height: 0),
-              ListTile(
-                leading: Icon(Icons.folder_off_outlined, color: cs.onSurface.withValues(alpha: 0.6)),
-                title: Text('No Folder (Uncategorized)', style: GoogleFonts.inter(color: cs.onSurface)),
-                onTap: () {
-                  ref.read(linkActionsProvider.notifier).bulkMoveToCollection(ids, null);
-                  ref.read(selectedLinkIdsProvider.notifier).state = const {};
-                  Navigator.pop(context);
-                  HapticFeedback.mediumImpact();
-                },
-              ),
-              const Divider(height: 0),
-              collectionsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, st) => const SizedBox.shrink(),
-                data: (folders) {
-                  return Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: folders.length,
-                      itemBuilder: (context, index) {
-                        final folder = folders[index];
-                        return ListTile(
-                          leading: Text(folder.emoji ?? '📁', style: const TextStyle(fontSize: 16)),
-                          title: Text(folder.name, style: GoogleFonts.inter(color: cs.onSurface)),
-                          onTap: () {
-                            ref.read(linkActionsProvider.notifier).bulkMoveToCollection(ids, folder.id);
-                            ref.read(selectedLinkIdsProvider.notifier).state = const {};
-                            Navigator.pop(context);
-                            HapticFeedback.mediumImpact();
-                          },
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: kSpaceSM),
-            ],
+                const Divider(height: 0),
+                ListTile(
+                  leading: Icon(Icons.folder_off_outlined, color: cs.onSurface.withValues(alpha: 0.6)),
+                  title: Text('No Folder (Uncategorized)', style: GoogleFonts.inter(color: cs.onSurface)),
+                  onTap: () {
+                    ref.read(linkActionsProvider.notifier).bulkMoveToCollection(ids, null);
+                    ref.read(selectedLinkIdsProvider.notifier).state = const {};
+                    Navigator.pop(context);
+                    HapticFeedback.mediumImpact();
+                  },
+                ),
+                const Divider(height: 0),
+                Expanded(
+                  child: collectionsAsync.when(
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, st) => const SizedBox.shrink(),
+                    data: (folders) {
+                      return ListView.builder(
+                        itemCount: folders.length,
+                        itemBuilder: (context, index) {
+                          final folder = folders[index];
+                          return ListTile(
+                            leading: Text(folder.emoji ?? '📁', style: const TextStyle(fontSize: 16)),
+                            title: Text(folder.name, style: GoogleFonts.inter(color: cs.onSurface)),
+                            onTap: () {
+                              ref.read(linkActionsProvider.notifier).bulkMoveToCollection(ids, folder.id);
+                              ref.read(selectedLinkIdsProvider.notifier).state = const {};
+                              Navigator.pop(context);
+                              HapticFeedback.mediumImpact();
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: kSpaceSM),
+              ],
+            ),
           ),
         );
       },
@@ -184,61 +191,65 @@ class MultiSelectBar extends ConsumerWidget {
               ),
               padding: const EdgeInsets.symmetric(horizontal: kSpaceMD),
               child: Row(
-            children: [
-              // Count Indicator
-              Text(
-                '${selectedIds.length} selected',
-                style: GoogleFonts.inter(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface,
-                ),
-              ),
-              const Spacer(),
+                children: [
+                  // Count Indicator
+                  Flexible(
+                    child: Text(
+                      '${selectedIds.length} selected',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
 
-              // Bulk Actions Strip
-              _ActionButton(
-                icon: Icons.check_circle_outline,
-                tooltip: 'Mark as Read',
-                onPressed: () {
-                  ref.read(linkActionsProvider.notifier).bulkMarkRead(selectedIds);
-                  ref.read(selectedLinkIdsProvider.notifier).state = const {};
-                  HapticFeedback.mediumImpact();
-                },
+                  // Bulk Actions Strip
+                  _ActionButton(
+                    icon: Icons.check_circle_outline,
+                    tooltip: 'Mark as Read',
+                    onPressed: () {
+                      ref.read(linkActionsProvider.notifier).bulkMarkRead(selectedIds);
+                      ref.read(selectedLinkIdsProvider.notifier).state = const {};
+                      HapticFeedback.mediumImpact();
+                    },
+                  ),
+                  _ActionButton(
+                    icon: Icons.archive_outlined,
+                    tooltip: 'Archive All',
+                    onPressed: () {
+                      ref.read(linkActionsProvider.notifier).bulkArchive(selectedIds);
+                      ref.read(selectedLinkIdsProvider.notifier).state = const {};
+                      HapticFeedback.mediumImpact();
+                    },
+                  ),
+                  _ActionButton(
+                    icon: Icons.folder_outlined,
+                    tooltip: 'Move to Folder',
+                    onPressed: () => _showFolderPicker(context, ref, selectedIds),
+                  ),
+                  _ActionButton(
+                    icon: Icons.label_outline,
+                    tooltip: 'Add Tag',
+                    onPressed: () => _showAddTagDialog(context, ref, selectedIds),
+                  ),
+                  _ActionButton(
+                    icon: Icons.delete_outline,
+                    tooltip: 'Delete All',
+                    color: kFreshnessLow,
+                    onPressed: () => _confirmDelete(context, ref, selectedIds),
+                  ),
+                ],
               ),
-              _ActionButton(
-                icon: Icons.archive_outlined,
-                tooltip: 'Archive All',
-                onPressed: () {
-                  ref.read(linkActionsProvider.notifier).bulkArchive(selectedIds);
-                  ref.read(selectedLinkIdsProvider.notifier).state = const {};
-                  HapticFeedback.mediumImpact();
-                },
-              ),
-              _ActionButton(
-                icon: Icons.folder_outlined,
-                tooltip: 'Move to Folder',
-                onPressed: () => _showFolderPicker(context, ref, selectedIds),
-              ),
-              _ActionButton(
-                icon: Icons.label_outline,
-                tooltip: 'Add Tag',
-                onPressed: () => _showAddTagDialog(context, ref, selectedIds),
-              ),
-              _ActionButton(
-                icon: Icons.delete_outline,
-                tooltip: 'Delete All',
-                color: kFreshnessLow,
-                onPressed: () => _confirmDelete(context, ref, selectedIds),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  ),
-);
-}
+    );
+  }
 }
 
 class _ActionButton extends StatelessWidget {
@@ -262,7 +273,8 @@ class _ActionButton extends StatelessWidget {
       color: color ?? cs.onSurface,
       tooltip: tooltip,
       onPressed: onPressed,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      iconSize: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       constraints: const BoxConstraints(),
     );
   }

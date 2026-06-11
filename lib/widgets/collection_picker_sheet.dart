@@ -85,6 +85,7 @@ class CollectionPickerSheet extends ConsumerWidget {
     final collectionsAsync = ref.watch(collectionsProvider);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
       decoration: BoxDecoration(
@@ -98,136 +99,141 @@ class CollectionPickerSheet extends ConsumerWidget {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(kSpaceMD),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Move to Folder',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.65,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(kSpaceMD),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Move to Folder',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 0),
-
-            // Option: Remove from folder
-            ListTile(
-              leading: Icon(
-                Icons.folder_off_outlined,
-                color: cs.onSurface.withValues(alpha: 0.6),
-              ),
-              title: Text(
-                'No Folder (Uncategorized)',
-                style: GoogleFonts.inter(
-                  color: cs.onSurface,
-                  fontWeight: currentCollectionId == null ? FontWeight.w600 : FontWeight.w400,
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
               ),
-              trailing: currentCollectionId == null
-                  ? Icon(Icons.check, color: cs.onSurface, size: 18)
-                  : null,
-              onTap: () {
-                ref.read(linkActionsProvider.notifier).updateLinkCollection(linkId, null);
-                HapticFeedback.lightImpact();
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(height: 0),
+              const Divider(height: 0),
 
-            // Collections List
-            collectionsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(kSpaceLG),
-                child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+              // Option: Remove from folder
+              ListTile(
+                leading: Icon(
+                  Icons.folder_off_outlined,
+                  color: cs.onSurface.withValues(alpha: 0.6),
+                ),
+                title: Text(
+                  'No Folder (Uncategorized)',
+                  style: GoogleFonts.inter(
+                    color: cs.onSurface,
+                    fontWeight: currentCollectionId == null ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+                trailing: currentCollectionId == null
+                    ? Icon(Icons.check, color: cs.onSurface, size: 18)
+                    : null,
+                onTap: () {
+                  ref.read(linkActionsProvider.notifier).updateLinkCollection(linkId, null);
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(context);
+                },
               ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(kSpaceLG),
-                child: Text('Error: $e'),
-              ),
-              data: (folders) {
-                if (folders.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: kSpaceXL),
-                    child: Column(
-                      children: [
-                        Text(
-                          'No folders created yet.',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: cs.onSurface.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+              const Divider(height: 0),
 
-                return Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: folders.length,
-                    itemBuilder: (context, index) {
-                      final folder = folders[index];
-                      final isSelected = folder.id == currentCollectionId;
-
-                      return ListTile(
-                        leading: Text(
-                          folder.emoji ?? '📁',
-                          style: const TextStyle(fontSize: 18),
+              // Collections List
+              Expanded(
+                child: collectionsAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(kSpaceLG),
+                    child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+                  ),
+                  error: (e, _) => Padding(
+                    padding: const EdgeInsets.all(kSpaceLG),
+                    child: Text('Error: $e'),
+                  ),
+                  data: (folders) {
+                    if (folders.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: kSpaceXL),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'No folders created yet.',
+                              style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  color: cs.onSurface.withValues(alpha: 0.4),
+                              ),
+                            ),
+                          ],
                         ),
-                        title: Text(
-                          folder.name,
-                          style: GoogleFonts.inter(
-                            color: cs.onSurface,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                          ),
-                        ),
-                        trailing: isSelected
-                            ? Icon(Icons.check, color: cs.onSurface, size: 18)
-                            : null,
-                        onTap: () {
-                          ref.read(linkActionsProvider.notifier).updateLinkCollection(linkId, folder.id);
-                          HapticFeedback.lightImpact();
-                          Navigator.pop(context);
-                        },
                       );
-                    },
-                  ),
-                );
-              },
-            ),
-            const Divider(height: 0),
+                    }
 
-            // Bottom Add Action
-            Padding(
-              padding: const EdgeInsets.all(kSpaceMD),
-              child: TextButton.icon(
-                onPressed: () => _showCreateCollectionDialog(context, ref),
-                icon: const Icon(Icons.add),
-                label: const Text('Create New Folder'),
-                style: TextButton.styleFrom(
-                  foregroundColor: cs.onSurface,
-                  padding: const EdgeInsets.symmetric(vertical: kSpaceMD),
-                  textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    return ListView.builder(
+                      itemCount: folders.length,
+                      itemBuilder: (context, index) {
+                        final folder = folders[index];
+                        final isSelected = folder.id == currentCollectionId;
+
+                        return ListTile(
+                          leading: Text(
+                            folder.emoji ?? '📁',
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                          title: Text(
+                            folder.name,
+                            style: GoogleFonts.inter(
+                              color: cs.onSurface,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? Icon(Icons.check, color: cs.onSurface, size: 18)
+                              : null,
+                          onTap: () {
+                            ref.read(linkActionsProvider.notifier).updateLinkCollection(linkId, folder.id);
+                            HapticFeedback.lightImpact();
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
-            ),
-          ],
+              const Divider(height: 0),
+
+              // Bottom Add Action
+              Padding(
+                padding: const EdgeInsets.all(kSpaceMD),
+                child: TextButton.icon(
+                  onPressed: () => _showCreateCollectionDialog(context, ref),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create New Folder'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: cs.onSurface,
+                    padding: const EdgeInsets.symmetric(vertical: kSpaceMD),
+                    textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

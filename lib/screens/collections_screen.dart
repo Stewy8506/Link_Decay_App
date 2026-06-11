@@ -6,7 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../data/database.dart';
 import '../models/link_status.dart';
 import '../providers/providers.dart';
+import '../services/export_service.dart';
 import '../utils/constants.dart';
+
 import '../utils/freshness.dart';
 import '../widgets/link_card.dart';
 import '../widgets/add_link_sheet.dart';
@@ -239,25 +241,43 @@ class _FoldersTab extends ConsumerWidget {
                   crossAxisCount: 2,
                   crossAxisSpacing: kSpaceMD,
                   mainAxisSpacing: kSpaceMD,
-                  childAspectRatio: 1.02, // slightly taller child aspect ratio for folder previews
+                  childAspectRatio: 1.15,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
+                    Widget card;
                     if (index == folders.length) {
                       // Create New Folder Card
-                      return _CreateFolderCard(onTap: onCreatePressed);
+                      card = _CreateFolderCard(onTap: onCreatePressed);
+                    } else {
+                      final folder = folders[index];
+                      // Compute link counts in inbox
+                      final folderInboxLinks = allLinks
+                          .where((l) => l.collectionId == folder.id && l.status == LinkStatus.inbox)
+                          .toList();
+
+                      card = _FolderCard(
+                        collection: folder,
+                        inboxCount: folderInboxLinks.length,
+                        links: folderInboxLinks,
+                      );
                     }
 
-                    final folder = folders[index];
-                    // Compute link counts in inbox
-                    final folderInboxLinks = allLinks
-                        .where((l) => l.collectionId == folder.id && l.status == LinkStatus.inbox)
-                        .toList();
-
-                    return _FolderCard(
-                      collection: folder,
-                      inboxCount: folderInboxLinks.length,
-                      links: folderInboxLinks,
+                    // Staggered-like entry animation
+                    return TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0.0, end: 1.0),
+                      duration: Duration(milliseconds: 300 + (index * 60).clamp(0, 300)),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return Opacity(
+                          opacity: value,
+                          child: Transform.translate(
+                            offset: Offset(0, 16 * (1 - value)),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: card,
                     );
                   },
                   childCount: folders.length + 1,
@@ -694,13 +714,13 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
         children: [
           // Folder back tab
           Positioned(
-            top: -4,
-            left: 12,
+            top: -7,
+            left: 14,
             child: Container(
               width: 44,
               height: 10,
               decoration: BoxDecoration(
-                color: cs.outline.withValues(alpha: 0.6),
+                color: cs.outline.withValues(alpha: 0.7),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(5),
                   topRight: Radius.circular(5),
@@ -710,13 +730,13 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
           ),
           // Stacked page effect
           Positioned(
-            top: -2,
-            left: 6,
-            right: 6,
+            top: -4,
+            left: 8,
+            right: 8,
             height: 10,
             child: Container(
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.7),
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.85),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(kRadiusMD)),
                 border: Border.all(color: cs.outline, width: 0.5),
               ),
@@ -726,14 +746,21 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    cs.surfaceContainerHighest,
+                    cs.surfaceContainerHighest.withValues(alpha: 0.82),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(kRadiusMD),
                 border: Border.all(color: cs.outline, width: 0.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? 0.2 : 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? 0.25 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -972,7 +999,28 @@ class CollectionDetailScreen extends ConsumerWidget {
         title: Text('${collection.emoji ?? "📁"} ${collection.name}'),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'Export Public Read List',
+            onPressed: () {
+              final allInbox = linksAsync.valueOrNull ?? [];
+              final folderLinks = allInbox.where((l) => l.collectionId == collection.id).toList();
+              if (folderLinks.isNotEmpty) {
+                ExportService.instance.shareCollectionAsHtml(collection, folderLinks);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Cannot export an empty folder'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
       ),
+
       body: linksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
         error: (e, _) => Center(child: Text('Error: $e')),

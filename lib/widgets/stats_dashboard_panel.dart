@@ -90,6 +90,16 @@ class StatsDashboardPanel extends ConsumerWidget {
           readActivity[6 - i] = links.where((l) => l.readAt != null && _isSameDay(l.readAt!, date)).length;
         }
 
+        // Heatmap calculation (last 28 days)
+        final dailyGoal = ref.watch(dailyReadingGoalProvider);
+        final heatmapData = List<int>.filled(28, 0);
+        final todayDateOnly = DateUtils.dateOnly(now);
+
+        for (int i = 27; i >= 0; i--) {
+          final date = todayDateOnly.subtract(Duration(days: i));
+          heatmapData[27 - i] = links.where((l) => l.readAt != null && _isSameDay(l.readAt!, date)).length;
+        }
+
         // Reading Streak
         final readDates = links
             .where((l) => l.readAt != null)
@@ -187,6 +197,23 @@ class StatsDashboardPanel extends ConsumerWidget {
                   ),
                 ],
               ),
+
+              const SizedBox(height: kSpaceSM),
+
+              // Daily Reading Heatmap Grid
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  'DAILY READING STREAK (GOAL: $dailyGoal/DAY)',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.35),
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+              _buildHeatmapGrid(cs, heatmapData, dailyGoal),
 
               const SizedBox(height: kSpaceSM),
 
@@ -337,13 +364,96 @@ class StatsDashboardPanel extends ConsumerWidget {
     );
   }
 
+  Widget _buildHeatmapGrid(ColorScheme cs, List<int> heatmapData, int dailyGoal) {
+    final weekLabels = ['3w ago', '2w ago', '1w ago', 'This wk'];
+    final dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(kRadiusSM),
+        border: Border.all(color: cs.outline, width: 0.5),
+      ),
+      padding: const EdgeInsets.all(kSpaceMD),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const SizedBox(width: 50),
+              ...List.generate(7, (i) => Expanded(
+                child: Center(
+                  child: Text(
+                    dayLabels[i],
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              )),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...List.generate(4, (weekIndex) {
+            final label = weekLabels[weekIndex];
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3.0),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 9,
+                        color: cs.onSurface.withValues(alpha: 0.45),
+                      ),
+                    ),
+                  ),
+                  ...List.generate(7, (dayIndex) {
+                    final dataIndex = weekIndex * 7 + dayIndex;
+                    final readCount = heatmapData[dataIndex];
+                    
+                    Color cellColor = cs.outline.withValues(alpha: 0.15);
+                    if (readCount >= dailyGoal) {
+                      cellColor = kFreshnessHigh;
+                    } else if (readCount > 0) {
+                      cellColor = kFreshnessHigh.withValues(alpha: 0.45);
+                    }
+
+                    return Expanded(
+                      child: Center(
+                        child: Tooltip(
+                          message: '$readCount read',
+                          child: Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: cellColor,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActivityBarChart(
     ColorScheme cs,
     List<String> labels,
     List<int> saved,
     List<int> read,
   ) {
-    // Find max value to scale heights
     int maxVal = 1;
     for (int i = 0; i < 7; i++) {
       if (saved[i] > maxVal) maxVal = saved[i];
@@ -365,49 +475,49 @@ class StatsDashboardPanel extends ConsumerWidget {
           final sVal = saved[index];
           final rVal = read[index];
 
-          // Compute heights (max height is 60px)
           final double sHt = (sVal / maxVal) * 55;
           final double rHt = (rVal / maxVal) * 55;
 
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Saved Bar (neutral slate color)
-                  Container(
-                    width: 8,
-                    height: sHt.clamp(2.0, 55.0),
-                    decoration: BoxDecoration(
-                      color: cs.onSurface.withValues(alpha: 0.15),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(2),
-                        topRight: Radius.circular(2),
+          return Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: sHt.clamp(2.0, 55.0),
+                      decoration: BoxDecoration(
+                        color: cs.onSurface.withValues(alpha: 0.15),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(2),
+                          topRight: Radius.circular(2),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 3),
-                  // Read Bar (neutral dark color)
-                  Container(
-                    width: 8,
-                    height: rHt.clamp(2.0, 55.0),
-                    decoration: BoxDecoration(
-                      color: cs.onSurface,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(2),
-                        topRight: Radius.circular(2),
+                    const SizedBox(width: 3),
+                    Container(
+                      width: 8,
+                      height: rHt.clamp(2.0, 55.0),
+                      decoration: BoxDecoration(
+                        color: cs.onSurface,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(2),
+                          topRight: Radius.circular(2),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                labels[index],
-                style: GoogleFonts.inter(fontSize: 9, color: cs.onSurface.withValues(alpha: 0.5)),
-              ),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  labels[index],
+                  style: GoogleFonts.inter(fontSize: 9, color: cs.onSurface.withValues(alpha: 0.5)),
+                ),
+              ],
+            ),
           );
         }),
       ),

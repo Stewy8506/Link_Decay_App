@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:drift/drift.dart' show Value;
+
 
 import '../data/database.dart';
 import '../providers/providers.dart';
@@ -152,6 +154,55 @@ class _LinkCardState extends ConsumerState<LinkCard> {
     }
   }
 
+  void _showPreviewDialog(double score) {
+    HapticFeedback.mediumImpact();
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close Preview',
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return _LinkPreviewDialog(
+          link: widget.link,
+          score: score,
+          onOpen: () {
+            Navigator.pop(context);
+            _quickOpenUrl();
+          },
+          onMarkRead: () {
+            Navigator.pop(context);
+            final actions = ref.read(linkActionsProvider.notifier);
+            actions.markAsRead(widget.link.id);
+            _showUndoSnackBar('Marked as read', () => actions.restoreToInbox(widget.link.id));
+          },
+          onArchive: () {
+            Navigator.pop(context);
+            final actions = ref.read(linkActionsProvider.notifier);
+            actions.archive(widget.link.id);
+            _showUndoSnackBar('Archived', () => actions.restoreToInbox(widget.link.id));
+          },
+          onSelect: () {
+            Navigator.pop(context);
+            ref.read(selectedLinkIdsProvider.notifier).state = {widget.link.id};
+          },
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutBack,
+            ),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final baseHalfLife = ref.watch(halfLifeDaysProvider);
@@ -213,9 +264,7 @@ class _LinkCardState extends ConsumerState<LinkCard> {
       onLongPress: isMultiSelect
           ? null
           : () {
-              // Enter multi-select mode
-              ref.read(selectedLinkIdsProvider.notifier).state = {widget.link.id};
-              HapticFeedback.mediumImpact();
+              _showPreviewDialog(score);
             },
       isSelected: isSelected,
       isMultiSelectMode: isMultiSelect,
@@ -340,143 +389,174 @@ class _CardContentState extends State<_CardContent> {
             borderRadius: BorderRadius.circular(kRadiusMD),
             splashColor: cs.onSurface.withValues(alpha: 0.05),
             highlightColor: cs.onSurface.withValues(alpha: 0.03),
-            child: Padding(
-              padding: const EdgeInsets.all(kSpaceMD),
-              child: Row(
-                children: [
-                  if (widget.isMultiSelectMode) ...[
-                    Checkbox(
-                      value: widget.isSelected,
-                      onChanged: (_) => widget.onTap(),
-                      activeColor: cs.onSurface,
-                      checkColor: cs.surface,
-                    ),
-                    const SizedBox(width: kSpaceSM),
-                  ],
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Top row: favicon + title + score/quick-open badge
-                        Row(
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 3.5,
+                  child: Container(
+                    color: color,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(kSpaceMD + 3.5, kSpaceMD, kSpaceMD, kSpaceMD),
+                  child: Row(
+                    children: [
+                      if (widget.isMultiSelectMode) ...[
+                        Checkbox(
+                          value: widget.isSelected,
+                          onChanged: (_) => widget.onTap(),
+                          activeColor: cs.onSurface,
+                          checkColor: cs.surface,
+                        ),
+                        const SizedBox(width: kSpaceSM),
+                      ],
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _FaviconWidget(
-                              faviconUrl: widget.link.faviconUrl,
-                              domain: widget.link.domain,
-                            ),
-                            const SizedBox(width: kSpaceMD),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: cs.onSurface,
-                                      height: 1.4,
-                                      letterSpacing: -0.1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: kSpaceXS),
-                                  Wrap(
-                                    crossAxisAlignment: WrapCrossAlignment.center,
+                            // Top row: favicon + title + score/quick-open badge
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _FaviconWidget(
+                                  faviconUrl: widget.link.faviconUrl,
+                                  domain: widget.link.domain,
+                                ),
+                                const SizedBox(width: kSpaceMD),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        widget.link.domain,
+                                        title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          color: cs.onSurface.withValues(alpha: 0.45),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: cs.onSurface,
+                                          height: 1.4,
+                                          letterSpacing: -0.1,
                                         ),
                                       ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                                        child: Text(
-                                          '·',
-                                          style: TextStyle(
-                                            color: cs.onSurface.withValues(alpha: 0.25),
-                                          ),
-                                        ),
-                                      ),
-                                      Text(
-                                        age,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          color: cs.onSurface.withValues(alpha: 0.45),
-                                        ),
-                                      ),
-                                      if (widget.link.estimatedReadMinutes != null) ...[
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 5),
-                                          child: Text(
-                                            '·',
-                                            style: TextStyle(
-                                              color: cs.onSurface.withValues(alpha: 0.25),
+                                      const SizedBox(height: kSpaceXS),
+                                      Wrap(
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [
+                                          if (widget.link.isDead) ...[
+                                            Container(
+                                              margin: const EdgeInsets.only(right: 6),
+                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: cs.errorContainer,
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                '☠️ DEAD',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: cs.onErrorContainer,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                          Text(
+                                            widget.link.domain,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: cs.onSurface.withValues(alpha: 0.45),
                                             ),
                                           ),
-                                        ),
-                                        Text(
-                                          '${widget.link.estimatedReadMinutes} min read',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            color: cs.onSurface.withValues(alpha: 0.45),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5),
+                                            child: Text(
+                                              '·',
+                                              style: TextStyle(
+                                                color: cs.onSurface.withValues(alpha: 0.25),
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ]
+                                          Text(
+                                            age,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: cs.onSurface.withValues(alpha: 0.45),
+                                            ),
+                                          ),
+                                          if (widget.link.estimatedReadMinutes != null) ...[
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5),
+                                              child: Text(
+                                                '·',
+                                                style: TextStyle(
+                                                  color: cs.onSurface.withValues(alpha: 0.25),
+                                                ),
+                                              ),
+                                            ),
+                                            Text(
+                                              '${widget.link.estimatedReadMinutes} min read',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 12,
+                                                color: cs.onSurface.withValues(alpha: 0.45),
+                                              ),
+                                            ),
+                                          ]
+                                        ],
+                                      ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: kSpaceSM),
-                            // Score badge & Quick Open icon
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                _ScoreBadge(score: widget.score, color: color),
-                                if (!widget.isMultiSelectMode) ...[
-                                  const SizedBox(height: 6),
-                                  InkWell(
-                                    onTap: widget.onQuickOpen,
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Icon(
-                                        Icons.open_in_new,
-                                        size: 14,
-                                        color: cs.onSurface.withValues(alpha: 0.4),
+                                ),
+                                const SizedBox(width: kSpaceSM),
+                                // Score badge & Quick Open icon
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    _ScoreBadge(score: widget.score, color: color),
+                                    if (!widget.isMultiSelectMode) ...[
+                                      const SizedBox(height: 6),
+                                      InkWell(
+                                        onTap: widget.onQuickOpen,
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(4),
+                                          child: Icon(
+                                            Icons.open_in_new,
+                                            size: 14,
+                                            color: cs.onSurface.withValues(alpha: 0.4),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ]
+                                    ]
+                                  ],
+                                ),
                               ],
                             ),
+
+                            const SizedBox(height: kSpaceMD),
+
+                            // Freshness bar
+                            FreshnessBar(score: widget.score, height: 3),
+
+                            if (widget.isSnoozed) ...[
+                              const SizedBox(height: kSpaceSM),
+                              _SnoozeBadge(snoozedUntil: widget.link.snoozedUntil!),
+                            ],
+
+                            if (widget.link.tags.isNotEmpty) ...[
+                              const SizedBox(height: kSpaceSM),
+                              _TagsRow(tags: widget.link.tags),
+                            ],
                           ],
                         ),
-
-                        const SizedBox(height: kSpaceMD),
-
-                        // Freshness bar
-                        FreshnessBar(score: widget.score, height: 3),
-
-                        if (widget.isSnoozed) ...[
-                          const SizedBox(height: kSpaceSM),
-                          _SnoozeBadge(snoozedUntil: widget.link.snoozedUntil!),
-                        ],
-
-                        if (widget.link.tags.isNotEmpty) ...[
-                          const SizedBox(height: kSpaceSM),
-                          _TagsRow(tags: widget.link.tags),
-                        ],
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -497,19 +577,23 @@ class _FaviconWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      width: 36,
-      height: 36,
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
-        color: cs.outline.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(8),
+        color: cs.outline.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
       ),
       clipBehavior: Clip.antiAlias,
-      child: faviconUrl != null
+      child: faviconUrl != null && faviconUrl!.isNotEmpty
           ? Image.network(
               faviconUrl!,
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return const _ShimmerPlaceholder(width: 40, height: 40);
+              },
               errorBuilder: (context, error, stackTrace) => _fallback(context),
             )
           : _fallback(context),
@@ -523,8 +607,8 @@ class _FaviconWidget extends StatelessWidget {
       child: Text(
         letter,
         style: GoogleFonts.inter(
-          color: cs.onSurface.withValues(alpha: 0.4),
-          fontSize: 15,
+          color: cs.onSurface.withValues(alpha: 0.45),
+          fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -677,6 +761,356 @@ class _SwipeBackground extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ShimmerPlaceholder extends StatefulWidget {
+  const _ShimmerPlaceholder({required this.width, required this.height});
+  final double width;
+  final double height;
+
+  @override
+  State<_ShimmerPlaceholder> createState() => _ShimmerPlaceholderState();
+}
+
+class _ShimmerPlaceholderState extends State<_ShimmerPlaceholder>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final baseColor = cs.surfaceContainer;
+    final highlightColor = cs.surfaceContainerHighest;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [baseColor, highlightColor, baseColor],
+              stops: const [0.1, 0.5, 0.9],
+              begin: Alignment(-1.0 + _controller.value * 2, -0.3),
+              end: Alignment(1.0 + _controller.value * 2, 0.3),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LinkPreviewDialog extends StatelessWidget {
+  const _LinkPreviewDialog({
+    required this.link,
+    required this.score,
+    required this.onOpen,
+    required this.onMarkRead,
+    required this.onArchive,
+    required this.onSelect,
+  });
+
+  final Link link;
+  final double score;
+  final VoidCallback onOpen;
+  final VoidCallback onMarkRead;
+  final VoidCallback onArchive;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final now = DateTime.now();
+    final age = ageLabel(link.createdAt, now);
+    final color = freshnessColor(score);
+    final title = link.title ?? link.domain;
+
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(kSpaceLG),
+        constraints: const BoxConstraints(maxWidth: 450),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(kRadiusLG),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: cs.surface.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(kRadiusLG),
+                border: Border.all(
+                  color: cs.outline.withValues(alpha: 0.2),
+                  width: 0.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (link.ogImageUrl != null && link.ogImageUrl!.isNotEmpty) ...[
+                      AspectRatio(
+                        aspectRatio: 1.91,
+                        child: Image.network(
+                          link.ogImageUrl!,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const _ShimmerPlaceholder(width: double.infinity, height: double.infinity);
+                          },
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: cs.outline.withValues(alpha: 0.1),
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              size: 40,
+                              color: cs.onSurface.withValues(alpha: 0.2),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.all(kSpaceLG),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _FaviconWidget(faviconUrl: link.faviconUrl, domain: link.domain),
+                              const SizedBox(width: kSpaceMD),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      link.domain,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: cs.onSurface.withValues(alpha: 0.5),
+                                      ),
+                                    ),
+                                    Text(
+                                      age,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        color: cs.onSurface.withValues(alpha: 0.4),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _ScoreBadge(score: score, color: color),
+                            ],
+                          ),
+                          const SizedBox(height: kSpaceMD),
+                          Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurface,
+                              height: 1.3,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          if (link.estimatedReadMinutes != null || link.isDead) ...[
+                            const SizedBox(height: kSpaceSM),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                if (link.estimatedReadMinutes != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: cs.outline.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '⏱️ ${link.estimatedReadMinutes} min read',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: cs.onSurface.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ),
+                                if (link.isDead)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: cs.errorContainer.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+                                    ),
+                                    child: Text(
+                                      '☠️ Dead Link',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: cs.error,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                          if (link.notes != null && link.notes!.isNotEmpty) ...[
+                            const SizedBox(height: kSpaceMD),
+                            Text(
+                              'Notes',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurface.withValues(alpha: 0.6),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(kSpaceMD),
+                              decoration: BoxDecoration(
+                                color: cs.outline.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(kRadiusSM),
+                                border: Border.all(
+                                  color: cs.outline.withValues(alpha: 0.1),
+                                ),
+                              ),
+                              child: Text(
+                                link.notes!,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: cs.onSurface.withValues(alpha: 0.85),
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: kSpaceLG),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextButton.icon(
+                                  onPressed: onOpen,
+                                  icon: const Icon(Icons.open_in_new, size: 16),
+                                  label: const Text('Open'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: cs.primary,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    backgroundColor: cs.primary.withValues(alpha: 0.08),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: kSpaceSM),
+                              Expanded(
+                                child: TextButton.icon(
+                                  onPressed: onMarkRead,
+                                  icon: const Icon(Icons.check_circle_outline, size: 16),
+                                  label: const Text('Read'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: kSwipeReadColor,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    backgroundColor: kSwipeReadColor.withValues(alpha: 0.08),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: kSpaceSM),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextButton.icon(
+                                  onPressed: onArchive,
+                                  icon: const Icon(Icons.archive_outlined, size: 16),
+                                  label: const Text('Archive'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: cs.onSurface.withValues(alpha: 0.7),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    backgroundColor: cs.outline.withValues(alpha: 0.1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: kSpaceSM),
+                              Expanded(
+                                child: TextButton.icon(
+                                  onPressed: onSelect,
+                                  icon: const Icon(Icons.checklist_outlined, size: 16),
+                                  label: const Text('Select'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: cs.onSurface.withValues(alpha: 0.7),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    backgroundColor: cs.outline.withValues(alpha: 0.1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: kSpaceMD),
+                          Center(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(
+                                'Dismiss',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: cs.onSurface.withValues(alpha: 0.4),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

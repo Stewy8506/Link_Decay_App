@@ -35,6 +35,9 @@ class Links extends Table {
   // Phase 8: Per-link decay override
   RealColumn get customHalfLifeDays => real().nullable()();
 
+  // V3 Features
+  BoolColumn get isDead => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -102,6 +105,9 @@ class AppSettings extends Table {
   TextColumn get domainHalfLifeOverrides => text().nullable()(); // JSON serialized Map<String, double>
   TextColumn get tagHalfLifeOverrides => text().nullable()(); // JSON serialized Map<String, double>
 
+  // V3 Features
+  IntColumn get dailyReadingGoal => integer().withDefault(const Constant(2))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -113,7 +119,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -143,6 +149,11 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(collections);
           await m.createTable(customFilters);
           await m.createTable(linkHighlights);
+        }
+        if (from < 3) {
+          // V3 Migration
+          await m.addColumn(links, links.isDead);
+          await m.addColumn(appSettings, appSettings.dailyReadingGoal);
         }
       },
     );
@@ -236,6 +247,13 @@ class AppDatabase extends _$AppDatabase {
         ogImageUrl: ogImageUrl != null ? Value(ogImageUrl) : const Value.absent(),
         estimatedReadMinutes: estimatedReadMinutes != null ? Value(estimatedReadMinutes) : const Value.absent(),
       ),
+    );
+  }
+
+  /// Update dead status
+  Future<void> updateLinkDeadStatus(String id, bool isDead) async {
+    await (update(links)..where((l) => l.id.equals(id))).write(
+      LinksCompanion(isDead: Value(isDead)),
     );
   }
 
