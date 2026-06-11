@@ -1,4 +1,4 @@
-package com.linkshelf.app
+package com.linkshelf.decay
 
 import io.flutter.embedding.android.FlutterActivity
 

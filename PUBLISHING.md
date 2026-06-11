@@ -32,7 +32,7 @@ Before starting, ensure you have:
 
 Double-check that the application's unique ID and settings are correctly configured in `android/app/build.gradle.kts`:
 
-1.  **Application ID**: Ensure `applicationId` is set to `com.linkshelf.app`.
+1.  **Application ID**: Ensure `applicationId` is set to `com.linkshelf.decay`.
 2.  **Target SDK Version**: Google Play requires target SDK version 34 (Android 14) or higher.
     *   `compileSdk = 34`
     *   `targetSdk = 34`

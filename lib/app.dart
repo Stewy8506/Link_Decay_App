@@ -12,6 +12,7 @@ import 'screens/settings_screen.dart';
 import 'utils/constants.dart';
 import 'utils/google_fonts.dart';
 import 'widgets/add_link_sheet.dart';
+import 'widgets/custom_loading_screen.dart';
 
 class LinkShelfApp extends ConsumerWidget {
   const LinkShelfApp({super.key});
@@ -52,12 +53,7 @@ class LinkShelfApp extends ConsumerWidget {
       home: onboardingCompleted.when(
         data: (completed) => completed ? const _AppShell() : const OnboardingScreen(),
         error: (error, stackTrace) => const _AppShell(),
-        loading: () => Builder(
-          builder: (context) => Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            body: const SizedBox.shrink(),
-          ),
-        ),
+        loading: () => const CustomLoadingScreen(),
       ),
     );
   }
