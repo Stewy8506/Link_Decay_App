@@ -1,5 +1,5 @@
 name: link_decay_app
-description: "ReadDecay — a local-first reading list with time-based freshness decay."
+description: "LinkShelf — a local-first reading list with time-based freshness decay."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -63,7 +63,7 @@ flutter:
 # Launcher icons configuration
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: true
+  ios: false
   image_path: "assets/icon/app_icon.png"
   adaptive_icon_background: "#FAFAF9" # Matches warm stone background
   adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"

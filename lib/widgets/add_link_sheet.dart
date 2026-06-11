@@ -184,7 +184,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
             controller: _titleController,
             decoration: const InputDecoration(
               labelText: 'Custom Name (Optional)',
-              hintText: 'e.g. ReadDecay Source Code',
+              hintText: 'e.g. LinkShelf Source Code',
             ),
             style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
             textCapitalization: TextCapitalization.sentences,

@@ -80,10 +80,10 @@ class ExportService {
     final jsonString = const JsonEncoder.withIndent('  ').convert(data);
 
     final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/readdecay_backup.json');
+    final file = File('${dir.path}/linkshelf_backup.json');
     await file.writeAsString(jsonString);
 
-    await Share.shareXFiles([XFile(file.path)], text: 'ReadDecay Backup');
+    await Share.shareXFiles([XFile(file.path)], text: 'LinkShelf Backup');
   }
 
   /// Exports data as Netscape HTML Bookmarks
@@ -96,7 +96,7 @@ class ExportService {
       ..writeln('     It will be read and imported by browser bookmark tools. -->')
       ..writeln('<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">')
       ..writeln('<TITLE>Bookmarks</TITLE>')
-      ..writeln('<H1>ReadDecay Bookmarks</H1>')
+      ..writeln('<H1>LinkShelf Bookmarks</H1>')
       ..writeln('<DL><p>');
 
     for (final link in links) {
@@ -108,10 +108,10 @@ class ExportService {
     buffer.writeln('</DL><p>');
 
     final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/readdecay_bookmarks.html');
+    final file = File('${dir.path}/linkshelf_bookmarks.html');
     await file.writeAsString(buffer.toString());
 
-    await Share.shareXFiles([XFile(file.path)], text: 'ReadDecay Bookmarks');
+    await Share.shareXFiles([XFile(file.path)], text: 'LinkShelf Bookmarks');
   }
 
   /// Imports from JSON string

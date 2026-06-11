@@ -50,7 +50,7 @@ class MetadataService {
             Uri.parse(url),
             headers: {
               'User-Agent':
-                  'Mozilla/5.0 (compatible; ReadDecay/1.0; +https://readdecay.app)',
+                  'Mozilla/5.0 (compatible; LinkShelf/1.0; +https://linkshelf.app)',
             },
           )
           .timeout(const Duration(seconds: 10));

@@ -9,8 +9,8 @@ import 'screens/inbox_screen.dart';
 import 'screens/settings_screen.dart';
 import 'utils/constants.dart';
 
-class ReadDecayApp extends ConsumerWidget {
-  const ReadDecayApp({super.key});
+class LinkShelfApp extends ConsumerWidget {
+  const LinkShelfApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

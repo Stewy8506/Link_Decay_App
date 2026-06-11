@@ -1,6 +1,6 @@
 # Google Play Store Publishing Guide
 
-This guide describes the step-by-step procedure required to configure release credentials, generate assets, compile production-ready bundles, and publish **ReadDecay** on the Google Play Store.
+This guide describes the step-by-step procedure required to configure release credentials, generate assets, compile production-ready bundles, and publish **LinkShelf** on the Google Play Store.
 
 ---
 
@@ -68,7 +68,7 @@ flutter build appbundle --release
 
 1. **Create an Application**: Log in to [Google Play Console](https://play.google.com/console), click **Create App**, and fill out the basic metadata.
 2. **Setup Task List**: Complete the required steps in the console (Declare permissions, specify Content Rating, choose Category).
-   - *Note*: ReadDecay uses local storage. Declare that the app does not collect user data to simplify the Data Safety form.
+   - *Note*: LinkShelf uses local storage. Declare that the app does not collect user data to simplify the Data Safety form.
 3. **Upload Bundle**: Create a release under **Testing** (Internal or Closed tracks) or **Production** and upload `app-release.aab`.
 4. **App Store Listing**:
    - **Screenshots**: Prepare at least 4-8 screenshots showing the Inbox, Stacked Folders grid, and Stats Dashboard.

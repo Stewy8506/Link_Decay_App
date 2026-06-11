@@ -57,5 +57,5 @@ const kDurationNormal = Duration(milliseconds: 250);
 const kDurationSlow   = Duration(milliseconds: 400);
 
 // ─── App Info ──────────────────────────────────────────────────────────────
-const kAppName    = 'ReadDecay';
+const kAppName    = 'LinkShelf';
 const kAppVersion = '1.0.0';

@@ -14,7 +14,7 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const _channelId = 'readdecay_daily';
+  static const _channelId = 'linkshelf_daily';
   static const _channelName = 'Daily Freshness Check';
   static const _channelDesc =
       'Notifies you when saved links are getting stale.';
@@ -124,7 +124,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       _notificationId,
-      'ReadDecay',
+      'LinkShelf',
       body,
       scheduledDate,
       details,

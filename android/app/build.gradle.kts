@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "com.readdecay.app"
+    namespace = "com.linkshelf.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -39,7 +39,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.readdecay.app"
+        applicationId = "com.linkshelf.app"
         // flutter_local_notifications v18+ requires minSdk 21
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion

@@ -24,7 +24,7 @@
 
 <br/>
 
-> **ReadDecay** is a local-first reading list manager with a twist — every link you save has a **freshness score** that exponentially decays over time. The longer you wait, the staler it gets. Links you haven't read sort to the top, glowing red, demanding your attention. Read them, snooze them, organize them, or watch them fade.
+> **LinkShelf** is a local-first reading list manager with a twist — every link you save has a **freshness score** that exponentially decays over time. The longer you wait, the staler it gets. Links you haven't read sort to the top, glowing red, demanding your attention. Read them, snooze them, organize them, or watch them fade.
 
 <br/>
 
@@ -34,7 +34,7 @@
 
 ## ✦ The Concept
 
-Most read-later apps treat your reading list like an infinite warehouse — links pile up forever, sorted by date, never asking you to act. **ReadDecay treats your reading list like a perishable.** Every link has a shelf life.
+Most read-later apps treat your reading list like an infinite warehouse — links pile up forever, sorted by date, never asking you to act. **LinkShelf treats your reading list like a perishable.** Every link has a shelf life.
 
 The core mechanic is **exponential decay**:
 
@@ -361,7 +361,7 @@ flutter run
 
 ## ✦ Android Share Sheet Setup
 
-ReadDecay registers itself as a handler for `text/plain` share intents. Once installed, you'll see **"ReadDecay"** appear in the Android share sheet from any app (Chrome, Firefox, Twitter, etc.).
+LinkShelf registers itself as a handler for `text/plain` share intents. Once installed, you'll see **"LinkShelf"** appear in the Android share sheet from any app (Chrome, Firefox, Twitter, etc.).
 
 The app handles two scenarios:
 1. **App is open** — the shared URL is saved immediately
@@ -371,7 +371,7 @@ The app handles two scenarios:
 
 ## ✦ Notification Setup
 
-On first launch, ReadDecay requests notification permission. If granted:
+On first launch, LinkShelf requests notification permission. If granted:
 - A daily check runs at **9:00 AM local time**
 - If any inbox links are below the freshness threshold, a notification is sent
 - The notification survives device reboots via the `BOOT_COMPLETED` receiver
@@ -446,7 +446,7 @@ For details on generating release keys, configuring credentials, generating cust
 ```
 MIT License
 
-Copyright (c) 2026 ReadDecay Contributors
+Copyright (c) 2026 LinkShelf Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

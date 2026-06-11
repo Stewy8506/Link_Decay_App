@@ -90,6 +90,6 @@ class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return const ReadDecayApp();
+    return const LinkShelfApp();
   }
 }

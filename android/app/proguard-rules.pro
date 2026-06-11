@@ -1,4 +1,4 @@
-# ProGuard Rules for ReadDecay Release Build
+# ProGuard Rules for LinkShelf Release Build
 
 # Keep Drift database classes, generated components, and schema tables
 -keep class * extends drift.GeneratedDatabase { *; }
