@@ -6,6 +6,7 @@ import 'app.dart';
 import 'providers/providers.dart';
 import 'services/notification_service.dart';
 import 'services/share_intent_service.dart';
+import 'utils/constants.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,12 +17,13 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set system UI overlay style
+  // Set initial system UI overlay style (dark mode default).
+  // Per-screen overrides are handled by AppBarTheme.systemOverlayStyle.
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF141416),
+      systemNavigationBarColor: kSurfaceDark,
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );

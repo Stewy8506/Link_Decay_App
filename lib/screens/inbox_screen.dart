@@ -23,16 +23,18 @@ class InboxScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final linksAsync = ref.watch(inboxLinksProvider);
     final halfLife = ref.watch(halfLifeDaysProvider);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: kBackgroundDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         slivers: [
           // ── App Bar ──────────────────────────────────────────────────
           SliverAppBar(
             pinned: true,
-            backgroundColor: kBackgroundDark,
+            backgroundColor: theme.scaffoldBackgroundColor,
             expandedHeight: 100,
             collapsedHeight: 60,
             flexibleSpace: FlexibleSpaceBar(
@@ -44,10 +46,10 @@ class InboxScreen extends ConsumerWidget {
                   Text(
                     'Inbox',
                     style: GoogleFonts.inter(
-                      fontSize: 26,
+                      fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      color: kTextPrimary,
-                      letterSpacing: -0.6,
+                      color: cs.onSurface,
+                      letterSpacing: -0.3,
                       height: 1.0,
                     ),
                   ),
@@ -55,7 +57,7 @@ class InboxScreen extends ConsumerWidget {
               ),
             ),
             actions: [
-              // Half-life indicator
+              // Half-life indicator / link count badge
               linksAsync.when(
                 data: (links) {
                   if (links.isEmpty) return const SizedBox.shrink();
@@ -68,15 +70,15 @@ class InboxScreen extends ConsumerWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: kCardDark,
+                          color: cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: kBorderDark),
+                          border: Border.all(color: cs.outline),
                         ),
                         child: Text(
                           '${links.length} links',
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: kTextSecondary,
+                            color: cs.onSurface.withValues(alpha: 0.5),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -90,7 +92,7 @@ class InboxScreen extends ConsumerWidget {
               IconButton(
                 onPressed: () => _showAddSheet(context),
                 icon: const Icon(Icons.add, size: 24),
-                color: kTextPrimary,
+                color: cs.onSurface,
                 tooltip: 'Add link',
               ),
               const SizedBox(width: kSpaceXS),
@@ -103,13 +105,17 @@ class InboxScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceSM),
               child: Row(
                 children: [
-                  const Icon(Icons.timer_outlined, size: 14, color: kTextTertiary),
+                  Icon(
+                    Icons.timer_outlined,
+                    size: 13,
+                    color: cs.onSurface.withValues(alpha: 0.3),
+                  ),
                   const SizedBox(width: 5),
                   Text(
                     'Half-life: ${halfLife.toStringAsFixed(0)} days · Most stale on top',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: kTextTertiary,
+                      color: cs.onSurface.withValues(alpha: 0.3),
                     ),
                   ),
                 ],
@@ -120,7 +126,7 @@ class InboxScreen extends ConsumerWidget {
           // ── Link List ─────────────────────────────────────────────────
           linksAsync.when(
             loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: kAccent)),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
             ),
             error: (e, _) => SliverFillRemaining(
               child: _ErrorState(error: e.toString()),
@@ -145,11 +151,13 @@ class InboxScreen extends ConsumerWidget {
         ],
       ),
 
-      // ── FAB ──────────────────────────────────────────────────────────
+      // ── FAB — inverted neutral style ──────────────────────────────────
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddSheet(context),
-        backgroundColor: kAccent,
-        foregroundColor: Colors.white,
+        // Inverted: text-color background, scaffold-color foreground
+        // This creates a high-contrast, premium, zero-color button
+        backgroundColor: cs.onSurface,
+        foregroundColor: cs.surface,
         elevation: 0,
         icon: const Icon(Icons.add, size: 20),
         label: Text(
@@ -171,6 +179,8 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(kSpaceXXL),
@@ -181,10 +191,15 @@ class _EmptyState extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: kAccent.withValues(alpha: 0.08),
+                // Neutral container — no accent color
+                color: cs.outline.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(kRadiusXL),
               ),
-              child: const Icon(Icons.inbox_outlined, color: kAccent, size: 32),
+              child: Icon(
+                Icons.inbox_outlined,
+                color: cs.onSurface.withValues(alpha: 0.3),
+                size: 30,
+              ),
             ),
             const SizedBox(height: kSpaceLG),
             Text(
@@ -192,7 +207,7 @@ class _EmptyState extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: kTextPrimary,
+                color: cs.onSurface,
                 letterSpacing: -0.3,
               ),
             ),
@@ -201,7 +216,7 @@ class _EmptyState extends StatelessWidget {
               'Save links to start tracking their freshness.\nTap + or share from any app.',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: kTextSecondary,
+                color: cs.onSurface.withValues(alpha: 0.4),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -224,7 +239,10 @@ class _ErrorState extends StatelessWidget {
         padding: const EdgeInsets.all(kSpaceXXL),
         child: Text(
           'Error: $error',
-          style: GoogleFonts.inter(color: kFreshnessLow, fontSize: 14),
+          style: GoogleFonts.inter(
+            color: kFreshnessLow,
+            fontSize: 14,
+          ),
           textAlign: TextAlign.center,
         ),
       ),

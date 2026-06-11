@@ -20,16 +20,18 @@ class ArchiveScreen extends ConsumerWidget {
     final statusFilter = ref.watch(archiveStatusFilterProvider);
     final allTags = ref.watch(allTagsProvider);
     final tagFilter = ref.watch(archiveTagFilterProvider);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: kBackgroundDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         slivers: [
           // ── App Bar ──────────────────────────────────────────────────
           SliverAppBar(
             pinned: true,
-            backgroundColor: kBackgroundDark,
+            backgroundColor: theme.scaffoldBackgroundColor,
             expandedHeight: 100,
             collapsedHeight: 60,
             flexibleSpace: FlexibleSpaceBar(
@@ -37,10 +39,10 @@ class ArchiveScreen extends ConsumerWidget {
               title: Text(
                 'Archive',
                 style: GoogleFonts.inter(
-                  fontSize: 26,
+                  fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: kTextPrimary,
-                  letterSpacing: -0.6,
+                  color: cs.onSurface,
+                  letterSpacing: -0.3,
                   height: 1.0,
                 ),
               ),
@@ -54,14 +56,18 @@ class ArchiveScreen extends ConsumerWidget {
               child: TextField(
                 onChanged: (v) =>
                     ref.read(archiveSearchQueryProvider.notifier).state = v,
-                style: GoogleFonts.inter(fontSize: 15, color: kTextPrimary),
+                style: GoogleFonts.inter(fontSize: 15, color: cs.onSurface),
                 decoration: InputDecoration(
                   hintText: 'Search titles, domains, tags…',
-                  prefixIcon: const Icon(Icons.search, size: 20, color: kTextTertiary),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    size: 20,
+                    color: cs.onSurface.withValues(alpha: 0.3),
+                  ),
                   suffixIcon: query.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear, size: 18),
-                          color: kTextTertiary,
+                          color: cs.onSurface.withValues(alpha: 0.3),
                           onPressed: () => ref
                               .read(archiveSearchQueryProvider.notifier)
                               .state = '',
@@ -106,10 +112,10 @@ class ArchiveScreen extends ConsumerWidget {
                   if (allTags.isNotEmpty) ...[
                     const SizedBox(width: kSpaceMD),
                     Container(
-                      width: 1,
+                      width: 0.5,
                       height: 20,
                       margin: const EdgeInsets.symmetric(vertical: 8),
-                      color: kBorderDark,
+                      color: cs.outline,
                     ),
                     const SizedBox(width: kSpaceMD),
                     ...allTags.map(
@@ -144,7 +150,7 @@ class ArchiveScreen extends ConsumerWidget {
                 '${links.length} ${links.length == 1 ? 'link' : 'links'}',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: kTextTertiary,
+                  color: cs.onSurface.withValues(alpha: 0.3),
                 ),
               ),
             ),
@@ -178,6 +184,7 @@ class _ArchiveCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final halfLife = ref.watch(halfLifeDaysProvider);
+    final cs = Theme.of(context).colorScheme;
     final now = DateTime.now();
     final score = computeFreshness(
       createdAt: link.createdAt,
@@ -189,112 +196,112 @@ class _ArchiveCard extends ConsumerWidget {
     final age = ageLabel(link.createdAt, now);
     final isRead = link.status == LinkStatus.read;
 
-    return GestureDetector(
-      onTap: () async {
-        final uri = Uri.tryParse(link.url);
-        if (uri != null && await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceSM),
-        decoration: BoxDecoration(
-          color: kCardDark,
-          borderRadius: BorderRadius.circular(kRadiusMD),
-          border: Border.all(color: kBorderDark, width: 0.5),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(kSpaceMD),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Status dot
-              Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: isRead ? kFreshnessHigh : kSwipeArchiveColor,
-                    shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () async {
+          final uri = Uri.tryParse(link.url);
+          if (uri != null && await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        },
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceSM),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(kRadiusMD),
+            border: Border.all(color: cs.outline, width: 0.5),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(kSpaceMD),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Neutral status dot — no green/blue
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: isRead
+                          ? cs.onSurface.withValues(alpha: 0.5)   // dimmer = read
+                          : cs.onSurface.withValues(alpha: 0.25), // dimmest = archived
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: kSpaceMD),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: kTextPrimary,
-                        height: 1.35,
+                const SizedBox(width: kSpaceMD),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: cs.onSurface,
+                          height: 1.4,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: kSpaceXS),
-                    Row(
-                      children: [
-                        Text(
-                          link.domain,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: kTextSecondary,
+                      const SizedBox(height: kSpaceXS),
+                      Row(
+                        children: [
+                          Text(
+                            link.domain,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: cs.onSurface.withValues(alpha: 0.45),
+                            ),
                           ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 5),
-                          child: Text('·', style: TextStyle(color: kTextTertiary)),
-                        ),
-                        Text(
-                          age,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: kTextSecondary,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 5),
+                            child: Text(
+                              '·',
+                              style: TextStyle(
+                                color: cs.onSurface.withValues(alpha: 0.25),
+                              ),
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                          Text(
+                            age,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: cs.onSurface.withValues(alpha: 0.45),
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: (isRead ? kFreshnessHigh : kSwipeArchiveColor)
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
+                          const Spacer(),
+                          // Neutral text label — no colored badge
+                          Text(
                             isRead ? 'Read' : 'Archived',
                             style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: isRead ? kFreshnessHigh : kSwipeArchiveColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: cs.onSurface.withValues(alpha: 0.35),
                             ),
+                          ),
+                        ],
+                      ),
+                      if (link.tags.isNotEmpty) ...[
+                        const SizedBox(height: kSpaceXS),
+                        Text(
+                          link.tags.split(',').map((t) => '#${t.trim()}').join(' '),
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: cs.onSurface.withValues(alpha: 0.3),
                           ),
                         ),
                       ],
-                    ),
-                    if (link.tags.isNotEmpty) ...[
-                      const SizedBox(height: kSpaceXS),
-                      Text(
-                        link.tags.split(',').map((t) => '#${t.trim()}').join(' '),
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: kTextTertiary,
-                        ),
-                      ),
+                      const SizedBox(height: kSpaceSM),
+                      FreshnessBar(score: score, height: 2),
                     ],
-                    const SizedBox(height: kSpaceSM),
-                    FreshnessBar(score: score, height: 2),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -319,13 +326,17 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return AnimatedContainer(
       duration: kDurationFast,
       decoration: BoxDecoration(
-        color: selected ? kAccent.withValues(alpha: 0.15) : kCardDark,
+        // Selected: inverted neutral — onSurface bg, surface text
+        // Unselected: transparent with border
+        color: selected ? cs.onSurface : Colors.transparent,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: selected ? kAccent.withValues(alpha: 0.5) : kBorderDark,
+          color: selected ? Colors.transparent : cs.outline,
         ),
       ),
       child: InkWell(
@@ -338,7 +349,9 @@ class _FilterChip extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? kAccent : kTextSecondary,
+              color: selected
+                  ? cs.surface       // Light text on dark chip
+                  : cs.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -354,6 +367,8 @@ class _EmptyArchive extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(kSpaceXXL),
@@ -364,10 +379,14 @@ class _EmptyArchive extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: kBorderDark,
+                color: cs.outline.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(kRadiusXL),
               ),
-              child: const Icon(Icons.archive_outlined, color: kTextTertiary, size: 32),
+              child: Icon(
+                Icons.archive_outlined,
+                color: cs.onSurface.withValues(alpha: 0.3),
+                size: 30,
+              ),
             ),
             const SizedBox(height: kSpaceLG),
             Text(
@@ -375,7 +394,7 @@ class _EmptyArchive extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: kTextPrimary,
+                color: cs.onSurface,
                 letterSpacing: -0.3,
               ),
             ),
@@ -384,7 +403,7 @@ class _EmptyArchive extends StatelessWidget {
               'Links you read or archive will appear here.',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: kTextSecondary,
+                color: cs.onSurface.withValues(alpha: 0.4),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,

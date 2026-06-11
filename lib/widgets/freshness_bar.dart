@@ -4,6 +4,7 @@ import '../utils/constants.dart';
 import '../utils/freshness.dart';
 
 /// An animated, color-coded horizontal bar indicating freshness score (0–1).
+/// This is the primary intentional color element in the UI.
 class FreshnessBar extends StatelessWidget {
   const FreshnessBar({
     super.key,
@@ -22,6 +23,7 @@ class FreshnessBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = freshnessColor(score);
     final label = freshnessLabel(score);
+    final cs = Theme.of(context).colorScheme;
 
     final bar = ClipRRect(
       borderRadius: BorderRadius.circular(height),
@@ -29,13 +31,13 @@ class FreshnessBar extends StatelessWidget {
         builder: (context, constraints) {
           return Stack(
             children: [
-              // Background track
+              // Background track — neutral border color, not the freshness tint
               Container(
                 height: height,
                 width: constraints.maxWidth,
-                color: color.withValues(alpha: 0.12),
+                color: cs.outline.withValues(alpha: 0.5),
               ),
-              // Filled portion
+              // Filled portion — the one colorful element
               AnimatedContainer(
                 duration: animate ? kDurationSlow : Duration.zero,
                 curve: Curves.easeOutCubic,

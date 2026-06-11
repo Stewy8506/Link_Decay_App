@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,6 +25,7 @@ class _LinkCardState extends ConsumerState<LinkCard> {
   static const _dismissThreshold = 0.35;
 
   void _openUrl() async {
+    HapticFeedback.lightImpact();
     final uri = Uri.tryParse(widget.link.url);
     if (uri != null && await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -31,6 +33,7 @@ class _LinkCardState extends ConsumerState<LinkCard> {
   }
 
   void _showSnooze() {
+    HapticFeedback.mediumImpact();
     showModalBottomSheet<void>(
       context: context,
       builder: (_) => SnoozeSheet(linkId: widget.link.id),
@@ -40,10 +43,12 @@ class _LinkCardState extends ConsumerState<LinkCard> {
   }
 
   Future<bool> _confirmDismiss(DismissDirection dir) async {
+    HapticFeedback.lightImpact();
     return true;
   }
 
   void _onDismissed(DismissDirection dir) {
+    HapticFeedback.mediumImpact();
     final actions = ref.read(linkActionsProvider.notifier);
     if (dir == DismissDirection.startToEnd) {
       actions.markAsRead(widget.link.id);
@@ -62,7 +67,7 @@ class _LinkCardState extends ConsumerState<LinkCard> {
           content: Text(message),
           action: SnackBarAction(
             label: 'Undo',
-            textColor: kAccent,
+            // Neutral: uses theme's actionTextColor (kTextPrimary)
             onPressed: onUndo,
           ),
           duration: const Duration(seconds: 3),
@@ -103,14 +108,12 @@ class _LinkCardState extends ConsumerState<LinkCard> {
         icon: Icons.archive_outlined,
         label: 'Archive',
       ),
-      child: GestureDetector(
+      child: _CardContent(
+        link: widget.link,
+        score: score,
+        isSnoozed: isSnoozed,
         onTap: _openUrl,
         onLongPress: _showSnooze,
-        child: _CardContent(
-          link: widget.link,
-          score: score,
-          isSnoozed: isSnoozed,
-        ),
       ),
     );
   }
@@ -123,14 +126,19 @@ class _CardContent extends StatelessWidget {
     required this.link,
     required this.score,
     required this.isSnoozed,
+    required this.onTap,
+    required this.onLongPress,
   });
 
   final Link link;
   final double score;
   final bool isSnoozed;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final now = DateTime.now();
     final age = ageLabel(link.createdAt, now);
     final color = freshnessColor(score);
@@ -139,94 +147,108 @@ class _CardContent extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 5),
       decoration: BoxDecoration(
-        color: kCardDark,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(kRadiusMD),
-        border: Border.all(color: kBorderDark, width: 0.5),
+        border: Border.all(color: cs.outline, width: 0.5),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(kSpaceMD),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top row: favicon + title + score badge
-            Row(
+      clipBehavior: Clip.antiAlias,
+      // Material + InkWell for proper ripple on tap
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(kRadiusMD),
+          splashColor: cs.onSurface.withValues(alpha: 0.05),
+          highlightColor: cs.onSurface.withValues(alpha: 0.03),
+          child: Padding(
+            padding: const EdgeInsets.all(kSpaceMD),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Favicon
-                _FaviconWidget(
-                  faviconUrl: link.faviconUrl,
-                  domain: link.domain,
-                ),
-                const SizedBox(width: kSpaceMD),
-                // Title + meta
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: kTextPrimary,
-                          height: 1.35,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                      const SizedBox(height: kSpaceXS),
-                      Row(
+                // Top row: favicon + title + score badge
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Favicon
+                    _FaviconWidget(
+                      faviconUrl: link.faviconUrl,
+                      domain: link.domain,
+                    ),
+                    const SizedBox(width: kSpaceMD),
+                    // Title + meta
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            link.domain,
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: kTextSecondary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: cs.onSurface,
+                              height: 1.4,
+                              letterSpacing: -0.1,
                             ),
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 5),
-                            child: Text(
-                              '·',
-                              style: TextStyle(color: kTextTertiary),
-                            ),
-                          ),
-                          Text(
-                            age,
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: kTextSecondary,
-                            ),
+                          const SizedBox(height: kSpaceXS),
+                          Row(
+                            children: [
+                              Text(
+                                link.domain,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: cs.onSurface.withValues(alpha: 0.45),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 5),
+                                child: Text(
+                                  '·',
+                                  style: TextStyle(
+                                    color: cs.onSurface.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                age,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: cs.onSurface.withValues(alpha: 0.45),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: kSpaceSM),
+                    // Score badge — this keeps its freshness color intentionally
+                    _ScoreBadge(score: score, color: color),
+                  ],
                 ),
-                const SizedBox(width: kSpaceSM),
-                // Score badge
-                _ScoreBadge(score: score, color: color),
+
+                const SizedBox(height: kSpaceMD),
+
+                // Freshness bar — the only colorful element
+                FreshnessBar(score: score, height: 3),
+
+                // Snoozed badge — neutral stone
+                if (isSnoozed) ...[
+                  const SizedBox(height: kSpaceSM),
+                  _SnoozeBadge(snoozedUntil: link.snoozedUntil!),
+                ],
+
+                // Tags
+                if (link.tags.isNotEmpty) ...[
+                  const SizedBox(height: kSpaceSM),
+                  _TagsRow(tags: link.tags),
+                ],
               ],
             ),
-
-            const SizedBox(height: kSpaceMD),
-
-            // Freshness bar
-            FreshnessBar(score: score, height: 3),
-
-            // Snoozed badge
-            if (isSnoozed) ...[
-              const SizedBox(height: kSpaceSM),
-              _SnoozeBadge(snoozedUntil: link.snoozedUntil!),
-            ],
-
-            // Tags
-            if (link.tags.isNotEmpty) ...[
-              const SizedBox(height: kSpaceSM),
-              _TagsRow(tags: link.tags),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -243,11 +265,12 @@ class _FaviconWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: kBorderDark,
+        color: cs.outline.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
@@ -257,19 +280,20 @@ class _FaviconWidget extends StatelessWidget {
               width: 36,
               height: 36,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => _fallback(),
+              errorBuilder: (context, error, stackTrace) => _fallback(context),
             )
-          : _fallback(),
+          : _fallback(context),
     );
   }
 
-  Widget _fallback() {
+  Widget _fallback(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final letter = domain.isNotEmpty ? domain[0].toUpperCase() : '?';
     return Center(
       child: Text(
         letter,
         style: GoogleFonts.inter(
-          color: kTextSecondary,
+          color: cs.onSurface.withValues(alpha: 0.4),
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
@@ -312,6 +336,7 @@ class _SnoozeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final month = [
       '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -320,13 +345,18 @@ class _SnoozeBadge extends StatelessWidget {
 
     return Row(
       children: [
-        const Icon(Icons.bedtime_outlined, size: 12, color: kAccentMuted),
+        Icon(
+          Icons.bedtime_outlined,
+          size: 12,
+          // Neutral stone — no violet
+          color: cs.onSurface.withValues(alpha: 0.4),
+        ),
         const SizedBox(width: 4),
         Text(
           'Snoozed until $label',
           style: GoogleFonts.inter(
             fontSize: 11,
-            color: kAccentMuted,
+            color: cs.onSurface.withValues(alpha: 0.4),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -342,6 +372,7 @@ class _TagsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final tagList = tags
         .split(',')
         .map((t) => t.trim())
@@ -352,19 +383,19 @@ class _TagsRow extends StatelessWidget {
       spacing: 4,
       runSpacing: 4,
       children: tagList
-          .take(3) // Show max 3 tags on card
+          .take(3)
           .map(
             (tag) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: kBorderDark,
+                color: cs.outline.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 tag,
                 style: GoogleFonts.inter(
                   fontSize: 10,
-                  color: kTextSecondary,
+                  color: cs.onSurface.withValues(alpha: 0.5),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -397,16 +428,17 @@ class _SwipeBackground extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        // Neutral tint — stone colors instead of green/blue
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(kRadiusMD),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       alignment: isStart ? Alignment.centerLeft : Alignment.centerRight,
       padding: const EdgeInsets.symmetric(horizontal: kSpaceLG),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 24),
+          Icon(icon, color: color, size: 22),
           const SizedBox(height: 4),
           Text(
             label,

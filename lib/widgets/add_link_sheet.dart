@@ -75,6 +75,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final cs = Theme.of(context).colorScheme;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(kSpaceMD, kSpaceLG, kSpaceMD, kSpaceMD + bottomInset),
@@ -88,7 +89,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: kBorderDark,
+                color: cs.outline,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -100,14 +101,17 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
             style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: kTextPrimary,
-              letterSpacing: -0.5,
+              color: cs.onSurface,
+              letterSpacing: -0.4,
             ),
           ),
           const SizedBox(height: kSpaceXS),
           Text(
             'Paste a URL to add it to your reading list.',
-            style: GoogleFonts.inter(fontSize: 14, color: kTextSecondary),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: cs.onSurface.withValues(alpha: 0.45),
+            ),
           ),
           const SizedBox(height: kSpaceLG),
 
@@ -117,16 +121,20 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
             focusNode: _focusNode,
             keyboardType: TextInputType.url,
             autocorrect: false,
-            style: GoogleFonts.inter(fontSize: 15, color: kTextPrimary),
+            style: GoogleFonts.inter(fontSize: 15, color: cs.onSurface),
             decoration: InputDecoration(
               hintText: 'https://example.com/article',
-              prefixIcon: const Icon(Icons.link, color: kTextTertiary, size: 20),
+              prefixIcon: Icon(
+                Icons.link,
+                color: cs.onSurface.withValues(alpha: 0.3),
+                size: 20,
+              ),
               errorText: _error,
               errorStyle: GoogleFonts.inter(color: kFreshnessLow, fontSize: 12),
               suffixIcon: _controller.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 18),
-                      color: kTextTertiary,
+                      color: cs.onSurface.withValues(alpha: 0.3),
                       onPressed: () {
                         _controller.clear();
                         setState(() => _error = null);
@@ -143,16 +151,25 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
           // Paste button
           TextButton.icon(
             onPressed: _pasteFromClipboard,
-            icon: const Icon(Icons.content_paste_outlined, size: 16),
+            icon: Icon(
+              Icons.content_paste_outlined,
+              size: 16,
+              color: cs.onSurface.withValues(alpha: 0.4),
+            ),
             label: Text(
               'Paste from clipboard',
-              style: GoogleFonts.inter(fontSize: 13),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: cs.onSurface.withValues(alpha: 0.4),
+              ),
             ),
-            style: TextButton.styleFrom(foregroundColor: kTextSecondary),
+            style: TextButton.styleFrom(
+              foregroundColor: cs.onSurface.withValues(alpha: 0.4),
+            ),
           ),
           const SizedBox(height: kSpaceMD),
 
-          // Save button
+          // Save button — inverted neutral (matches FAB style)
           SizedBox(
             width: double.infinity,
             height: 52,
@@ -162,16 +179,16 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
                   ? Container(
                       key: const ValueKey('loading'),
                       decoration: BoxDecoration(
-                        color: kAccent.withValues(alpha: 0.3),
+                        color: cs.outline.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(kRadiusMD),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: SizedBox(
-                          width: 20,
-                          height: 20,
+                          width: 18,
+                          height: 18,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: kAccent,
+                            strokeWidth: 1.5,
+                            color: cs.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       ),
@@ -180,8 +197,9 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
                       key: const ValueKey('save'),
                       onPressed: _submit,
                       style: FilledButton.styleFrom(
-                        backgroundColor: kAccent,
-                        foregroundColor: Colors.white,
+                        // Inverted neutral: onSurface bg, surface text
+                        backgroundColor: cs.onSurface,
+                        foregroundColor: cs.surface,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(kRadiusMD),
                         ),

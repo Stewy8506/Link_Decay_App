@@ -16,15 +16,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: kBackgroundDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         slivers: [
           SliverAppBar(
             pinned: true,
-            backgroundColor: kBackgroundDark,
+            backgroundColor: theme.scaffoldBackgroundColor,
             expandedHeight: 100,
             collapsedHeight: 60,
             flexibleSpace: FlexibleSpaceBar(
@@ -32,10 +34,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: Text(
                 'Settings',
                 style: GoogleFonts.inter(
-                  fontSize: 26,
+                  fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: kTextPrimary,
-                  letterSpacing: -0.6,
+                  color: cs.onSurface,
+                  letterSpacing: -0.3,
                   height: 1.0,
                 ),
               ),
@@ -43,11 +45,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           settingsAsync.when(
             loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: kAccent)),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
             ),
             error: (e, _) => SliverFillRemaining(
               child: Center(
-                child: Text('Error: $e', style: TextStyle(color: kFreshnessLow)),
+                child: Text(
+                  'Error: $e',
+                  style: TextStyle(color: kFreshnessLow),
+                ),
               ),
             ),
             data: (settings) {
@@ -160,7 +165,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const _Divider(),
                       _LegendRow(
-                        color: kFreshnessLow.withValues(alpha: 0.7),
+                        color: kFreshnessLow.withValues(alpha: 0.6),
                         label: 'Critical',
                         range: '< 25%',
                       ),
@@ -201,6 +206,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceLG, kSpaceMD, kSpaceSM),
       child: Text(
@@ -208,7 +214,7 @@ class _SectionHeader extends StatelessWidget {
         style: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: kTextTertiary,
+          color: cs.onSurface.withValues(alpha: 0.3),
           letterSpacing: 1.2,
         ),
       ),
@@ -222,12 +228,13 @@ class _SettingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: kSpaceMD),
       decoration: BoxDecoration(
-        color: kCardDark,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(kRadiusMD),
-        border: Border.all(color: kBorderDark, width: 0.5),
+        border: Border.all(color: cs.outline, width: 0.5),
       ),
       child: Column(children: children),
     );
@@ -268,6 +275,7 @@ class _SliderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceMD, kSpaceMD, kSpaceSM),
       child: Column(
@@ -275,7 +283,7 @@ class _SliderRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: kTextSecondary),
+              Icon(icon, size: 18, color: cs.onSurface.withValues(alpha: 0.45)),
               const SizedBox(width: kSpaceSM),
               Expanded(
                 child: Column(
@@ -286,23 +294,24 @@ class _SliderRow extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: kTextPrimary,
+                        color: cs.onSurface,
                       ),
                     ),
                     Text(
                       sublabel,
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: kTextSecondary,
+                        color: cs.onSurface.withValues(alpha: 0.45),
                       ),
                     ),
                   ],
                 ),
               ),
+              // Neutral value badge — no salmon tint
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: kAccent.withValues(alpha: 0.12),
+                  color: cs.outline.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -310,7 +319,7 @@ class _SliderRow extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: kAccent,
+                    color: cs.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -346,11 +355,12 @@ class _SwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 14),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: kTextSecondary),
+          Icon(icon, size: 18, color: cs.onSurface.withValues(alpha: 0.45)),
           const SizedBox(width: kSpaceSM),
           Expanded(
             child: Column(
@@ -361,12 +371,15 @@ class _SwitchRow extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: kTextPrimary,
+                    color: cs.onSurface,
                   ),
                 ),
                 Text(
                   sublabel,
-                  style: GoogleFonts.inter(fontSize: 12, color: kTextSecondary),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: cs.onSurface.withValues(alpha: 0.45),
+                  ),
                 ),
               ],
             ),
@@ -391,6 +404,7 @@ class _LegendRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 12),
       child: Row(
@@ -406,13 +420,16 @@ class _LegendRow extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: kTextPrimary,
+              color: cs.onSurface,
             ),
           ),
           const Spacer(),
           Text(
             range,
-            style: GoogleFonts.inter(fontSize: 12, color: kTextSecondary),
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: cs.onSurface.withValues(alpha: 0.45),
+            ),
           ),
         ],
       ),
@@ -428,6 +445,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 12),
       child: Row(
@@ -437,13 +455,16 @@ class _InfoRow extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: kTextPrimary,
+              color: cs.onSurface,
             ),
           ),
           const Spacer(),
           Text(
             value,
-            style: GoogleFonts.inter(fontSize: 13, color: kTextSecondary),
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: cs.onSurface.withValues(alpha: 0.45),
+            ),
           ),
         ],
       ),

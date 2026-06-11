@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -13,6 +14,8 @@ class SnoozeSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceLG, kSpaceMD, kSpaceMD),
@@ -26,7 +29,7 @@ class SnoozeSheet extends ConsumerWidget {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: kBorderDark,
+                  color: cs.outline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -37,8 +40,8 @@ class SnoozeSheet extends ConsumerWidget {
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: kTextPrimary,
-                letterSpacing: -0.4,
+                color: cs.onSurface,
+                letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: kSpaceXS),
@@ -46,7 +49,7 @@ class SnoozeSheet extends ConsumerWidget {
               'Decay pauses while snoozed.',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: kTextSecondary,
+                color: cs.onSurface.withValues(alpha: 0.45),
               ),
             ),
             const SizedBox(height: kSpaceLG),
@@ -98,12 +101,16 @@ class _SnoozeOption extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+
     return Material(
-      color: kCardDark,
+      color: cs.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(kRadiusMD),
       child: InkWell(
         borderRadius: BorderRadius.circular(kRadiusMD),
+        splashColor: cs.onSurface.withValues(alpha: 0.05),
         onTap: () async {
+          HapticFeedback.lightImpact();
           Navigator.of(context).pop();
           await ref
               .read(linkActionsProvider.notifier)
@@ -125,10 +132,15 @@ class _SnoozeOption extends ConsumerWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: kAccentMuted.withValues(alpha: 0.12),
+                  // Neutral stone tint — no violet
+                  color: cs.outline.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(kRadiusSM),
                 ),
-                child: Icon(icon, color: kAccentMuted, size: 20),
+                child: Icon(
+                  icon,
+                  color: cs.onSurface.withValues(alpha: 0.5),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: kSpaceMD),
               Column(
@@ -139,20 +151,24 @@ class _SnoozeOption extends ConsumerWidget {
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: kTextPrimary,
+                      color: cs.onSurface,
                     ),
                   ),
                   Text(
                     sublabel,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: kTextSecondary,
+                      color: cs.onSurface.withValues(alpha: 0.45),
                     ),
                   ),
                 ],
               ),
               const Spacer(),
-              const Icon(Icons.chevron_right, color: kTextTertiary, size: 18),
+              Icon(
+                Icons.chevron_right,
+                color: cs.onSurface.withValues(alpha: 0.25),
+                size: 18,
+              ),
             ],
           ),
         ),
