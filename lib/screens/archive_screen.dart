@@ -162,7 +162,7 @@ class ArchiveScreen extends ConsumerWidget {
               : SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, i) {
-                      if (i == links.length) return const SizedBox(height: 80);
+                      if (i == links.length) return const SizedBox(height: 100);
                       return _ArchiveCard(link: links[i]);
                     },
                     childCount: links.length + 1,

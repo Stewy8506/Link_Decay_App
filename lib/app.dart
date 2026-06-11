@@ -62,6 +62,30 @@ class _AppShellState extends State<_AppShell> {
             ),
           ),
 
+          // Bottom gradient fade overlay
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: 120 + MediaQuery.of(context).viewPadding.bottom,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      theme.scaffoldBackgroundColor.withValues(alpha: 0.0),
+                      theme.scaffoldBackgroundColor.withValues(alpha: 0.75),
+                      theme.scaffoldBackgroundColor,
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
           // Floating pill navbar
           Positioned(
             left: 0,
@@ -91,6 +115,9 @@ class _FloatingPillNavBar extends StatelessWidget {
 
   final int selectedIndex;
   final ValueChanged<int> onTap;
+
+  static const _navBarWidth = 260.0;
+  static const _horizontalPadding = 6.0;
 
   static const _items = [
     _NavItem(icon: Icons.inbox_outlined, selectedIcon: Icons.inbox, label: 'Inbox'),
@@ -124,101 +151,111 @@ class _FloatingPillNavBar extends StatelessWidget {
         ? const Color(0xFF636363)
         : const Color(0xFF9C9A97);
 
-    return Padding(
-      // Float with margin from edges and bottom (respect safe area)
-      padding: EdgeInsets.fromLTRB(40, 0, 40, 12 + bottomPadding),
-      child: Container(
-        height: 60,
-        decoration: BoxDecoration(
-          color: pillBg,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: pillBorder, width: 0.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: Stack(
-            children: [
-              // Animated indicator pill
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                left: _indicatorLeft(context),
-                top: 6,
-                bottom: 6,
-                width: _indicatorWidth(context),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: indicatorColor,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
+    final indicatorW = _indicatorWidth();
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        // Float with margin from edges and bottom (respect safe area)
+        padding: EdgeInsets.only(bottom: 16 + bottomPadding),
+        child: SizedBox(
+          width: _navBarWidth,
+          height: 58,
+          child: Container(
+            decoration: BoxDecoration(
+              color: pillBg,
+              borderRadius: BorderRadius.circular(29),
+              border: Border.all(color: pillBorder, width: 0.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 0,
                 ),
-              ),
-
-              // Nav items row
-              Row(
-                children: List.generate(_items.length, (i) {
-                  final item = _items[i];
-                  final isSelected = i == selectedIndex;
-
-                  return Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => onTap(i),
-                      child: SizedBox(
-                        height: 60,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: Icon(
-                                isSelected ? item.selectedIcon : item.icon,
-                                key: ValueKey('${i}_$isSelected'),
-                                size: 21,
-                                color: isSelected ? selectedColor : unselectedColor,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 200),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                color: isSelected ? selectedColor : unselectedColor,
-                                letterSpacing: 0.1,
-                              ),
-                              child: Text(item.label),
-                            ),
-                          ],
-                        ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(29),
+              child: Stack(
+                children: [
+                  // Animated indicator pill
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                    left: _indicatorLeft(),
+                    top: 5,
+                    bottom: 5,
+                    width: indicatorW,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: indicatorColor,
+                        borderRadius: BorderRadius.circular(24),
                       ),
                     ),
-                  );
-                }),
+                  ),
+
+                  // Nav items row
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+                    child: Row(
+                      children: List.generate(_items.length, (i) {
+                        final item = _items[i];
+                        final isSelected = i == selectedIndex;
+
+                        return Expanded(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => onTap(i),
+                            child: SizedBox(
+                              height: 58,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    child: Icon(
+                                      isSelected ? item.selectedIcon : item.icon,
+                                      key: ValueKey('${i}_$isSelected'),
+                                      size: 20,
+                                      color: isSelected ? selectedColor : unselectedColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  AnimatedDefaultTextStyle(
+                                    duration: const Duration(milliseconds: 200),
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                      color: isSelected ? selectedColor : unselectedColor,
+                                      letterSpacing: 0.1,
+                                    ),
+                                    child: Text(item.label),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  double _indicatorWidth(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final pillWidth = screenWidth - 80; // 40px padding on each side
-    return pillWidth / _items.length;
+  double _indicatorWidth() {
+    final innerWidth = _navBarWidth - (_horizontalPadding * 2);
+    return innerWidth / _items.length;
   }
 
-  double _indicatorLeft(BuildContext context) {
-    return _indicatorWidth(context) * selectedIndex;
+  double _indicatorLeft() {
+    return _horizontalPadding + (_indicatorWidth() * selectedIndex);
   }
 }
 

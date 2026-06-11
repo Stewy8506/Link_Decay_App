@@ -38,7 +38,12 @@ class InboxScreen extends ConsumerWidget {
             expandedHeight: 100,
             collapsedHeight: 60,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceMD),
+              titlePadding: const EdgeInsets.fromLTRB(
+                kSpaceMD,
+                0,
+                kSpaceMD,
+                kSpaceMD,
+              ),
               title: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,7 +107,12 @@ class InboxScreen extends ConsumerWidget {
           // ── Decay info bar ────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceSM),
+              padding: const EdgeInsets.fromLTRB(
+                kSpaceMD,
+                0,
+                kSpaceMD,
+                kSpaceSM,
+              ),
               child: Row(
                 children: [
                   Icon(
@@ -128,23 +138,21 @@ class InboxScreen extends ConsumerWidget {
             loading: () => const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
             ),
-            error: (e, _) => SliverFillRemaining(
-              child: _ErrorState(error: e.toString()),
-            ),
+            error: (e, _) =>
+                SliverFillRemaining(child: _ErrorState(error: e.toString())),
             data: (links) {
               if (links.isEmpty) {
                 return const SliverFillRemaining(child: _EmptyState());
               }
               return SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) {
-                    if (i == links.length) {
-                      return const SizedBox(height: 100); // Bottom padding for FAB
-                    }
-                    return LinkCard(key: ValueKey(links[i].id), link: links[i]);
-                  },
-                  childCount: links.length + 1,
-                ),
+                delegate: SliverChildBuilderDelegate((context, i) {
+                  if (i == links.length) {
+                    return const SizedBox(
+                      height: 200,
+                    ); // Bottom padding for FAB and navbar
+                  }
+                  return LinkCard(key: ValueKey(links[i].id), link: links[i]);
+                }, childCount: links.length + 1),
               );
             },
           ),
@@ -152,6 +160,7 @@ class InboxScreen extends ConsumerWidget {
       ),
 
       // ── FAB — inverted neutral style ──────────────────────────────────
+      floatingActionButtonLocation: const _AboveNavBarFabLocation(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddSheet(context),
         // Inverted: text-color background, scaffold-color foreground
@@ -169,6 +178,28 @@ class InboxScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+// Custom location to place the FAB above the floating bottom navbar
+class _AboveNavBarFabLocation extends FloatingActionButtonLocation {
+  const _AboveNavBarFabLocation();
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
+    final double fabX =
+        scaffoldGeometry.scaffoldSize.width -
+        scaffoldGeometry.floatingActionButtonSize.width -
+        16;
+
+    // Positioned above the floating pill navbar (height 58 + padding 16 + spacing 34)
+    final double bottomInset = scaffoldGeometry.minInsets.bottom;
+    final double fabY =
+        scaffoldGeometry.scaffoldSize.height -
+        scaffoldGeometry.floatingActionButtonSize.height -
+        (bottomInset + 108.0);
+
+    return Offset(fabX, fabY);
   }
 }
 
@@ -239,10 +270,7 @@ class _ErrorState extends StatelessWidget {
         padding: const EdgeInsets.all(kSpaceXXL),
         child: Text(
           'Error: $error',
-          style: GoogleFonts.inter(
-            color: kFreshnessLow,
-            fontSize: 14,
-          ),
+          style: GoogleFonts.inter(color: kFreshnessLow, fontSize: 14),
           textAlign: TextAlign.center,
         ),
       ),
