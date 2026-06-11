@@ -729,3 +729,44 @@ Future<void> _syncTopStaleLinks(List<_LinkWithScoreForSync> scoredItems) async {
   } catch (_) {}
 }
 
+// ─── Onboarding Provider ───────────────────────────────────────────────────
+
+final onboardingCompletedProvider = StateNotifierProvider<OnboardingNotifier, AsyncValue<bool>>((ref) {
+  return OnboardingNotifier();
+});
+
+class OnboardingNotifier extends StateNotifier<AsyncValue<bool>> {
+  OnboardingNotifier() : super(const AsyncValue.loading()) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final completed = prefs.getBool('onboarding_completed') ?? false;
+      state = AsyncValue.data(completed);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  Future<void> completeOnboarding() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_completed', true);
+      state = const AsyncValue.data(true);
+    } catch (_) {
+      state = const AsyncValue.data(true);
+    }
+  }
+
+  Future<void> resetOnboarding() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_completed', false);
+      state = const AsyncValue.data(false);
+    } catch (_) {}
+  }
+}
+
+

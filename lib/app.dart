@@ -7,6 +7,7 @@ import 'app_theme.dart';
 import 'providers/providers.dart';
 import 'screens/collections_screen.dart';
 import 'screens/inbox_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/settings_screen.dart';
 import 'utils/constants.dart';
 import 'utils/google_fonts.dart';
@@ -29,6 +30,8 @@ class LinkShelfApp extends ConsumerWidget {
     final customAccentColor = parseHexColor(customAccentHex);
     final customBgColor = parseHexColor(customBgHex);
 
+    final onboardingCompleted = ref.watch(onboardingCompletedProvider);
+
     return MaterialApp(
       title: kAppName,
       scaffoldMessengerKey: scaffoldMessengerKey,
@@ -46,7 +49,16 @@ class LinkShelfApp extends ConsumerWidget {
         fontFamily: fontFamily,
       ),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-      home: const _AppShell(),
+      home: onboardingCompleted.when(
+        data: (completed) => completed ? const _AppShell() : const OnboardingScreen(),
+        error: (error, stackTrace) => const _AppShell(),
+        loading: () => Builder(
+          builder: (context) => Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: const SizedBox.shrink(),
+          ),
+        ),
+      ),
     );
   }
 }
