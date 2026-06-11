@@ -416,11 +416,13 @@ class StatsDashboardPanel extends ConsumerWidget {
                     final dataIndex = weekIndex * 7 + dayIndex;
                     final readCount = heatmapData[dataIndex];
                     
-                    Color cellColor = cs.outline.withValues(alpha: 0.15);
+                    Color cellColor = cs.outline.withValues(alpha: 0.12);
                     if (readCount >= dailyGoal) {
                       cellColor = kFreshnessHigh;
                     } else if (readCount > 0) {
-                      cellColor = kFreshnessHigh.withValues(alpha: 0.45);
+                      cellColor = kFreshnessHigh.withValues(
+                        alpha: (readCount / dailyGoal).clamp(0.25, 0.75),
+                      );
                     }
 
                     return Expanded(
@@ -432,7 +434,7 @@ class StatsDashboardPanel extends ConsumerWidget {
                             height: 14,
                             decoration: BoxDecoration(
                               color: cellColor,
-                              borderRadius: BorderRadius.circular(3),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                         ),
@@ -443,6 +445,53 @@ class StatsDashboardPanel extends ConsumerWidget {
               ),
             );
           }),
+          const SizedBox(height: kSpaceMD),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                '0 reads',
+                style: GoogleFonts.inter(fontSize: 8.5, color: cs.onSurface.withValues(alpha: 0.4)),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: cs.outline.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(2.5),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: kFreshnessHigh.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2.5),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Progress',
+                style: GoogleFonts.inter(fontSize: 8.5, color: cs.onSurface.withValues(alpha: 0.4)),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: kFreshnessHigh,
+                  borderRadius: BorderRadius.circular(2.5),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Goal met ($dailyGoal+)',
+                style: GoogleFonts.inter(fontSize: 8.5, color: cs.onSurface.withValues(alpha: 0.4)),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -461,65 +510,89 @@ class StatsDashboardPanel extends ConsumerWidget {
     }
 
     return Container(
-      height: 100,
+      height: 110,
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(kRadiusSM),
         border: Border.all(color: cs.outline, width: 0.5),
       ),
       padding: const EdgeInsets.all(kSpaceSM),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(7, (index) {
-          final sVal = saved[index];
-          final rVal = read[index];
+      child: Stack(
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(4, (i) {
+              return Container(
+                height: 0.5,
+                color: cs.outline.withValues(alpha: i == 3 ? 0.0 : 0.25),
+              );
+            }),
+          ),
+          Positioned.fill(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (index) {
+                final sVal = saved[index];
+                final rVal = read[index];
 
-          final double sHt = (sVal / maxVal) * 55;
-          final double rHt = (rVal / maxVal) * 55;
+                final double sHt = (sVal / maxVal) * 65;
+                final double rHt = (rVal / maxVal) * 65;
 
-          return Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: sHt.clamp(2.0, 55.0),
-                      decoration: BoxDecoration(
-                        color: cs.onSurface.withValues(alpha: 0.15),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(2),
-                          topRight: Radius.circular(2),
+                return Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: sHt.clamp(2.0, 65.0),
+                            decoration: BoxDecoration(
+                              color: cs.onSurface.withValues(alpha: 0.12),
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(3),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Container(
+                            width: 6,
+                            height: rHt.clamp(2.0, 65.0),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  cs.primary,
+                                  cs.primary.withValues(alpha: 0.7),
+                                ],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              ),
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(3),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        labels[index],
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                          color: cs.onSurface.withValues(alpha: 0.45),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 3),
-                    Container(
-                      width: 8,
-                      height: rHt.clamp(2.0, 55.0),
-                      decoration: BoxDecoration(
-                        color: cs.onSurface,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(2),
-                          topRight: Radius.circular(2),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  labels[index],
-                  style: GoogleFonts.inter(fontSize: 9, color: cs.onSurface.withValues(alpha: 0.5)),
-                ),
-              ],
+                    ],
+                  ),
+                );
+              }),
             ),
-          );
-        }),
+          ),
+        ],
       ),
     );
   }

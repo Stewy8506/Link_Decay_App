@@ -91,10 +91,10 @@ class _LinkCardState extends ConsumerState<LinkCard> {
 
     if (action == 'read') {
       actions.markAsRead(widget.link.id);
-      _showUndoSnackBar('Marked as read', () => actions.restoreToInbox(widget.link.id));
+      _showUndoSnackBar('Marked as read', () => actions.restoreToInbox(widget.link.id, force: true));
     } else if (action == 'archive') {
       actions.archive(widget.link.id);
-      _showUndoSnackBar('Archived', () => actions.restoreToInbox(widget.link.id));
+      _showUndoSnackBar('Archived', () => actions.restoreToInbox(widget.link.id, force: true));
     } else if (action == 'delete') {
       final linkData = widget.link;
       actions.delete(widget.link.id);
@@ -174,29 +174,43 @@ class _LinkCardState extends ConsumerState<LinkCard> {
             Navigator.pop(context);
             final actions = ref.read(linkActionsProvider.notifier);
             actions.markAsRead(widget.link.id);
-            _showUndoSnackBar('Marked as read', () => actions.restoreToInbox(widget.link.id));
+            _showUndoSnackBar('Marked as read', () => actions.restoreToInbox(widget.link.id, force: true));
           },
           onArchive: () {
             Navigator.pop(context);
             final actions = ref.read(linkActionsProvider.notifier);
             actions.archive(widget.link.id);
-            _showUndoSnackBar('Archived', () => actions.restoreToInbox(widget.link.id));
+            _showUndoSnackBar('Archived', () => actions.restoreToInbox(widget.link.id, force: true));
           },
           onSelect: () {
             Navigator.pop(context);
             ref.read(selectedLinkIdsProvider.notifier).state = {widget.link.id};
           },
+          onEdit: () {
+            Navigator.pop(context);
+            _openDetailScreen();
+          },
+          onSnooze: () {
+            Navigator.pop(context);
+            _showSnooze();
+          },
         );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            scale: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutBack,
+        return BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: 5.0 * animation.value,
+            sigmaY: 5.0 * animation.value,
+          ),
+          child: FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutBack,
+              ),
+              child: child,
             ),
-            child: child,
           ),
         );
       },
@@ -366,14 +380,14 @@ class _CardContentState extends State<_CardContent> {
               : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(kRadiusMD),
           border: Border.all(
-            color: widget.isSelected ? cs.onSurface : cs.outline,
+            color: widget.isSelected ? cs.onSurface : cs.outline.withValues(alpha: 0.5),
             width: widget.isSelected ? 1.0 : 0.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.15 : 0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 1),
+              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.015),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -449,18 +463,34 @@ class _CardContentState extends State<_CardContent> {
                                           if (widget.link.isDead) ...[
                                             Container(
                                               margin: const EdgeInsets.only(right: 6),
-                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: cs.errorContainer,
+                                                color: cs.error.withValues(alpha: 0.12),
                                                 borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                '☠️ DEAD',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: cs.onErrorContainer,
+                                                border: Border.all(
+                                                  color: cs.error.withValues(alpha: 0.25),
+                                                  width: 0.5,
                                                 ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.link_off,
+                                                    size: 10,
+                                                    color: cs.error,
+                                                  ),
+                                                  const SizedBox(width: 3),
+                                                  Text(
+                                                    'DEAD LINK',
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 8,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: cs.error,
+                                                      letterSpacing: 0.3,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ],
@@ -828,6 +858,8 @@ class _LinkPreviewDialog extends StatelessWidget {
     required this.onMarkRead,
     required this.onArchive,
     required this.onSelect,
+    required this.onEdit,
+    required this.onSnooze,
   });
 
   final Link link;
@@ -836,6 +868,8 @@ class _LinkPreviewDialog extends StatelessWidget {
   final VoidCallback onMarkRead;
   final VoidCallback onArchive;
   final VoidCallback onSelect;
+  final VoidCallback onEdit;
+  final VoidCallback onSnooze;
 
   @override
   Widget build(BuildContext context) {
@@ -876,27 +910,20 @@ class _LinkPreviewDialog extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (link.ogImageUrl != null && link.ogImageUrl!.isNotEmpty) ...[
-                      AspectRatio(
-                        aspectRatio: 1.91,
-                        child: Image.network(
-                          link.ogImageUrl!,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const _ShimmerPlaceholder(width: double.infinity, height: double.infinity);
-                          },
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: cs.outline.withValues(alpha: 0.1),
-                            child: Icon(
-                              Icons.broken_image_outlined,
-                              size: 40,
-                              color: cs.onSurface.withValues(alpha: 0.2),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    AspectRatio(
+                      aspectRatio: 1.91,
+                      child: link.ogImageUrl != null && link.ogImageUrl!.isNotEmpty
+                          ? Image.network(
+                              link.ogImageUrl!,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const _ShimmerPlaceholder(width: double.infinity, height: double.infinity);
+                              },
+                              errorBuilder: (context, error, stackTrace) => _fallbackPreviewCover(context),
+                            )
+                          : _fallbackPreviewCover(context),
+                    ),
                     Padding(
                       padding: const EdgeInsets.all(kSpaceLG),
                       child: Column(
@@ -970,20 +997,66 @@ class _LinkPreviewDialog extends StatelessWidget {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: cs.errorContainer.withValues(alpha: 0.2),
+                                      color: cs.error.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+                                      border: Border.all(color: cs.error.withValues(alpha: 0.25), width: 0.5),
                                     ),
-                                    child: Text(
-                                      '☠️ Dead Link',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: cs.error,
-                                      ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.link_off, size: 12, color: cs.error),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'DEAD LINK',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: cs.error,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                               ],
+                            ),
+                          ],
+                          if (link.tags.isNotEmpty) ...[
+                            const SizedBox(height: kSpaceMD),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: link.tags
+                                  .split(',')
+                                  .map((t) => t.trim())
+                                  .where((t) => t.isNotEmpty)
+                                  .map((tag) => Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: cs.outline.withValues(alpha: 0.08),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: cs.outline.withValues(alpha: 0.15),
+                                            width: 0.5,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.tag, size: 10, color: cs.onSurface.withValues(alpha: 0.5)),
+                                            const SizedBox(width: 3),
+                                            Text(
+                                              tag,
+                                              style: GoogleFonts.inter(
+                                                color: cs.onSurface.withValues(alpha: 0.7),
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ))
+                                  .toList(),
                             ),
                           ],
                           if (link.notes != null && link.notes!.isNotEmpty) ...[
@@ -1022,16 +1095,16 @@ class _LinkPreviewDialog extends StatelessWidget {
                           Row(
                             children: [
                               Expanded(
-                                child: TextButton.icon(
+                                child: FilledButton.icon(
                                   onPressed: onOpen,
                                   icon: const Icon(Icons.open_in_new, size: 16),
-                                  label: const Text('Open'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: cs.primary,
+                                  label: const Text('Open Link'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: cs.onSurface,
+                                    foregroundColor: cs.surface,
                                     padding: const EdgeInsets.symmetric(vertical: 12),
-                                    backgroundColor: cs.primary.withValues(alpha: 0.08),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
                                 ),
@@ -1041,52 +1114,44 @@ class _LinkPreviewDialog extends StatelessWidget {
                                 child: TextButton.icon(
                                   onPressed: onMarkRead,
                                   icon: const Icon(Icons.check_circle_outline, size: 16),
-                                  label: const Text('Read'),
+                                  label: const Text('Mark Read'),
                                   style: TextButton.styleFrom(
                                     foregroundColor: kSwipeReadColor,
                                     padding: const EdgeInsets.symmetric(vertical: 12),
-                                    backgroundColor: kSwipeReadColor.withValues(alpha: 0.08),
+                                    backgroundColor: kSwipeReadColor.withValues(alpha: 0.12),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(10),
+                                      side: BorderSide(color: kSwipeReadColor.withValues(alpha: 0.25), width: 0.5),
                                     ),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: kSpaceSM),
+                          const SizedBox(height: kSpaceMD),
+                          // Secondary icon bar
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              Expanded(
-                                child: TextButton.icon(
-                                  onPressed: onArchive,
-                                  icon: const Icon(Icons.archive_outlined, size: 16),
-                                  label: const Text('Archive'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    backgroundColor: cs.outline.withValues(alpha: 0.1),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
+                              _SecondaryIconButton(
+                                icon: Icons.edit_outlined,
+                                label: 'Edit',
+                                onPressed: onEdit,
                               ),
-                              const SizedBox(width: kSpaceSM),
-                              Expanded(
-                                child: TextButton.icon(
-                                  onPressed: onSelect,
-                                  icon: const Icon(Icons.checklist_outlined, size: 16),
-                                  label: const Text('Select'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: cs.onSurface.withValues(alpha: 0.7),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    backgroundColor: cs.outline.withValues(alpha: 0.1),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
+                              _SecondaryIconButton(
+                                icon: Icons.bedtime_outlined,
+                                label: 'Snooze',
+                                onPressed: onSnooze,
+                              ),
+                              _SecondaryIconButton(
+                                icon: Icons.archive_outlined,
+                                label: 'Archive',
+                                onPressed: onArchive,
+                              ),
+                              _SecondaryIconButton(
+                                icon: Icons.checklist_outlined,
+                                label: 'Select',
+                                onPressed: onSelect,
                               ),
                             ],
                           ),
@@ -1117,4 +1182,119 @@ class _LinkPreviewDialog extends StatelessWidget {
     ),
   );
 }
+
+  Widget _fallbackPreviewCover(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final hash = link.domain.hashCode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final color1 = isDark
+        ? cs.outline.withValues(alpha: 0.15)
+        : cs.outline.withValues(alpha: 0.08);
+    final color2 = isDark
+        ? cs.surfaceContainerHighest.withValues(alpha: 0.45)
+        : cs.surfaceContainerHighest.withValues(alpha: 0.2);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color1, color2],
+          begin: hash.isEven ? Alignment.topLeft : Alignment.topRight,
+          end: hash.isEven ? Alignment.bottomRight : Alignment.bottomLeft,
+        ),
+      ),
+      child: Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Opacity(
+              opacity: 0.05,
+              child: Icon(
+                Icons.link,
+                size: 80,
+                color: cs.onSurface,
+              ),
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: cs.surface.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: cs.outline.withValues(alpha: 0.25),
+                      width: 0.5,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  child: _FaviconWidget(faviconUrl: link.faviconUrl, domain: link.domain),
+                ),
+                const SizedBox(height: kSpaceSM),
+                Text(
+                  link.domain,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.5),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryIconButton extends StatelessWidget {
+  const _SecondaryIconButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: cs.outline.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: cs.outline.withValues(alpha: 0.25),
+              width: 0.5,
+            ),
+          ),
+          child: IconButton(
+            onPressed: onPressed,
+            icon: Icon(icon, color: cs.onSurface.withValues(alpha: 0.8), size: 20),
+            padding: const EdgeInsets.all(10),
+            constraints: const BoxConstraints(),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            color: cs.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../data/database.dart';
 import '../models/link_status.dart';
 import '../providers/providers.dart';
 import '../utils/constants.dart';
 import '../utils/freshness.dart';
 import '../widgets/freshness_bar.dart';
+import 'link_detail_screen.dart';
 
 class ArchiveScreen extends ConsumerWidget {
   const ArchiveScreen({super.key});
@@ -26,53 +25,47 @@ class ArchiveScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
-        physics: const ClampingScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── App Bar ──────────────────────────────────────────────────
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: theme.scaffoldBackgroundColor,
-            expandedHeight: 100,
-            collapsedHeight: 60,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceMD),
-              title: Text(
-                'Archive',
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
-                  letterSpacing: -0.3,
-                  height: 1.0,
-                ),
-              ),
-            ),
-          ),
-
-          // ── Search bar ────────────────────────────────────────────────
+          // Redesigned padded compact search bar at top
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceSM),
+              padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceMD, kSpaceMD, kSpaceSM),
               child: TextField(
                 onChanged: (v) =>
                     ref.read(archiveSearchQueryProvider.notifier).state = v,
-                style: GoogleFonts.inter(fontSize: 15, color: cs.onSurface),
+                style: GoogleFonts.inter(fontSize: 13.5, color: cs.onSurface),
                 decoration: InputDecoration(
-                  hintText: 'Search titles, domains, tags…',
+                  hintText: 'Search read or archived links…',
+                  filled: true,
+                  fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
                   prefixIcon: Icon(
                     Icons.search,
-                    size: 20,
-                    color: cs.onSurface.withValues(alpha: 0.3),
+                    size: 16,
+                    color: cs.onSurface.withValues(alpha: 0.35),
                   ),
                   suffixIcon: query.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
-                          color: cs.onSurface.withValues(alpha: 0.3),
+                          icon: const Icon(Icons.clear, size: 16),
+                          color: cs.onSurface.withValues(alpha: 0.35),
                           onPressed: () => ref
                               .read(archiveSearchQueryProvider.notifier)
                               .state = '',
                         )
                       : null,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: kSpaceMD),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: cs.outline, width: 0.5),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: cs.outline, width: 0.5),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: cs.onSurface.withValues(alpha: 0.25), width: 1.0),
+                  ),
                 ),
               ),
             ),
@@ -199,11 +192,13 @@ class _ArchiveCard extends ConsumerWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () async {
-          final uri = Uri.tryParse(link.url);
-          if (uri != null && await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
+        onTap: () {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => LinkDetailScreen(linkId: link.id),
+            ),
+          );
         },
         child: Container(
           margin: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceSM),

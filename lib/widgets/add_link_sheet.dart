@@ -292,70 +292,39 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
                     return ListView(
                       scrollDirection: Axis.horizontal,
                       children: [
-                        ChoiceChip(
-                          avatar: const Text('📥'),
-                          label: const Text('Inbox Only'),
-                          selected: _selectedCollectionId == null,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() => _selectedCollectionId = null);
-                            }
+                        _CustomFolderChip(
+                          emoji: '📥',
+                          name: 'Inbox Only',
+                          isSelected: _selectedCollectionId == null,
+                          onTap: () {
+                            setState(() => _selectedCollectionId = null);
+                            HapticFeedback.lightImpact();
                           },
-                          backgroundColor: Colors.transparent,
-                          selectedColor: cs.onSurface,
-                          showCheckmark: false,
-                          side: BorderSide(
-                            color: _selectedCollectionId == null ? Colors.transparent : cs.outline,
-                            width: 0.5,
-                          ),
-                          labelStyle: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: _selectedCollectionId == null ? FontWeight.w600 : FontWeight.w400,
-                            color: _selectedCollectionId == null ? cs.surface : cs.onSurface.withValues(alpha: 0.65),
-                          ),
                         ),
                         ...folders.map((folder) {
                           final isSelected = _selectedCollectionId == folder.id;
                           return Padding(
                             padding: const EdgeInsets.only(left: 8.0),
-                            child: ChoiceChip(
-                              avatar: Text(folder.emoji ?? '📁'),
-                              label: Text(folder.name),
-                              selected: isSelected,
-                              onSelected: (selected) {
+                            child: _CustomFolderChip(
+                              emoji: folder.emoji ?? '📁',
+                              name: folder.name,
+                              isSelected: isSelected,
+                              onTap: () {
                                 setState(() {
-                                  _selectedCollectionId = selected ? folder.id : null;
+                                  _selectedCollectionId = isSelected ? null : folder.id;
                                 });
+                                HapticFeedback.lightImpact();
                               },
-                              backgroundColor: Colors.transparent,
-                              selectedColor: cs.onSurface,
-                              showCheckmark: false,
-                              side: BorderSide(
-                                color: isSelected ? Colors.transparent : cs.outline,
-                                width: 0.5,
-                              ),
-                              labelStyle: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                color: isSelected ? cs.surface : cs.onSurface.withValues(alpha: 0.65),
-                              ),
                             ),
                           );
                         }),
-                        // "+ New Folder" chip
                         Padding(
                           padding: const EdgeInsets.only(left: 8.0),
-                          child: InputChip(
-                            avatar: Icon(Icons.add, size: 16, color: cs.onSurface.withValues(alpha: 0.65)),
-                            label: const Text('New Folder'),
-                            onPressed: _showCreateFolderDialog,
-                            backgroundColor: Colors.transparent,
-                            side: BorderSide(color: cs.outline, width: 0.5),
-                            labelStyle: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: cs.onSurface.withValues(alpha: 0.65),
-                            ),
+                          child: _CustomNewFolderChip(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _showCreateFolderDialog();
+                            },
                           ),
                         ),
                       ],
@@ -409,6 +378,97 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomFolderChip extends StatelessWidget {
+  const _CustomFolderChip({
+    required this.emoji,
+    required this.name,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final String name;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? cs.onSurface : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? Colors.transparent : cs.outline.withValues(alpha: 0.5),
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 6),
+            Text(
+              name,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? cs.surface : cs.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomNewFolderChip extends StatelessWidget {
+  const _CustomNewFolderChip({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: cs.outline.withValues(alpha: 0.5),
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add, size: 14, color: cs.onSurface.withValues(alpha: 0.6)),
+            const SizedBox(width: 4),
+            Text(
+              'New Folder',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: cs.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -208,10 +208,10 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                     Image.network(
                       link.ogImageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _fallbackCover(cs),
+                      errorBuilder: (context, error, stackTrace) => _fallbackCover(context, link),
                     )
                   else
-                    _fallbackCover(cs),
+                    _fallbackCover(context, link),
 
                   // Overlay Gradient for text readability
                   Container(
@@ -356,8 +356,50 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                 ),
               ),
 
-              // ── Per-Link Decay Customization Slider ─────────────────────
-              _SectionHeader(label: 'Decay Control Override'),
+              if (link.tags.isNotEmpty) ...[
+                const SizedBox(height: kSpaceSM),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: kSpaceMD),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: link.tags
+                        .split(',')
+                        .map((t) => t.trim())
+                        .where((t) => t.isNotEmpty)
+                        .map((tag) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: cs.outline.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: cs.outline.withValues(alpha: 0.15),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.tag, size: 12, color: cs.onSurface.withValues(alpha: 0.5)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    tag,
+                                    style: GoogleFonts.inter(
+                                      color: cs.onSurface.withValues(alpha: 0.7),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ],
+
+              // ── Per-Link Lifespan Customization Slider ──────────────────
+              _SectionHeader(label: 'Lifespan Control Override'),
               _CardWrapper(
                 children: [
                   Padding(
@@ -366,7 +408,7 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          link.customHalfLifeDays == null ? 'Using Global Half-life' : 'Custom Half-life Override',
+                          link.customHalfLifeDays == null ? 'Using Global Lifespan' : 'Custom Lifespan Override',
                           style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
                         ),
                         if (link.customHalfLifeDays != null)
@@ -382,18 +424,18 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                     ),
                   ),
                   Slider(
-                    value: currentHalfLife.clamp(1.0, 30.0),
-                    min: 1,
-                    max: 30,
-                    divisions: 29,
+                    value: (currentHalfLife * 2).clamp(2.0, 60.0),
+                    min: 2,
+                    max: 60,
+                    divisions: 58,
                     onChanged: (val) {
-                      ref.read(linkActionsProvider.notifier).updateCustomHalfLife(link.id, val);
+                      ref.read(linkActionsProvider.notifier).updateCustomHalfLife(link.id, val / 2.0);
                     },
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceMD),
                     child: Text(
-                      'This article will decay to 50% freshness in ${currentHalfLife.toStringAsFixed(0)} days.',
+                      'This link has a total lifespan of ${(currentHalfLife * 2).toStringAsFixed(0)} days before it is considered stale.',
                       style: GoogleFonts.inter(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.45)),
                     ),
                   ),
@@ -519,29 +561,45 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                           ref.read(linkActionsProvider.notifier).deleteHighlight(highlight.id);
                           HapticFeedback.lightImpact();
                         },
-                        child: _CardWrapper(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(kSpaceMD),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(Icons.format_quote, size: 20, color: cs.onSurface.withValues(alpha: 0.25)),
-                                  const SizedBox(width: kSpaceSM),
-                                  Expanded(
-                                    child: Text(
-                                      highlight.content,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13.5,
-                                        color: cs.onSurface,
-                                        height: 1.45,
-                                      ),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(kRadiusMD),
+                              bottomRight: Radius.circular(kRadiusMD),
+                            ),
+                            border: Border(
+                              left: BorderSide(
+                                color: freshnessColor(score),
+                                width: 3.5,
+                              ),
+                              top: BorderSide(color: cs.outline.withValues(alpha: 0.3), width: 0.5),
+                              right: BorderSide(color: cs.outline.withValues(alpha: 0.3), width: 0.5),
+                              bottom: BorderSide(color: cs.outline.withValues(alpha: 0.3), width: 0.5),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(kSpaceMD),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.format_quote, size: 18, color: freshnessColor(score).withValues(alpha: 0.5)),
+                                const SizedBox(width: kSpaceSM),
+                                Expanded(
+                                  child: Text(
+                                    highlight.content,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13.5,
+                                      color: cs.onSurface,
+                                      height: 1.5,
+                                      fontStyle: FontStyle.italic,
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       );
                     }).toList(),
@@ -572,69 +630,65 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                 ],
               ),
 
-              const SizedBox(height: 140),
+              const SizedBox(height: kSpaceXL),
             ]),
           )
         ],
       ),
 
-      // ── Actions Footer Drawer / Strip ───────────────────────────────────
-      bottomSheet: Container(
+      // ── Actions Footer Solid Bar ────────────────────────────────────────
+      bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
+          color: cs.surfaceContainerHighest,
           border: Border(
             top: BorderSide(
-              color: cs.outline.withValues(alpha: 0.5),
+              color: cs.outline,
               width: 0.5,
             ),
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: kSpaceSM, vertical: kSpaceMD),
         child: SafeArea(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          top: false,
+          child: Container(
+            height: 68,
+            alignment: Alignment.center,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Open External URL
                 _ActionButton(
                   icon: Icons.open_in_new_outlined,
                   label: 'Open',
                   onPressed: () => _openUrl(link.url),
                 ),
-                const SizedBox(width: 12),
-                // Folder Selector
-                _ActionButton(
-                  icon: Icons.folder_outlined,
-                  label: 'Folder',
-                  onPressed: () {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      builder: (_) => CollectionPickerSheet(
-                        linkId: link.id,
-                        currentCollectionId: link.collectionId,
-                      ),
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                // Snooze Option
-                _ActionButton(
-                  icon: Icons.bedtime_outlined,
-                  label: 'Snooze',
-                  onPressed: () {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      builder: (_) => SnoozeSheet(linkId: link.id),
-                      isScrollControlled: true,
-                      useSafeArea: true,
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                // Toggle Read/Inbox
+                if (link.status == LinkStatus.inbox) ...[
+                  _ActionButton(
+                    icon: Icons.folder_outlined,
+                    label: 'Folder',
+                    onPressed: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        builder: (_) => CollectionPickerSheet(
+                          linkId: link.id,
+                          currentCollectionId: link.collectionId,
+                        ),
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                      );
+                    },
+                  ),
+                  _ActionButton(
+                    icon: Icons.bedtime_outlined,
+                    label: 'Snooze',
+                    onPressed: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        builder: (_) => SnoozeSheet(linkId: link.id),
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                      );
+                    },
+                  ),
+                ],
                 if (link.status == LinkStatus.inbox)
                   _ActionButton(
                     icon: Icons.check_circle_outline,
@@ -649,13 +703,27 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                   _ActionButton(
                     icon: Icons.restore_page_outlined,
                     label: 'To Inbox',
-                    onPressed: () {
-                      ref.read(linkActionsProvider.notifier).restoreToInbox(link.id);
-                      HapticFeedback.mediumImpact();
+                    onPressed: () async {
+                      final success = await ref.read(linkActionsProvider.notifier).restoreToInbox(link.id);
+                      if (!success) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Archived links cannot be unarchived once they have completely decayed.',
+                                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                              ),
+                              backgroundColor: kFreshnessLow,
+                            ),
+                          );
+                        }
+                        HapticFeedback.vibrate();
+                      } else {
+                        HapticFeedback.mediumImpact();
+                        if (context.mounted) Navigator.pop(context);
+                      }
                     },
                   ),
-                const SizedBox(width: 12),
-                // Delete
                 _ActionButton(
                   icon: Icons.delete_outline,
                   label: 'Delete',
@@ -674,15 +742,60 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
     );
   }
 
-  Widget _fallbackCover(ColorScheme cs) {
+  Widget _fallbackCover(BuildContext context, Link link) {
+    final cs = Theme.of(context).colorScheme;
+    final hash = link.domain.hashCode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final color1 = isDark
+        ? cs.outline.withValues(alpha: 0.15)
+        : cs.outline.withValues(alpha: 0.08);
+    final color2 = isDark
+        ? cs.surfaceContainerHighest.withValues(alpha: 0.45)
+        : cs.surfaceContainerHighest.withValues(alpha: 0.2);
+
     return Container(
-      color: cs.outline.withValues(alpha: 0.15),
-      child: Center(
-        child: Icon(
-          Icons.image_outlined,
-          size: 40,
-          color: cs.onSurface.withValues(alpha: 0.25),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color1, color2],
+          begin: hash.isEven ? Alignment.topLeft : Alignment.topRight,
+          end: hash.isEven ? Alignment.bottomRight : Alignment.bottomLeft,
         ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Opacity(
+            opacity: 0.04,
+            child: Icon(
+              Icons.image_outlined,
+              size: 140,
+              color: cs.onSurface,
+            ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.auto_stories_outlined,
+                  size: 32,
+                  color: cs.onSurface.withValues(alpha: 0.25),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  link.domain,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.45),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -721,14 +834,28 @@ class _SectionHeader extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceLG, kSpaceMD, kSpaceSM),
-      child: Text(
-        label.toUpperCase(),
-        style: GoogleFonts.inter(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: cs.onSurface.withValues(alpha: 0.3),
-          letterSpacing: 1.2,
-        ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.6),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label.toUpperCase(),
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface.withValues(alpha: 0.35),
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
       ),
     );
   }

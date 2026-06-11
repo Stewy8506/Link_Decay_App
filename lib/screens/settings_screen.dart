@@ -155,7 +155,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   void _addDomainOverrideDialog(Map<String, double> current) {
     final domainController = TextEditingController();
-    double days = 7.0;
+    double days = 14.0;
 
     showDialog<void>(
       context: context,
@@ -165,7 +165,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: Theme.of(context).cardColor,
-              title: Text('Domain Decay Override', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              title: Text('Domain Lifespan Override', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -181,15 +181,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Half-life Days', style: GoogleFonts.inter(fontSize: 13)),
+                      Text('Link Lifespan', style: GoogleFonts.inter(fontSize: 13)),
                       Text('${days.toStringAsFixed(0)} days', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                     ],
                   ),
                   Slider(
                     value: days,
-                    min: 1,
-                    max: 30,
-                    divisions: 29,
+                    min: 2,
+                    max: 60,
+                    divisions: 58,
                     onChanged: (v) => setState(() => days = v),
                   ),
                 ],
@@ -203,7 +203,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onPressed: () {
                     final dom = domainController.text.trim().toLowerCase();
                     if (dom.isNotEmpty) {
-                      final updated = Map<String, double>.from(current)..[dom] = days;
+                      final updated = Map<String, double>.from(current)..[dom] = days / 2.0;
                       ref.read(linkActionsProvider.notifier).updateSettings(
                             domainHalfLifeOverrides: jsonEncode(updated),
                           );
@@ -223,7 +223,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   void _addTagOverrideDialog(Map<String, double> current) {
     final tagController = TextEditingController();
-    double days = 7.0;
+    double days = 14.0;
 
     showDialog<void>(
       context: context,
@@ -233,7 +233,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: Theme.of(context).cardColor,
-              title: Text('Tag Decay Override', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              title: Text('Tag Lifespan Override', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -248,15 +248,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Half-life Days', style: GoogleFonts.inter(fontSize: 13)),
+                      Text('Link Lifespan', style: GoogleFonts.inter(fontSize: 13)),
                       Text('${days.toStringAsFixed(0)} days', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                     ],
                   ),
                   Slider(
                     value: days,
-                    min: 1,
-                    max: 30,
-                    divisions: 29,
+                    min: 2,
+                    max: 60,
+                    divisions: 58,
                     onChanged: (v) => setState(() => days = v),
                   ),
                 ],
@@ -270,7 +270,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onPressed: () {
                     final t = tagController.text.trim().toLowerCase();
                     if (t.isNotEmpty) {
-                      final updated = Map<String, double>.from(current)..[t] = days;
+                      final updated = Map<String, double>.from(current)..[t] = days / 2.0;
                       ref.read(linkActionsProvider.notifier).updateSettings(
                             tagHalfLifeOverrides: jsonEncode(updated),
                           );
@@ -342,21 +342,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 delegate: SliverChildListDelegate([
                   const SizedBox(height: kSpaceSM),
 
-                  _SectionHeader(label: 'Decay'),
+                  _SectionHeader(label: 'Lifespan'),
                   _SettingCard(
                     children: [
                       _SliderRow(
                         icon: Icons.timer_outlined,
-                        label: 'Half-life',
-                        sublabel: 'Links decay by 50% after ${halfLife.toStringAsFixed(0)} days',
-                        value: halfLife,
-                        min: 1,
-                        max: 30,
-                        divisions: 29,
+                        label: 'Default lifespan',
+                        sublabel: 'Base duration before a link reaches stale status',
+                        value: (halfLife * 2).clamp(2.0, 60.0),
+                        min: 2,
+                        max: 60,
+                        divisions: 58,
                         onChanged: (v) {
-                          ref.read(linkActionsProvider.notifier).updateSettings(halfLifeDays: v);
+                          ref.read(linkActionsProvider.notifier).updateSettings(halfLifeDays: v / 2.0);
                         },
-                        valueLabel: '${halfLife.toStringAsFixed(0)} days',
+                        valueLabel: '${(halfLife * 2).toStringAsFixed(0)} days',
                       ),
                       const _Divider(),
                       _SliderRow(
@@ -479,14 +479,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ],
                   ),
 
-                  // ── Advanced Decay overrides ─────────────────────────
-                  _SectionHeader(label: 'Decay Overrides'),
+                  // ── Advanced Lifespan overrides ───────────────────────
+                  _SectionHeader(label: 'Lifespan Overrides'),
                   _SettingCard(
                     children: [
                       // Domain overrides list
                       ListTile(
                         leading: Icon(Icons.dns_outlined, color: cs.onSurface.withValues(alpha: 0.6)),
-                        title: Text('Domain-Specific Decay', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                        title: Text('Domain-Specific Lifespan', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                         subtitle: Text('${domainOverrides.length} domain overrides configured', style: GoogleFonts.inter()),
                         trailing: Icon(Icons.add, size: 20, color: cs.onSurface),
                         onTap: () => _addDomainOverrideDialog(domainOverrides),
@@ -496,7 +496,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ...domainOverrides.entries.map((e) {
                           return ListTile(
                             title: Text(e.key, style: GoogleFonts.inter(fontSize: 13)),
-                            subtitle: Text('Half-life: ${e.value.toStringAsFixed(0)} days', style: GoogleFonts.inter(fontSize: 11)),
+                            subtitle: Text('Lifespan: ${(e.value * 2).toStringAsFixed(0)} days', style: GoogleFonts.inter(fontSize: 11)),
                             trailing: IconButton(
                               icon: Icon(Icons.delete_outline, size: 18, color: kFreshnessLow),
                               onPressed: () {
@@ -514,7 +514,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       // Tag overrides list
                       ListTile(
                         leading: Icon(Icons.tag, color: cs.onSurface.withValues(alpha: 0.6)),
-                        title: Text('Tag-Specific Decay', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                        title: Text('Tag-Specific Lifespan', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                         subtitle: Text('${tagOverrides.length} tag overrides configured', style: GoogleFonts.inter()),
                         trailing: Icon(Icons.add, size: 20, color: cs.onSurface),
                         onTap: () => _addTagOverrideDialog(tagOverrides),
@@ -524,7 +524,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ...tagOverrides.entries.map((e) {
                           return ListTile(
                             title: Text('#${e.key}', style: GoogleFonts.inter(fontSize: 13)),
-                            subtitle: Text('Half-life: ${e.value.toStringAsFixed(0)} days', style: GoogleFonts.inter(fontSize: 11)),
+                            subtitle: Text('Lifespan: ${(e.value * 2).toStringAsFixed(0)} days', style: GoogleFonts.inter(fontSize: 11)),
                             trailing: IconButton(
                               icon: Icon(Icons.delete_outline, size: 18, color: kFreshnessLow),
                               onPressed: () {

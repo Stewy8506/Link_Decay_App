@@ -482,35 +482,61 @@ class _EmptyFoldersView extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 90,
-                  height: 90,
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
-                    color: cs.outline.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(kRadiusXL),
+                    border: Border.all(
+                      color: cs.outline.withValues(alpha: 0.15),
+                      width: 1,
+                    ),
+                    shape: BoxShape.circle,
                   ),
                 ),
-                Icon(
-                  Icons.folder_copy_outlined,
-                  color: cs.onSurface.withValues(alpha: 0.3),
-                  size: 40,
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: cs.outline.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: cs.outline.withValues(alpha: 0.5),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.folder_open_outlined,
+                    color: cs.onSurface.withValues(alpha: 0.4),
+                    size: 26,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: kSpaceLG),
             Text(
-              'No Folders Yet',
+              'No folders yet',
               style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: cs.onSurface,
-                letterSpacing: -0.5,
+                letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: kSpaceSM),
             Text(
-              'Group your links by topic to keep your reading list organized and track their decay rates together.',
+              'Group your links by topic to keep your reading list organized and track decay rates together.',
               style: GoogleFonts.inter(
-                fontSize: 13.5,
+                fontSize: 13,
                 color: cs.onSurface.withValues(alpha: 0.45),
                 height: 1.5,
               ),

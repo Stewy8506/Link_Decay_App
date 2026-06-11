@@ -312,7 +312,10 @@ class LinkActionsNotifier extends Notifier<void> {
     } else if (domainLower.contains('news.ycombinator.com') ||
         domainLower.contains('reddit.com') ||
         domainLower.contains('twitter.com') ||
-        domainLower.contains('x.com')) {
+        domainLower.contains('x.com') ||
+        domainLower.contains('instagram.com') ||
+        domainLower.contains('facebook.com') ||
+        domainLower.contains('linkedin.com')) {
       autoTag = 'Social';
     } else if (domainLower.contains('stackoverflow.com')) {
       autoTag = 'Dev';
@@ -353,8 +356,26 @@ class LinkActionsNotifier extends Notifier<void> {
     await _db.updateLinkStatus(id, LinkStatus.archived);
   }
 
-  Future<void> restoreToInbox(String id) async {
+  Future<bool> restoreToInbox(String id, {bool force = false}) async {
+    if (!force) {
+      final link = await (_db.select(_db.links)..where((l) => l.id.equals(id))).getSingleOrNull();
+      if (link != null && link.status == LinkStatus.archived) {
+        final settings = await (_db.select(_db.appSettings)..where((s) => s.id.equals(1))).getSingleOrNull();
+        final baseHalfLife = settings?.halfLifeDays ?? kDefaultHalfLifeDays;
+        final currentHalfLife = link.customHalfLifeDays ?? baseHalfLife;
+        final score = computeFreshness(
+          createdAt: link.createdAt,
+          now: DateTime.now(),
+          halfLifeDays: currentHalfLife,
+          snoozedUntil: link.snoozedUntil,
+        );
+        if (score <= 0.0) {
+          return false;
+        }
+      }
+    }
     await _db.updateLinkStatus(id, LinkStatus.inbox);
+    return true;
   }
 
   Future<void> snooze(String id, Duration duration) async {

@@ -61,9 +61,13 @@ It's gamified procrastination therapy.
 - **Half-life info bar** — Shows current global half-life decay rate at the top of the list.
 - **Link count badge** — Live count of inbox items in the app bar.
 - **Full-text search** — Filters by title, domain, and tags live as you type.
+- **Dead link indicator** — Warns you about dead or unreachable pages with a `☠️ DEAD LINK` banner.
 
 ### 📂 Collections & Folder System
 - **Folders Grid View** — Dedicated collections screen to group and organize links with custom names, emoji icons, active link counts, and **Average Freshness** scores calculated dynamically.
+- **Tactile Card Stack Design** — Visual grid layout styling each folder as a physical directory tab with layered nested cards.
+- **Spring Scale Animations** — Grid items feature dynamic haptic feedback and custom spring micro-scaling on tap.
+- **Dynamic Folders Dashboard** — Integrated overview metrics displaying total folder count, percentage of links organized, and general decay average.
 - **Manage Folders** — Edit folder details (rename, change emoji) or delete folders (deleting folders safely returns their links back to the general Inbox).
 - **Direct Folder Ingestion** — FloatingActionButton inside any folder view to immediately save a link into that specific folder.
 - **Add-Link Pre-selection** — Horizontal folder selection chips inside the add sheet to assign a folder during ingestion.
@@ -84,6 +88,7 @@ It's gamified procrastination therapy.
 - **Overscroll Pull-Down** — Pull down from the Inbox screen header to trigger haptic feedback and smoothly animate (`AnimatedSize`) the stats panel open.
 - **Habit Metrics** — Tracks reading streaks (consecutive days of reading), total read links count, and active inbox count.
 - **Saved vs Read Velocity Chart** — 7-day visual bar chart tracking links saved vs. links read.
+- **28-Day Reading Heatmap Grid** — Contribution calendar visualization displaying daily reading frequency and progress over a 4-week window.
 - **Inbox Health Band** — Stacked distribution bar representing the breakdown of Fresh, Fading, and Stale items.
 - **Top Domain Sources** — Chips of the most frequently saved website domains.
 
@@ -117,6 +122,13 @@ It's gamified procrastination therapy.
 ### 💾 Data Tools (Backup & Restore)
 - **HTML Bookmarks** — Import and export Netscape HTML bookmarks (e.g. from Chrome, Safari, Pocket).
 - **JSON Backup** — Export and share a full database JSON backup. Import JSON backups with choice of *Merge* (keep local links) or *Overwrite* (purge tables first) restore strategies.
+
+### ⚙️ Preferences & Health Tools
+- **Link Health Check Scanner** — Background scanning utility to check saved inbox URLs for broken links (404, 5xx, or network issues), flagging offline pages.
+- **Dead Link Warnings** — Unreachable or dead links are highlighted in the inbox list with a customized skull warning badge (`☠️ DEAD LINK`).
+- **Domain & Tag Lifespan Overrides** — Define custom decay rates (half-life in days) for entire websites (e.g. `youtube.com`) or tags (e.g. `#news`) directly inside Settings.
+- **Configurable Daily Reading Goal** — Set custom targets (e.g., read 3 links per day) to gauge reading consistency in the streak dashboard.
+- **Notification Alert Threshold** — Tailor when notifications are triggered based on exact freshness percentage limits.
 
 ### 👆 Gestures Customizer
 - Configure what **Swipe Left** and **Swipe Right** gestures do on link cards directly from settings (`None`, `Read`, `Archive`, `Snooze`, `Folder Picker`, or `Delete`).
