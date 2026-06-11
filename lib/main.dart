@@ -29,7 +29,11 @@ Future<void> main() async {
   );
 
   // Initialize notifications
-  await NotificationService.instance.initialize();
+  try {
+    await NotificationService.instance.initialize();
+  } catch (e, stack) {
+    debugPrint('Failed to initialize notifications: $e\n$stack');
+  }
 
   runApp(
     const ProviderScope(
@@ -83,29 +87,33 @@ class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
   }
 
   Future<void> _scheduleNotifications() async {
-    // Request permission, then schedule if granted.
-    final granted = await NotificationService.instance.requestPermissions();
-    if (!granted) return;
+    try {
+      // Request permission, then schedule if granted.
+      final granted = await NotificationService.instance.requestPermissions();
+      if (!granted) return;
 
-    final db = ref.read(databaseProvider);
-    final settings = await db.getSettings();
-    final halfLife = settings?.halfLifeDays ?? 7.0;
-    final threshold = settings?.notificationThreshold ?? 0.25;
-    final enabled = settings?.notificationsEnabled ?? true;
-    final decayCurve = settings?.decayCurveType ?? 'exponential';
+      final db = ref.read(databaseProvider);
+      final settings = await db.getSettings();
+      final halfLife = settings?.halfLifeDays ?? 7.0;
+      final threshold = settings?.notificationThreshold ?? 0.25;
+      final enabled = settings?.notificationsEnabled ?? true;
+      final decayCurve = settings?.decayCurveType ?? 'exponential';
 
-    if (enabled) {
-      await NotificationService.instance.scheduleDailyCheck(
-        db: db,
-        halfLifeDays: halfLife,
-        threshold: threshold,
-        decayCurveType: decayCurve,
-      );
-      await NotificationService.instance.scheduleWeeklyDigest(
-        db: db,
-        halfLifeDays: halfLife,
-        decayCurveType: decayCurve,
-      );
+      if (enabled) {
+        await NotificationService.instance.scheduleDailyCheck(
+          db: db,
+          halfLifeDays: halfLife,
+          threshold: threshold,
+          decayCurveType: decayCurve,
+        );
+        await NotificationService.instance.scheduleWeeklyDigest(
+          db: db,
+          halfLifeDays: halfLife,
+          decayCurveType: decayCurve,
+        );
+      }
+    } catch (e, stack) {
+      debugPrint('Error scheduling notifications: $e\n$stack');
     }
   }
 
