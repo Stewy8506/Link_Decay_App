@@ -178,19 +178,68 @@ class _FoldersTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (folders) {
+        if (folders.isEmpty) {
+          return _EmptyFoldersView(onCreatePressed: onCreatePressed);
+        }
+
         final allLinks = allLinksAsync.valueOrNull ?? [];
+        final baseHalfLife = ref.watch(halfLifeDaysProvider);
+        final now = DateTime.now();
+
+        // Stats calculations
+        int organizedCount = 0;
+        int uncategorizedCount = 0;
+        double freshnessSum = 0.0;
+
+        for (final l in allLinks) {
+          if (l.status == LinkStatus.inbox) {
+            final score = computeFreshness(
+              createdAt: l.createdAt,
+              now: now,
+              halfLifeDays: l.customHalfLifeDays ?? baseHalfLife,
+              snoozedUntil: l.snoozedUntil,
+            );
+            if (l.collectionId != null) {
+              organizedCount++;
+              freshnessSum += score;
+            } else {
+              uncategorizedCount++;
+            }
+          }
+        }
+
+        final avgFreshness = organizedCount > 0 ? (freshnessSum / organizedCount) : 1.0;
+        final freshColor = avgFreshness > 0.66
+            ? kFreshnessHigh
+            : avgFreshness > 0.33
+                ? kFreshnessMid
+                : kFreshnessLow;
 
         return CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
+            // Dashboard Overview
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: kSpaceSM),
+                child: _FoldersDashboardPanel(
+                  folderCount: folders.length,
+                  organizedCount: organizedCount,
+                  uncategorizedCount: uncategorizedCount,
+                  avgFreshness: avgFreshness,
+                  freshnessColor: freshColor,
+                ),
+              ),
+            ),
+
             SliverPadding(
-              padding: const EdgeInsets.all(kSpaceMD),
+              padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceMD, kSpaceMD, kSpaceMD),
               sliver: SliverGrid(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: kSpaceMD,
                   mainAxisSpacing: kSpaceMD,
-                  childAspectRatio: 1.15,
+                  childAspectRatio: 1.02, // slightly taller child aspect ratio for folder previews
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -225,7 +274,267 @@ class _FoldersTab extends ConsumerWidget {
   }
 }
 
-class _FolderCard extends ConsumerWidget {
+// ─── Folders Dashboard Panel ──────────────────────────────────────────────────
+
+class _FoldersDashboardPanel extends StatelessWidget {
+  const _FoldersDashboardPanel({
+    required this.folderCount,
+    required this.organizedCount,
+    required this.uncategorizedCount,
+    required this.avgFreshness,
+    required this.freshnessColor,
+  });
+
+  final int folderCount;
+  final int organizedCount;
+  final int uncategorizedCount;
+  final double avgFreshness;
+  final Color freshnessColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final totalInbox = organizedCount + uncategorizedCount;
+    final orgPercent = totalInbox > 0 ? (organizedCount / totalInbox * 100).round() : 0;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: kSpaceSM),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(kRadiusLG),
+        border: Border.all(color: cs.outline, width: 0.5),
+      ),
+      padding: const EdgeInsets.all(kSpaceMD),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Overview',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface.withValues(alpha: 0.55),
+                  letterSpacing: 0.2,
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: freshnessColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Decay Status',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurface.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: kSpaceMD),
+          Row(
+            children: [
+              _StatItem(
+                label: 'Folders',
+                value: '$folderCount',
+                subLabel: 'Created',
+              ),
+              _VerticalDivider(),
+              _StatItem(
+                label: 'Organized',
+                value: '$orgPercent%',
+                subLabel: '$organizedCount of $totalInbox links',
+              ),
+              _VerticalDivider(),
+              _StatItem(
+                label: 'Avg Freshness',
+                value: '${(avgFreshness * 100).toStringAsFixed(0)}%',
+                subLabel: 'Decay rate',
+                valueColor: freshnessColor,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({
+    required this.label,
+    required this.value,
+    required this.subLabel,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final String subLabel;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+              color: cs.onSurface.withValues(alpha: 0.4),
+              letterSpacing: 0.1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: valueColor ?? cs.onSurface,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subLabel,
+            style: GoogleFonts.inter(
+              fontSize: 9,
+              color: cs.onSurface.withValues(alpha: 0.35),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VerticalDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 0.5,
+      height: 32,
+      margin: const EdgeInsets.symmetric(horizontal: kSpaceMD),
+      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+    );
+  }
+}
+
+// ─── Folders Empty State View ──────────────────────────────────────────────────
+
+class _EmptyFoldersView extends StatelessWidget {
+  const _EmptyFoldersView({required this.onCreatePressed});
+  final VoidCallback onCreatePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(kSpaceXXL),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    color: cs.outline.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(kRadiusXL),
+                  ),
+                ),
+                Icon(
+                  Icons.folder_copy_outlined,
+                  color: cs.onSurface.withValues(alpha: 0.3),
+                  size: 40,
+                ),
+              ],
+            ),
+            const SizedBox(height: kSpaceLG),
+            Text(
+              'No Folders Yet',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: kSpaceSM),
+            Text(
+              'Group your links by topic to keep your reading list organized and track their decay rates together.',
+              style: GoogleFonts.inter(
+                fontSize: 13.5,
+                color: cs.onSurface.withValues(alpha: 0.45),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: kSpaceXL),
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onCreatePressed();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: kSpaceLG, vertical: 12),
+                decoration: BoxDecoration(
+                  color: cs.onSurface,
+                  borderRadius: BorderRadius.circular(kRadiusXL),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, size: 18, color: cs.surface),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Create First Folder',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: cs.surface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Stacked Folder Card Widget ───────────────────────────────────────────────
+
+class _FolderCard extends ConsumerStatefulWidget {
   const _FolderCard({
     required this.collection,
     required this.inboxCount,
@@ -236,7 +545,14 @@ class _FolderCard extends ConsumerWidget {
   final int inboxCount;
   final List<Link> links;
 
-  void _showFolderOptions(BuildContext context, WidgetRef ref) {
+  @override
+  ConsumerState<_FolderCard> createState() => _FolderCardState();
+}
+
+class _FolderCardState extends ConsumerState<_FolderCard> {
+  double _scale = 1.0;
+
+  void _showFolderOptions(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     HapticFeedback.mediumImpact();
 
@@ -265,7 +581,7 @@ class _FolderCard extends ConsumerWidget {
                 title: Text('Rename Folder', style: GoogleFonts.inter(color: cs.onSurface)),
                 onTap: () {
                   Navigator.pop(context);
-                  _showRenameDialog(context, ref);
+                  _showRenameDialog(context);
                 },
               ),
               ListTile(
@@ -273,7 +589,7 @@ class _FolderCard extends ConsumerWidget {
                 title: Text('Delete Folder', style: GoogleFonts.inter(color: kFreshnessLow)),
                 subtitle: const Text('Links will be moved back to general Inbox'),
                 onTap: () {
-                  ref.read(linkActionsProvider.notifier).deleteCollection(collection.id);
+                  ref.read(linkActionsProvider.notifier).deleteCollection(widget.collection.id);
                   Navigator.pop(context);
                   HapticFeedback.heavyImpact();
                 },
@@ -286,9 +602,9 @@ class _FolderCard extends ConsumerWidget {
     );
   }
 
-  void _showRenameDialog(BuildContext context, WidgetRef ref) {
-    final nameController = TextEditingController(text: collection.name);
-    final emojiController = TextEditingController(text: collection.emoji ?? '📁');
+  void _showRenameDialog(BuildContext context) {
+    final nameController = TextEditingController(text: widget.collection.name);
+    final emojiController = TextEditingController(text: widget.collection.emoji ?? '📁');
 
     showDialog<void>(
       context: context,
@@ -325,7 +641,7 @@ class _FolderCard extends ConsumerWidget {
                 final emoji = emojiController.text.trim();
                 if (name.isNotEmpty) {
                   ref.read(linkActionsProvider.notifier).updateCollection(
-                        collection.id,
+                        widget.collection.id,
                         name,
                         emoji.isNotEmpty ? emoji : '📁',
                       );
@@ -342,17 +658,17 @@ class _FolderCard extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
     // Calculate freshness indicator if items are present
     double avgFreshness = 1.0;
-    if (links.isNotEmpty) {
+    if (widget.links.isNotEmpty) {
       final baseHalfLife = ref.watch(halfLifeDaysProvider);
       final now = DateTime.now();
       double sum = 0.0;
-      for (final l in links) {
+      for (final l in widget.links) {
         sum += computeFreshness(
           createdAt: l.createdAt,
           now: now,
@@ -360,7 +676,7 @@ class _FolderCard extends ConsumerWidget {
           snoozedUntil: l.snoozedUntil,
         );
       }
-      avgFreshness = sum / links.length;
+      avgFreshness = sum / widget.links.length;
     }
 
     final freshColor = avgFreshness > 0.66
@@ -369,142 +685,267 @@ class _FolderCard extends ConsumerWidget {
             ? kFreshnessMid
             : kFreshnessLow;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          Navigator.push<void>(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CollectionDetailScreen(collection: collection),
+    return AnimatedScale(
+      scale: _scale,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOutCubic,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Folder back tab
+          Positioned(
+            top: -4,
+            left: 12,
+            child: Container(
+              width: 44,
+              height: 10,
+              decoration: BoxDecoration(
+                color: cs.outline.withValues(alpha: 0.6),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(5),
+                  topRight: Radius.circular(5),
+                ),
+              ),
             ),
-          );
-        },
-        onLongPress: () => _showFolderOptions(context, ref),
-        borderRadius: BorderRadius.circular(kRadiusMD),
-        child: Container(
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(kRadiusMD),
-            border: Border.all(color: cs.outline, width: 0.5),
           ),
-          padding: const EdgeInsets.all(kSpaceMD),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Top Row: Emoji Icon + Link Count Badge
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    collection.emoji ?? '📁',
-                    style: const TextStyle(fontSize: 26),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: cs.outline.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$inboxCount',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: cs.onSurface,
-                      ),
-                    ),
+          // Stacked page effect
+          Positioned(
+            top: -2,
+            left: 6,
+            right: 6,
+            height: 10,
+            child: Container(
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withValues(alpha: 0.7),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(kRadiusMD)),
+                border: Border.all(color: cs.outline, width: 0.5),
+              ),
+            ),
+          ),
+          // Main Card Container
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(kRadiusMD),
+                border: Border.all(color: cs.outline, width: 0.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? 0.2 : 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-
-              // Bottom Area: Title + Freshness Indicator
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    collection.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  if (links.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTapDown: (_) => setState(() => _scale = 0.96),
+                  onTapUp: (_) => setState(() => _scale = 1.0),
+                  onTapCancel: () => setState(() => _scale = 1.0),
+                  onTap: () {
+                    Navigator.push<void>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CollectionDetailScreen(collection: widget.collection),
+                      ),
+                    );
+                  },
+                  onLongPress: () => _showFolderOptions(context),
+                  borderRadius: BorderRadius.circular(kRadiusMD),
+                  child: Padding(
+                    padding: const EdgeInsets.all(kSpaceMD),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(color: freshColor, shape: BoxShape.circle),
+                        // Top Row: Emoji Icon + Link Count Badge
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              widget.collection.emoji ?? '📁',
+                              style: const TextStyle(fontSize: 26),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: cs.onSurface.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${widget.inboxCount}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Avg Freshness: ${(avgFreshness * 100).toStringAsFixed(0)}%',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            color: cs.onSurface.withValues(alpha: 0.4),
+
+                        const SizedBox(height: 6),
+
+                        // Middle Row: Recent Link Previews
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (widget.links.isEmpty)
+                                Text(
+                                  'Empty folder',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10.5,
+                                    color: cs.onSurface.withValues(alpha: 0.3),
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                )
+                              else
+                                ...widget.links.take(2).map((l) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 1.5),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.link,
+                                          size: 10,
+                                          color: cs.onSurface.withValues(alpha: 0.3),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            l.title ?? l.domain,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 10.5,
+                                              color: cs.onSurface.withValues(alpha: 0.55),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                            ],
                           ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        // Bottom Area: Title + Freshness Progress Bar
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.collection.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            if (widget.links.isNotEmpty)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(2),
+                                      child: LinearProgressIndicator(
+                                        value: avgFreshness,
+                                        minHeight: 3,
+                                        backgroundColor: cs.outline.withValues(alpha: 0.4),
+                                        valueColor: AlwaysStoppedAnimation<Color>(freshColor),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${(avgFreshness * 100).toStringAsFixed(0)}%',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: cs.onSurface.withValues(alpha: 0.45),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  color: cs.outline.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
-                  ] else ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Empty folder',
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        color: cs.onSurface.withValues(alpha: 0.3),
-                      ),
-                    ),
-                  ]
-                ],
+                  ),
+                ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-class _CreateFolderCard extends StatelessWidget {
+class _CreateFolderCard extends StatefulWidget {
   const _CreateFolderCard({required this.onTap});
   final VoidCallback onTap;
+
+  @override
+  State<_CreateFolderCard> createState() => _CreateFolderCardState();
+}
+
+class _CreateFolderCardState extends State<_CreateFolderCard> {
+  double _scale = 1.0;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(kRadiusMD),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(kRadiusMD),
-            border: Border.all(color: cs.outline, width: 1.0, style: BorderStyle.solid),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.create_new_folder_outlined, color: cs.onSurface.withValues(alpha: 0.4), size: 28),
-              const SizedBox(height: kSpaceSM),
-              Text(
-                'Add Folder',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: cs.onSurface.withValues(alpha: 0.5),
+    return AnimatedScale(
+      scale: _scale,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOutCubic,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTapDown: (_) => setState(() => _scale = 0.96),
+          onTapUp: (_) => setState(() => _scale = 1.0),
+          onTapCancel: () => setState(() => _scale = 1.0),
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(kRadiusMD),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(kRadiusMD),
+              border: Border.all(color: cs.outline, width: 1.0, style: BorderStyle.solid),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.create_new_folder_outlined, color: cs.onSurface.withValues(alpha: 0.4), size: 28),
+                const SizedBox(height: kSpaceSM),
+                Text(
+                  'Add Folder',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: cs.onSurface.withValues(alpha: 0.5),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

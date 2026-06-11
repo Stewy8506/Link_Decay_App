@@ -9,6 +9,7 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: ReadDecayApp()),
     );
+    await tester.pump(Duration.zero);
     // Just ensure it builds without errors.
     expect(find.byType(MaterialApp), findsOneWidget);
   });

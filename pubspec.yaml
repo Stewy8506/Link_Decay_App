@@ -48,6 +48,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
 
   # Code generation
   drift_dev: ^2.22.1
@@ -58,3 +59,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+# Launcher icons configuration
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#FAFAF9" # Matches warm stone background
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+

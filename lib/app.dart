@@ -56,9 +56,24 @@ class _AppShellState extends ConsumerState<_AppShell> {
         children: [
           // Screen content
           AnimatedSwitcher(
-            duration: kDurationNormal,
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
+            duration: const Duration(milliseconds: 320),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.0, 0.03),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  )),
+                  child: child,
+                ),
+              );
+            },
             child: KeyedSubtree(
               key: ValueKey(_selectedIndex),
               child: _screens[_selectedIndex],
@@ -208,39 +223,12 @@ class _FloatingPillNavBar extends StatelessWidget {
                         final item = _items[i];
                         final isSelected = i == selectedIndex;
 
-                        return Expanded(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => onTap(i),
-                            child: SizedBox(
-                              height: 58,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
-                                    child: Icon(
-                                      isSelected ? item.selectedIcon : item.icon,
-                                      key: ValueKey('${i}_$isSelected'),
-                                      size: 20,
-                                      color: isSelected ? selectedColor : unselectedColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  AnimatedDefaultTextStyle(
-                                    duration: const Duration(milliseconds: 200),
-                                    style: TextStyle(
-                                      fontSize: 9.5,
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                      color: isSelected ? selectedColor : unselectedColor,
-                                      letterSpacing: 0.1,
-                                    ),
-                                    child: Text(item.label),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        return _NavBarItemWidget(
+                          item: item,
+                          isSelected: isSelected,
+                          onTap: () => onTap(i),
+                          selectedColor: selectedColor,
+                          unselectedColor: unselectedColor,
                         );
                       }),
                     ),
@@ -261,6 +249,75 @@ class _FloatingPillNavBar extends StatelessWidget {
 
   double _indicatorLeft() {
     return _horizontalPadding + (_indicatorWidth() * selectedIndex);
+  }
+}
+
+class _NavBarItemWidget extends StatefulWidget {
+  const _NavBarItemWidget({
+    required this.item,
+    required this.isSelected,
+    required this.onTap,
+    required this.selectedColor,
+    required this.unselectedColor,
+  });
+
+  final _NavItem item;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color selectedColor;
+  final Color unselectedColor;
+
+  @override
+  State<_NavBarItemWidget> createState() => _NavBarItemWidgetState();
+}
+
+class _NavBarItemWidgetState extends State<_NavBarItemWidget> {
+  double _scale = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _scale = 0.92),
+        onTapUp: (_) => setState(() => _scale = 1.0),
+        onTapCancel: () => setState(() => _scale = 1.0),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _scale,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOutCubic,
+          child: SizedBox(
+            height: 58,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    widget.isSelected ? widget.item.selectedIcon : widget.item.icon,
+                    key: ValueKey('${widget.isSelected}'),
+                    size: 20,
+                    color: widget.isSelected ? widget.selectedColor : widget.unselectedColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: widget.isSelected ? widget.selectedColor : widget.unselectedColor,
+                    letterSpacing: 0.1,
+                  ),
+                  child: Text(widget.item.label),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

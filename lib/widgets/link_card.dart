@@ -269,7 +269,7 @@ class _SwipeDetails {
 
 // ─── Card Content ──────────────────────────────────────────────────────────
 
-class _CardContent extends StatelessWidget {
+class _CardContent extends StatefulWidget {
   const _CardContent({
     required this.link,
     required this.score,
@@ -291,104 +291,108 @@ class _CardContent extends StatelessWidget {
   final bool isMultiSelectMode;
 
   @override
+  State<_CardContent> createState() => _CardContentState();
+}
+
+class _CardContentState extends State<_CardContent> {
+  double _scale = 1.0;
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final now = DateTime.now();
-    final age = ageLabel(link.createdAt, now);
-    final color = freshnessColor(score);
-    final title = link.title ?? link.domain;
+    final age = ageLabel(widget.link.createdAt, now);
+    final color = freshnessColor(widget.score);
+    final title = widget.link.title ?? widget.link.domain;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 5),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? cs.outline.withValues(alpha: 0.15)
-            : cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(kRadiusMD),
-        border: Border.all(
-          color: isSelected ? cs.onSurface : cs.outline,
-          width: isSelected ? 1.0 : 0.5,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
+    return AnimatedScale(
+      scale: _scale,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOutCubic,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 5),
+        decoration: BoxDecoration(
+          color: widget.isSelected
+              ? cs.outline.withValues(alpha: 0.15)
+              : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(kRadiusMD),
-          splashColor: cs.onSurface.withValues(alpha: 0.05),
-          highlightColor: cs.onSurface.withValues(alpha: 0.03),
-          child: Padding(
-            padding: const EdgeInsets.all(kSpaceMD),
-            child: Row(
-              children: [
-                if (isMultiSelectMode) ...[
-                  Checkbox(
-                    value: isSelected,
-                    onChanged: (_) => onTap(),
-                    activeColor: cs.onSurface,
-                    checkColor: cs.surface,
-                  ),
-                  const SizedBox(width: kSpaceSM),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Top row: favicon + title + score/quick-open badge
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _FaviconWidget(
-                            faviconUrl: link.faviconUrl,
-                            domain: link.domain,
-                          ),
-                          const SizedBox(width: kSpaceMD),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: cs.onSurface,
-                                    height: 1.4,
-                                    letterSpacing: -0.1,
-                                  ),
-                                ),
-                                const SizedBox(height: kSpaceXS),
-                                Wrap(
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    Text(
-                                      link.domain,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        color: cs.onSurface.withValues(alpha: 0.45),
-                                      ),
+          border: Border.all(
+            color: widget.isSelected ? cs.onSurface : cs.outline,
+            width: widget.isSelected ? 1.0 : 0.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.15 : 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTapDown: (_) => setState(() => _scale = 0.98),
+            onTapUp: (_) => setState(() => _scale = 1.0),
+            onTapCancel: () => setState(() => _scale = 1.0),
+            onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
+            borderRadius: BorderRadius.circular(kRadiusMD),
+            splashColor: cs.onSurface.withValues(alpha: 0.05),
+            highlightColor: cs.onSurface.withValues(alpha: 0.03),
+            child: Padding(
+              padding: const EdgeInsets.all(kSpaceMD),
+              child: Row(
+                children: [
+                  if (widget.isMultiSelectMode) ...[
+                    Checkbox(
+                      value: widget.isSelected,
+                      onChanged: (_) => widget.onTap(),
+                      activeColor: cs.onSurface,
+                      checkColor: cs.surface,
+                    ),
+                    const SizedBox(width: kSpaceSM),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top row: favicon + title + score/quick-open badge
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _FaviconWidget(
+                              faviconUrl: widget.link.faviconUrl,
+                              domain: widget.link.domain,
+                            ),
+                            const SizedBox(width: kSpaceMD),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: cs.onSurface,
+                                      height: 1.4,
+                                      letterSpacing: -0.1,
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                                      child: Text(
-                                        '·',
-                                        style: TextStyle(
-                                          color: cs.onSurface.withValues(alpha: 0.25),
+                                  ),
+                                  const SizedBox(height: kSpaceXS),
+                                  Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      Text(
+                                        widget.link.domain,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: cs.onSurface.withValues(alpha: 0.45),
                                         ),
                                       ),
-                                    ),
-                                    Text(
-                                      age,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        color: cs.onSurface.withValues(alpha: 0.45),
-                                      ),
-                                    ),
-                                    if (link.estimatedReadMinutes != null) ...[
                                       Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 5),
                                         child: Text(
@@ -399,62 +403,80 @@ class _CardContent extends StatelessWidget {
                                         ),
                                       ),
                                       Text(
-                                        '${link.estimatedReadMinutes} min read',
+                                        age,
                                         style: GoogleFonts.inter(
                                           fontSize: 12,
                                           color: cs.onSurface.withValues(alpha: 0.45),
                                         ),
                                       ),
-                                    ]
-                                  ],
-                                ),
-                              ],
+                                      if (widget.link.estimatedReadMinutes != null) ...[
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                                          child: Text(
+                                            '·',
+                                            style: TextStyle(
+                                              color: cs.onSurface.withValues(alpha: 0.25),
+                                            ),
+                                          ),
+                                        ),
+                                        Text(
+                                          '${widget.link.estimatedReadMinutes} min read',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            color: cs.onSurface.withValues(alpha: 0.45),
+                                          ),
+                                        ),
+                                      ]
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: kSpaceSM),
-                          // Score badge & Quick Open icon
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              _ScoreBadge(score: score, color: color),
-                              if (!isMultiSelectMode) ...[
-                                const SizedBox(height: 6),
-                                InkWell(
-                                  onTap: onQuickOpen,
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4),
-                                    child: Icon(
-                                      Icons.open_in_new,
-                                      size: 14,
-                                      color: cs.onSurface.withValues(alpha: 0.4),
+                            const SizedBox(width: kSpaceSM),
+                            // Score badge & Quick Open icon
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                _ScoreBadge(score: widget.score, color: color),
+                                if (!widget.isMultiSelectMode) ...[
+                                  const SizedBox(height: 6),
+                                  InkWell(
+                                    onTap: widget.onQuickOpen,
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Icon(
+                                        Icons.open_in_new,
+                                        size: 14,
+                                        color: cs.onSurface.withValues(alpha: 0.4),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ]
-                            ],
-                          ),
+                                ]
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: kSpaceMD),
+
+                        // Freshness bar
+                        FreshnessBar(score: widget.score, height: 3),
+
+                        if (widget.isSnoozed) ...[
+                          const SizedBox(height: kSpaceSM),
+                          _SnoozeBadge(snoozedUntil: widget.link.snoozedUntil!),
                         ],
-                      ),
 
-                      const SizedBox(height: kSpaceMD),
-
-                      // Freshness bar
-                      FreshnessBar(score: score, height: 3),
-
-                      if (isSnoozed) ...[
-                        const SizedBox(height: kSpaceSM),
-                        _SnoozeBadge(snoozedUntil: link.snoozedUntil!),
+                        if (widget.link.tags.isNotEmpty) ...[
+                          const SizedBox(height: kSpaceSM),
+                          _TagsRow(tags: widget.link.tags),
+                        ],
                       ],
-
-                      if (link.tags.isNotEmpty) ...[
-                        const SizedBox(height: kSpaceSM),
-                        _TagsRow(tags: link.tags),
-                      ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

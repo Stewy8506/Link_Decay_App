@@ -435,6 +435,12 @@ flutter test
 
 ---
 
+## ✦ Production & Publishing
+
+For details on generating release keys, configuring credentials, generating custom launcher icons, and compiling release-ready bundles, refer to the step-by-step [Google Play Store Publishing Guide](PUBLISHING.md).
+
+---
+
 ## ✦ License
 
 ```
