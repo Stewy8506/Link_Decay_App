@@ -17,14 +17,15 @@
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.41.2-02569B?style=flat-square&logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.11.0-0175C2?style=flat-square&logo=dart)](https://dart.dev)
-[![Drift](https://img.shields.io/badge/Drift-ORM-4A90E2?style=flat-square)](https://drift.simonbinder.eu)
+[![Cloud Firestore](https://img.shields.io/badge/Cloud_Firestore-Database-FFCA28?style=flat-square&logo=firebase)](https://firebase.google.com)
+[![Firebase Auth](https://img.shields.io/badge/Firebase_Auth-Sync-FFCA28?style=flat-square&logo=firebase)](https://firebase.google.com)
 [![Riverpod](https://img.shields.io/badge/Riverpod-2.x-00BCD4?style=flat-square)](https://riverpod.dev)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20macOS%20%7C%20Windows%20%7C%20Web%20Extension-3DDC84?style=flat-square)](https://flutter.dev)
 
 <br/>
 
-> **LinkShelf** is a local-first reading list manager with a twist — every link you save has a **freshness score** that exponentially decays over time. The longer you wait, the staler it gets. Links you haven't read sort to the top, glowing red, demanding your attention. Read them, snooze them, organize them, or watch them fade.
+> **LinkShelf** is a cloud-synced reading list manager with a twist — every link you save has a **freshness score** that exponentially decays over time. The longer you wait, the staler it gets. Links you haven't read sort to the top, glowing red, demanding your attention. Read them, snooze them, organize them, or watch them fade.
 > 
 > Now available as a **native Mobile App (Android)**, **native Desktop Apps (macOS & Windows)**, and a **Browser Extension (Chrome & Safari)**!
 
@@ -51,6 +52,13 @@ It's gamified procrastination therapy.
 ---
 
 ## ✦ Implemented Features
+
+### ☁️ Cloud Sync & Database Migration
+- **Transparent Silent Anonymous Authentication** — On first boot, the app silently authenticates users using Firebase Anonymous Sign-In so they can use the app instantly without registering.
+- **Cross-Device Sync** — Link your database to a Google account from Settings to automatically sync and access your reading lists across devices.
+- **Conflict Merge Resolution** — Tapping "Link Google Account" when the Google account is already linked to another profile prompts an "Account Sync Conflict" dialog. If approved, the app reads offline links saved in the current anonymous session into memory, signs in to the Google account, and copies (merges) the links directly to the Google account.
+- **Legacy SQLite Migration** — Automatically detects legacy SQLite (Drift) database records on startup, performs a batch migration to Cloud Firestore under the user's `uid`, and clean up Drift resources.
+- **Path-Isolated Security Rules** — Enforces strict data ownership where users can only read or write under `/users/{userId}/` matching their own authenticated `uid`.
 
 ### 🖥️ Desktop Widescreen Layout (Widescreen Mode)
 - **Left Sidebar Navigation (`_DesktopSidebar`)** — When window width is >600px, LinkShelf automatically transforms from mobile bottom nav to a widescreen layout featuring a persistent left sidebar with bold branding and interactive highlights.
@@ -81,7 +89,7 @@ It's gamified procrastination therapy.
 - **Folders Grid View** — Dedicated collections screen to group and organize links with custom names, emoji icons, active link counts, and **Average Freshness** scores calculated dynamically.
 - **Tactile Card Stack Design** — Visual grid layout styling each folder as a physical directory tab with layered nested cards.
 - **Spring Scale Animations** — Grid items feature dynamic haptic feedback and custom spring micro-scaling on tap.
-- **Dynamic Folders Dashboard** — Integrated overview metrics displaying total folder count, percentage of links organized, and general decay average.
+- **Folders Dashboard** — Integrated overview metrics displaying total folder count, percentage of links organized, and general decay average.
 - **Manage Folders** — Edit folder details (rename, change emoji) or delete folders (deleting folders safely returns their links back to the general Inbox).
 - **Direct Folder Ingestion** — FloatingActionButton inside any folder view to immediately save a link into that specific folder.
 - **Add-Link Pre-selection** — Horizontal folder selection chips inside the add sheet to assign a folder during ingestion.
@@ -135,7 +143,7 @@ It's gamified procrastination therapy.
 
 ### 💾 Data Tools (Backup & Restore)
 - **HTML Bookmarks** — Import and export Netscape HTML bookmarks (e.g. from Chrome, Safari, Pocket).
-- **JSON Backup** — Export and share a full database JSON backup. Import JSON backups with choice of *Merge* (keep local links) or *Overwrite* (purge tables first) restore strategies.
+- **JSON Backup** — Export and share a full database JSON backup. Import JSON backups with choice of *Merge* (keep local links) or *Overwrite* (purge tables first) restore strategies. Features transactional-like client-side rollbacks to protect database integrity on parsing errors.
 
 ### ⚙️ Preferences & Health Tools
 - **Decay Curve Profiler** — Toggle between **Exponential** and **Linear** decay algorithms, dynamically recalculating and rendering freshness scores across all screens.
@@ -178,13 +186,16 @@ It's gamified procrastination therapy.
                       │ reads / writes
 ┌─────────────────────▼───────────────────────────────────┐
 │                  Data Layer                             │
-│  AppDatabase (Drift + SQLite)                          │
-│    Links table         Collections table                │
-│    CustomFilters       LinkHighlights                   │
-│    AppSettings table                                    │
-│  MetadataService       ExportService                    │
-│  NotificationService   ShareIntentService               │
-│  ExtensionService (Conditional Stub / Web JS Interop)   │
+│  Cloud Firestore (Primary Storage)                      │
+│    `/users/{uid}/links/{linkId}`                        │
+│    `/users/{uid}/collections/{collectionId}`            │
+│    `/users/{uid}/custom_filters/{filterId}`             │
+│    `/users/{uid}/settings/app_settings`                 │
+│  Drift SQLite (Legacy database used for migration only)  │
+│  AuthService            FirestoreService                │
+│  MigrationService       MetadataService                 │
+│  ExportService          NotificationService             │
+│  ShareIntentService     ExtensionService (Interop Web)  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -213,7 +224,8 @@ score = pow(0.5, effectiveAgeDays / halfLifeDays)
 |---|---|
 | **Framework** | Flutter 3.41.2 · Dart 3.11.0 |
 | **Platforms** | Android, macOS (native Cocoa), Windows (native Win32), Web (Chrome & Safari extensions) |
-| **Database** | [Drift](https://drift.simonbinder.eu) (type-safe SQLite ORM) |
+| **Authentication** | Firebase Auth (Anonymous & Google Sign-In) |
+| **Database** | Cloud Firestore (Primary) & Drift SQLite (Legacy migration helper) |
 | **State** | [Riverpod](https://riverpod.dev) 2.x |
 | **Fonts** | [Inter](https://rsms.me/inter/) via `google_fonts` |
 | **Networking** | `http` · `html` (HTML scraping) |
@@ -231,23 +243,28 @@ score = pow(0.5, effectiveAgeDays / halfLifeDays)
 ```
 link_decay_app/
 ├── lib/
-│   ├── main.dart                    # Entry point — init + ProviderScope
+│   ├── main.dart                    # Entry point — initializes Firebase + runs Migration checks
 │   ├── app.dart                     # MaterialApp + bottom nav / desktop shell
 │   ├── app_theme.dart               # Theme palettes configuration
+│   ├── firebase_options.dart        # Auto-generated FlutterFire options
 │   │
 │   ├── data/
-│   │   ├── database.dart            # Drift DB: tables, queries, streams
+│   │   ├── database.dart            # Drift DB: Legacy SQLite tables, queries, streams
 │   │   └── database.g.dart          # Generated Drift queries
 │   │
 │   ├── models/
+│   │   ├── models.dart              # Firestore-mapped domain models (Link, Collection, etc.)
 │   │   └── link_status.dart         # Enum: inbox / read / archived
 │   │
 │   ├── providers/
-│   │   └── providers.dart           # All Riverpod providers + actions
+│   │   └── providers.dart           # All Riverpod providers + Firestore actions notifier
 │   │
 │   ├── services/
+│   │   ├── auth_service.dart        # Firebase Auth: silent anonymous sign-in, Google link & switch auth
+│   │   ├── firestore_service.dart   # Scoped user collection CRUD actions and document streams
+│   │   ├── migration_service.dart   # Port SQLite data to Firestore under active uid
 │   │   ├── metadata_service.dart    # Fetch title, description, images & favicon
-│   │   ├── export_service.dart      # JSON & Netscape HTML import/export
+│   │   ├── export_service.dart      # JSON & HTML export/import with rollback simulation
 │   │   ├── notification_service.dart # Daily staleness notifications
 │   │   ├── share_intent_service.dart # Android share sheet listener
 │   │   ├── extension_service.dart   # Main conditional exporter for interop
@@ -258,7 +275,7 @@ link_decay_app/
 │   │   ├── inbox_screen.dart        # Main reading list with stats panel
 │   │   ├── collections_screen.dart  # Folder grid & collection details
 │   │   ├── archive_screen.dart      # Search + filter read/archived links
-│   │   ├── settings_screen.dart     # Preferences & data tools
+│   │   ├── settings_screen.dart     # Sync options, preferences & data tools
 │   │   ├── link_detail_screen.dart  # Rich details, notes & quotes
 │   │   └── custom_filter_creator.dart # Smart lists builder
 │   │
@@ -279,6 +296,7 @@ link_decay_app/
 │   ├── manifest.json                # Extension Manifest V3 configuration
 │   └── index.html                   # Extension viewport and layout configs
 │
+├── firestore.rules                  # Scoped path-isolated Firebase security rules
 ├── pubspec.yaml                     # All dependencies
 └── README.md                        # This file
 ```
@@ -302,13 +320,18 @@ cd link_decay_app
 flutter pub get
 ```
 
-### Generate Code
+### Configure Firebase
 
-Drift requires code generation:
+Firebase requires credentials to be configured via the FlutterFire CLI:
 
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
+1. Log in to Firebase CLI:
+   ```bash
+   firebase login
+   ```
+2. Configure platforms:
+   ```bash
+   flutterfire configure --platforms=android,macos,web
+   ```
 
 ### Run on Platforms
 
@@ -319,7 +342,7 @@ flutter run
 # Run on macOS native desktop
 flutter run -d macos
 
-# Run on Windows native desktop
+# Run on Windows native desktop (fallback database)
 flutter run -d windows
 ```
 
@@ -377,7 +400,7 @@ in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
+ 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
@@ -394,7 +417,7 @@ SOFTWARE.
 
 <div align="center">
 
-**Built with Flutter · Powered by Drift · Styled with Inter**
+**Built with Flutter · Powered by Firebase Cloud Firestore · Styled with Inter**
 
 *Save the link. Beat the decay.*
 
