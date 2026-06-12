@@ -300,8 +300,9 @@ final sortedFilteredInboxProvider = Provider<List<Link>>((ref) {
             .map((c) => c.trim())
             .toSet();
         if (link.collectionId == null ||
-            !filterColls.contains(link.collectionId))
+            !filterColls.contains(link.collectionId)) {
           return false;
+        }
       }
 
       // Domains filter

@@ -102,9 +102,12 @@ class FirestoreService {
     final uid = _uid;
     if (uid.isEmpty) return;
     final Map<String, dynamic> updates = {'status': status.name};
-    if (readAt != null) updates['readAt'] = Timestamp.fromDate(readAt);
-    if (archivedAt != null)
+    if (readAt != null) {
+      updates['readAt'] = Timestamp.fromDate(readAt);
+    }
+    if (archivedAt != null) {
       updates['archivedAt'] = Timestamp.fromDate(archivedAt);
+    }
     await _linksRef(uid).doc(id).update(updates);
   }
 
@@ -143,11 +146,18 @@ class FirestoreService {
     final uid = _uid;
     if (uid.isEmpty) return;
     final Map<String, dynamic> updates = {};
-    if (title != null) updates['title'] = title;
-    if (faviconUrl != null) updates['faviconUrl'] = faviconUrl;
-    if (ogImageUrl != null) updates['ogImageUrl'] = ogImageUrl;
-    if (estimatedReadMinutes != null)
+    if (title != null) {
+      updates['title'] = title;
+    }
+    if (faviconUrl != null) {
+      updates['faviconUrl'] = faviconUrl;
+    }
+    if (ogImageUrl != null) {
+      updates['ogImageUrl'] = ogImageUrl;
+    }
+    if (estimatedReadMinutes != null) {
       updates['estimatedReadMinutes'] = estimatedReadMinutes;
+    }
     if (updates.isNotEmpty) {
       await _linksRef(uid).doc(id).update(updates);
     }
@@ -348,8 +358,9 @@ class FirestoreService {
     String targetUid, {
     bool onlyLinks = false,
   }) async {
-    if (sourceUid.isEmpty || targetUid.isEmpty || sourceUid == targetUid)
+    if (sourceUid.isEmpty || targetUid.isEmpty || sourceUid == targetUid) {
       return;
+    }
 
     final batchSize = 100;
 
