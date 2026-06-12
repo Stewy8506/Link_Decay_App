@@ -61,9 +61,9 @@ flutter run -d windows
 ```
 
 ### Running on Web / Extension Viewport
-To test the web-renderer structure inside a browser window:
+To test the web application inside a browser window:
 ```bash
-flutter run -d chrome --web-renderer html
+flutter run -d chrome
 ```
 
 ---

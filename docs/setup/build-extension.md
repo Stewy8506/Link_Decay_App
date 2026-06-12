@@ -17,11 +17,11 @@ The build relies on files under the `/web` directory:
 To build the extension, run the compiler with specific web options:
 
 ```bash
-flutter build web --web-renderer html --csp
+flutter build web --csp --no-web-resources-cdn
 ```
 
 ### Explaining the Compiler Flags:
-- `--web-renderer html`: Compiles without CanvasKit/WebAssembly, reducing compilation sizes and respecting standard browser cookie/storage policies.
+- `--no-web-resources-cdn`: Bundles all web static resources (like CanvasKit WebAssembly files) locally inside the build directory to avoid fetching them from a CDN, which violates extension Content Security Policies.
 - `--csp`: Enables Content Security Policy compliance by disabling dynamically evaluated script tags. This is **required** by Chrome Extensions Manifest V3 guidelines.
 
 ---

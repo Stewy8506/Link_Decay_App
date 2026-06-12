@@ -64,7 +64,7 @@ jobs:
         run: flutter build appbundle --release --dart-define-from-file=.env.json
 
       - name: Compile Web Extension
-        run: flutter build web --web-renderer html --csp --dart-define-from-file=.env.json
+        run: flutter build web --csp --no-web-resources-cdn --dart-define-from-file=.env.json
 
       - name: Package Web Extension
         run: |
