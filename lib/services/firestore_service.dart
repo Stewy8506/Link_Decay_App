@@ -24,8 +24,11 @@ class FirestoreService {
   CollectionReference<Map<String, dynamic>> _highlightsRef(String uid) =>
       _firestore.collection('users').doc(uid).collection('highlights');
 
-  DocumentReference<Map<String, dynamic>> _settingsDoc(String uid) =>
-      _firestore.collection('users').doc(uid).collection('settings').doc('app_settings');
+  DocumentReference<Map<String, dynamic>> _settingsDoc(String uid) => _firestore
+      .collection('users')
+      .doc(uid)
+      .collection('settings')
+      .doc('app_settings');
 
   // ─── Links Operations ──────────────────────────────────────────────────────
 
@@ -33,18 +36,23 @@ class FirestoreService {
     final uid = _uid;
     if (uid.isEmpty) return Stream.value([]);
     return _linksRef(uid).snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Link.fromMap(doc.data(), doc.id)).toList();
+      return snapshot.docs
+          .map((doc) => Link.fromMap(doc.data(), doc.id))
+          .toList();
     });
   }
 
   Stream<List<Link>> watchInboxLinks() {
     final uid = _uid;
     if (uid.isEmpty) return Stream.value([]);
-    return _linksRef(uid)
-        .where('status', isEqualTo: LinkStatus.inbox.name)
-        .snapshots()
-        .map((snapshot) {
-      final list = snapshot.docs.map((doc) => Link.fromMap(doc.data(), doc.id)).toList();
+    return _linksRef(
+      uid,
+    ).where('status', isEqualTo: LinkStatus.inbox.name).snapshots().map((
+      snapshot,
+    ) {
+      final list = snapshot.docs
+          .map((doc) => Link.fromMap(doc.data(), doc.id))
+          .toList();
       // Drift ordered inbox links by createdAt ascending, let's keep that default logic
       list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       return list;
@@ -55,21 +63,28 @@ class FirestoreService {
     final uid = _uid;
     if (uid.isEmpty) return Stream.value([]);
     return _linksRef(uid)
-        .where('status', whereIn: [LinkStatus.read.name, LinkStatus.archived.name])
+        .where(
+          'status',
+          whereIn: [LinkStatus.read.name, LinkStatus.archived.name],
+        )
         .snapshots()
         .map((snapshot) {
-      final list = snapshot.docs.map((doc) => Link.fromMap(doc.data(), doc.id)).toList();
-      // Drift ordered archive links by createdAt descending, let's keep that logic
-      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return list;
-    });
+          final list = snapshot.docs
+              .map((doc) => Link.fromMap(doc.data(), doc.id))
+              .toList();
+          // Drift ordered archive links by createdAt descending, let's keep that logic
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 
   Future<List<Link>> getAllLinksFuture() async {
     final uid = _uid;
     if (uid.isEmpty) return [];
     final snapshot = await _linksRef(uid).get();
-    return snapshot.docs.map((doc) => Link.fromMap(doc.data(), doc.id)).toList();
+    return snapshot.docs
+        .map((doc) => Link.fromMap(doc.data(), doc.id))
+        .toList();
   }
 
   Future<void> insertLink(Link link) async {
@@ -78,16 +93,26 @@ class FirestoreService {
     await _linksRef(uid).doc(link.id).set(link.toMap());
   }
 
-  Future<void> updateLinkStatus(String id, LinkStatus status, {DateTime? readAt, DateTime? archivedAt}) async {
+  Future<void> updateLinkStatus(
+    String id,
+    LinkStatus status, {
+    DateTime? readAt,
+    DateTime? archivedAt,
+  }) async {
     final uid = _uid;
     if (uid.isEmpty) return;
     final Map<String, dynamic> updates = {'status': status.name};
     if (readAt != null) updates['readAt'] = Timestamp.fromDate(readAt);
-    if (archivedAt != null) updates['archivedAt'] = Timestamp.fromDate(archivedAt);
+    if (archivedAt != null)
+      updates['archivedAt'] = Timestamp.fromDate(archivedAt);
     await _linksRef(uid).doc(id).update(updates);
   }
 
-  Future<void> snoozeLink(String id, DateTime snoozedUntil, int snoozedSeconds) async {
+  Future<void> snoozeLink(
+    String id,
+    DateTime snoozedUntil,
+    int snoozedSeconds,
+  ) async {
     final uid = _uid;
     if (uid.isEmpty) return;
     await _linksRef(uid).doc(id).update({
@@ -99,9 +124,7 @@ class FirestoreService {
   Future<void> clearSnooze(String id) async {
     final uid = _uid;
     if (uid.isEmpty) return;
-    await _linksRef(uid).doc(id).update({
-      'snoozedUntil': null,
-    });
+    await _linksRef(uid).doc(id).update({'snoozedUntil': null});
   }
 
   Future<void> deleteLink(String id) async {
@@ -123,7 +146,8 @@ class FirestoreService {
     if (title != null) updates['title'] = title;
     if (faviconUrl != null) updates['faviconUrl'] = faviconUrl;
     if (ogImageUrl != null) updates['ogImageUrl'] = ogImageUrl;
-    if (estimatedReadMinutes != null) updates['estimatedReadMinutes'] = estimatedReadMinutes;
+    if (estimatedReadMinutes != null)
+      updates['estimatedReadMinutes'] = estimatedReadMinutes;
     if (updates.isNotEmpty) {
       await _linksRef(uid).doc(id).update(updates);
     }
@@ -153,10 +177,15 @@ class FirestoreService {
     await _linksRef(uid).doc(id).update({'collectionId': collectionId});
   }
 
-  Future<void> updateCustomHalfLife(String id, double? customHalfLifeDays) async {
+  Future<void> updateCustomHalfLife(
+    String id,
+    double? customHalfLifeDays,
+  ) async {
     final uid = _uid;
     if (uid.isEmpty) return;
-    await _linksRef(uid).doc(id).update({'customHalfLifeDays': customHalfLifeDays});
+    await _linksRef(
+      uid,
+    ).doc(id).update({'customHalfLifeDays': customHalfLifeDays});
   }
 
   // ─── Collections Operations ────────────────────────────────────────────────
@@ -165,7 +194,9 @@ class FirestoreService {
     final uid = _uid;
     if (uid.isEmpty) return Stream.value([]);
     return _collectionsRef(uid).snapshots().map((snapshot) {
-      final list = snapshot.docs.map((doc) => Collection.fromMap(doc.data(), doc.id)).toList();
+      final list = snapshot.docs
+          .map((doc) => Collection.fromMap(doc.data(), doc.id))
+          .toList();
       list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       return list;
     });
@@ -175,7 +206,9 @@ class FirestoreService {
     final uid = _uid;
     if (uid.isEmpty) return [];
     final snapshot = await _collectionsRef(uid).get();
-    final list = snapshot.docs.map((doc) => Collection.fromMap(doc.data(), doc.id)).toList();
+    final list = snapshot.docs
+        .map((doc) => Collection.fromMap(doc.data(), doc.id))
+        .toList();
     list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     return list;
   }
@@ -184,7 +217,9 @@ class FirestoreService {
     final uid = _uid;
     if (uid.isEmpty) return [];
     final snapshot = await _filtersRef(uid).get();
-    return snapshot.docs.map((doc) => CustomFilter.fromMap(doc.data(), doc.id)).toList();
+    return snapshot.docs
+        .map((doc) => CustomFilter.fromMap(doc.data(), doc.id))
+        .toList();
   }
 
   Future<void> insertCollection(Collection collection) async {
@@ -203,9 +238,11 @@ class FirestoreService {
     final uid = _uid;
     if (uid.isEmpty) return;
     final batch = _firestore.batch();
-    
+
     // Set collectionId to null for all links belonging to this collection
-    final linksSnap = await _linksRef(uid).where('collectionId', isEqualTo: id).get();
+    final linksSnap = await _linksRef(
+      uid,
+    ).where('collectionId', isEqualTo: id).get();
     for (final doc in linksSnap.docs) {
       batch.update(doc.reference, {'collectionId': null});
     }
@@ -221,7 +258,9 @@ class FirestoreService {
     final uid = _uid;
     if (uid.isEmpty) return Stream.value([]);
     return _filtersRef(uid).snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => CustomFilter.fromMap(doc.data(), doc.id)).toList();
+      return snapshot.docs
+          .map((doc) => CustomFilter.fromMap(doc.data(), doc.id))
+          .toList();
     });
   }
 
@@ -248,11 +287,12 @@ class FirestoreService {
   Stream<List<LinkHighlight>> watchHighlightsForLink(String linkId) {
     final uid = _uid;
     if (uid.isEmpty) return Stream.value([]);
-    return _highlightsRef(uid)
-        .where('linkId', isEqualTo: linkId)
-        .snapshots()
-        .map((snapshot) {
-      final list = snapshot.docs.map((doc) => LinkHighlight.fromMap(doc.data(), doc.id)).toList();
+    return _highlightsRef(
+      uid,
+    ).where('linkId', isEqualTo: linkId).snapshots().map((snapshot) {
+      final list = snapshot.docs
+          .map((doc) => LinkHighlight.fromMap(doc.data(), doc.id))
+          .toList();
       list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return list;
     });
@@ -303,11 +343,16 @@ class FirestoreService {
 
   /// Merges user database from [sourceUid] to [targetUid].
   /// If [onlyLinks] is true, it only migrates the 'links' collection.
-  Future<void> migrateUserData(String sourceUid, String targetUid, {bool onlyLinks = false}) async {
-    if (sourceUid.isEmpty || targetUid.isEmpty || sourceUid == targetUid) return;
+  Future<void> migrateUserData(
+    String sourceUid,
+    String targetUid, {
+    bool onlyLinks = false,
+  }) async {
+    if (sourceUid.isEmpty || targetUid.isEmpty || sourceUid == targetUid)
+      return;
 
     final batchSize = 100;
-    
+
     // 1. Copy Links
     final linksSnapshot = await _linksRef(sourceUid).get();
     if (linksSnapshot.docs.isNotEmpty) {

@@ -65,12 +65,17 @@ class CustomFilters extends Table {
   RealColumn get minFreshness => real().nullable()();
   RealColumn get maxFreshness => real().nullable()();
   TextColumn get tags => text().nullable()(); // Comma-separated tag inclusions
-  TextColumn get collections => text().nullable()(); // Comma-separated collection ID inclusions
-  TextColumn get domains => text().nullable()(); // Comma-separated domain inclusions
+  TextColumn get collections =>
+      text().nullable()(); // Comma-separated collection ID inclusions
+  TextColumn get domains =>
+      text().nullable()(); // Comma-separated domain inclusions
   IntColumn get minReadTime => integer().nullable()();
   IntColumn get maxReadTime => integer().nullable()();
-  TextColumn get snoozeFilter => text().nullable()(); // 'all', 'exclude_snoozed', 'only_snoozed'
-  TextColumn get sortField => text().withDefault(const Constant('freshness_asc'))(); // 'freshness_asc', 'freshness_desc', 'created_desc', 'created_asc', 'title_asc', 'read_time_asc'
+  TextColumn get snoozeFilter =>
+      text().nullable()(); // 'all', 'exclude_snoozed', 'only_snoozed'
+  TextColumn get sortField => text().withDefault(
+    const Constant('freshness_asc'),
+  )(); // 'freshness_asc', 'freshness_desc', 'created_desc', 'created_asc', 'title_asc', 'read_time_asc'
 
   @override
   Set<Column> get primaryKey => {id};
@@ -93,28 +98,40 @@ class LinkHighlights extends Table {
 class AppSettings extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
   RealColumn get halfLifeDays => real().withDefault(const Constant(7.0))();
-  RealColumn get notificationThreshold => real().withDefault(const Constant(0.25))();
-  BoolColumn get notificationsEnabled => boolean().withDefault(const Constant(true))();
+  RealColumn get notificationThreshold =>
+      real().withDefault(const Constant(0.25))();
+  BoolColumn get notificationsEnabled =>
+      boolean().withDefault(const Constant(true))();
   BoolColumn get isDarkMode => boolean().withDefault(const Constant(true))();
 
   // Phase 7 Customizations
-  TextColumn get themePalette => text().withDefault(const Constant('warm_stone'))(); // 'warm_stone', 'cold_slate', 'forest_moss', 'pitch_charcoal'
-  TextColumn get swipeLeftAction => text().withDefault(const Constant('archive'))(); // 'none', 'read', 'archive', 'delete', 'snooze', 'collection'
-  TextColumn get swipeRightAction => text().withDefault(const Constant('read'))(); // 'none', 'read', 'archive', 'delete', 'snooze', 'collection'
+  TextColumn get themePalette => text().withDefault(
+    const Constant('warm_stone'),
+  )(); // 'warm_stone', 'cold_slate', 'forest_moss', 'pitch_charcoal'
+  TextColumn get swipeLeftAction => text().withDefault(
+    const Constant('archive'),
+  )(); // 'none', 'read', 'archive', 'delete', 'snooze', 'collection'
+  TextColumn get swipeRightAction => text().withDefault(
+    const Constant('read'),
+  )(); // 'none', 'read', 'archive', 'delete', 'snooze', 'collection'
 
   // Phase 8 Advanced Decay Overrides
-  TextColumn get domainHalfLifeOverrides => text().nullable()(); // JSON serialized Map<String, double>
-  TextColumn get tagHalfLifeOverrides => text().nullable()(); // JSON serialized Map<String, double>
+  TextColumn get domainHalfLifeOverrides =>
+      text().nullable()(); // JSON serialized Map<String, double>
+  TextColumn get tagHalfLifeOverrides =>
+      text().nullable()(); // JSON serialized Map<String, double>
 
   // V3 Features
   IntColumn get dailyReadingGoal => integer().withDefault(const Constant(2))();
 
   // V4 Customizations
-  TextColumn get snoozePresets => text().withDefault(const Constant('[1, 3, 7]'))();
+  TextColumn get snoozePresets =>
+      text().withDefault(const Constant('[1, 3, 7]'))();
   TextColumn get fontFamily => text().withDefault(const Constant('inter'))();
   TextColumn get customAccentColor => text().nullable()();
   TextColumn get customBgColor => text().nullable()();
-  TextColumn get decayCurveType => text().withDefault(const Constant('exponential'))();
+  TextColumn get decayCurveType =>
+      text().withDefault(const Constant('exponential'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -122,7 +139,9 @@ class AppSettings extends Table {
 
 // ─── Database ─────────────────────────────────────────────────────────────
 
-@DriftDatabase(tables: [Links, Collections, CustomFilters, LinkHighlights, AppSettings])
+@DriftDatabase(
+  tables: [Links, Collections, CustomFilters, LinkHighlights, AppSettings],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.connection);
@@ -215,15 +234,18 @@ class AppDatabase extends _$AppDatabase {
       LinksCompanion(
         status: Value(status),
         readAt: status == LinkStatus.read ? Value(now) : const Value.absent(),
-        archivedAt: status == LinkStatus.archived ? Value(now) : const Value.absent(),
+        archivedAt: status == LinkStatus.archived
+            ? Value(now)
+            : const Value.absent(),
       ),
     );
   }
 
   /// Snooze a link until [snoozedUntil], accumulating snoozed seconds.
   Future<void> snoozeLink(String id, DateTime snoozedUntil) async {
-    final existing = await (select(links)..where((l) => l.id.equals(id)))
-        .getSingleOrNull();
+    final existing = await (select(
+      links,
+    )..where((l) => l.id.equals(id))).getSingleOrNull();
     if (existing == null) return;
 
     final now = DateTime.now();
@@ -260,9 +282,15 @@ class AppDatabase extends _$AppDatabase {
     await (update(links)..where((l) => l.id.equals(id))).write(
       LinksCompanion(
         title: title != null ? Value(title) : const Value.absent(),
-        faviconUrl: faviconUrl != null ? Value(faviconUrl) : const Value.absent(),
-        ogImageUrl: ogImageUrl != null ? Value(ogImageUrl) : const Value.absent(),
-        estimatedReadMinutes: estimatedReadMinutes != null ? Value(estimatedReadMinutes) : const Value.absent(),
+        faviconUrl: faviconUrl != null
+            ? Value(faviconUrl)
+            : const Value.absent(),
+        ogImageUrl: ogImageUrl != null
+            ? Value(ogImageUrl)
+            : const Value.absent(),
+        estimatedReadMinutes: estimatedReadMinutes != null
+            ? Value(estimatedReadMinutes)
+            : const Value.absent(),
       ),
     );
   }
@@ -276,26 +304,33 @@ class AppDatabase extends _$AppDatabase {
 
   /// Update comma-separated tags string.
   Future<void> updateTags(String id, String tags) async {
-    await (update(links)..where((l) => l.id.equals(id)))
-        .write(LinksCompanion(tags: Value(tags)));
+    await (update(
+      links,
+    )..where((l) => l.id.equals(id))).write(LinksCompanion(tags: Value(tags)));
   }
 
   /// Update link notes.
   Future<void> updateNotes(String id, String notes) async {
-    await (update(links)..where((l) => l.id.equals(id)))
-        .write(LinksCompanion(notes: Value(notes)));
+    await (update(links)..where((l) => l.id.equals(id))).write(
+      LinksCompanion(notes: Value(notes)),
+    );
   }
 
   /// Update link's collection.
   Future<void> updateLinkCollection(String id, String? collectionId) async {
-    await (update(links)..where((l) => l.id.equals(id)))
-        .write(LinksCompanion(collectionId: Value(collectionId)));
+    await (update(links)..where((l) => l.id.equals(id))).write(
+      LinksCompanion(collectionId: Value(collectionId)),
+    );
   }
 
   /// Update custom half life overrides.
-  Future<void> updateCustomHalfLife(String id, double? customHalfLifeDays) async {
-    await (update(links)..where((l) => l.id.equals(id)))
-        .write(LinksCompanion(customHalfLifeDays: Value(customHalfLifeDays)));
+  Future<void> updateCustomHalfLife(
+    String id,
+    double? customHalfLifeDays,
+  ) async {
+    await (update(links)..where((l) => l.id.equals(id))).write(
+      LinksCompanion(customHalfLifeDays: Value(customHalfLifeDays)),
+    );
   }
 
   /// Get inbox links below a freshness threshold.
@@ -305,25 +340,35 @@ class AppDatabase extends _$AppDatabase {
     String decayCurveType = 'exponential',
   }) async {
     final now = DateTime.now();
-    final allInbox = await (select(links)
-          ..where((l) => l.status.equalsValue(LinkStatus.inbox)))
-        .get();
+    final allInbox = await (select(
+      links,
+    )..where((l) => l.status.equalsValue(LinkStatus.inbox))).get();
 
     final settings = await getSettings();
     Map<String, double> domainOverrides = const {};
     Map<String, double> tagOverrides = const {};
 
     if (settings != null) {
-      if (settings.domainHalfLifeOverrides != null && settings.domainHalfLifeOverrides!.isNotEmpty) {
+      if (settings.domainHalfLifeOverrides != null &&
+          settings.domainHalfLifeOverrides!.isNotEmpty) {
         try {
-          final Map<String, dynamic> decoded = jsonDecode(settings.domainHalfLifeOverrides!);
-          domainOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+          final Map<String, dynamic> decoded = jsonDecode(
+            settings.domainHalfLifeOverrides!,
+          );
+          domainOverrides = decoded.map(
+            (key, val) => MapEntry(key, (val as num).toDouble()),
+          );
         } catch (_) {}
       }
-      if (settings.tagHalfLifeOverrides != null && settings.tagHalfLifeOverrides!.isNotEmpty) {
+      if (settings.tagHalfLifeOverrides != null &&
+          settings.tagHalfLifeOverrides!.isNotEmpty) {
         try {
-          final Map<String, dynamic> decoded = jsonDecode(settings.tagHalfLifeOverrides!);
-          tagOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+          final Map<String, dynamic> decoded = jsonDecode(
+            settings.tagHalfLifeOverrides!,
+          );
+          tagOverrides = decoded.map(
+            (key, val) => MapEntry(key, (val as num).toDouble()),
+          );
         } catch (_) {}
       }
     }
@@ -358,7 +403,9 @@ class AppDatabase extends _$AppDatabase {
   // ── Collections ────────────────────────────────────────────────────────
 
   Stream<List<Collection>> watchCollections() {
-    return (select(collections)..orderBy([(c) => OrderingTerm.asc(c.sortOrder)])).watch();
+    return (select(
+      collections,
+    )..orderBy([(c) => OrderingTerm.asc(c.sortOrder)])).watch();
   }
 
   Future<void> insertCollection(CollectionsCompanion entry) async {
@@ -366,13 +413,16 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> updateCollection(CollectionsCompanion entry) async {
-    await (update(collections)..where((c) => c.id.equals(entry.id.value))).write(entry);
+    await (update(
+      collections,
+    )..where((c) => c.id.equals(entry.id.value))).write(entry);
   }
 
   Future<void> deleteCollection(String id) async {
     // Set collectionId to null for all links belonging to this collection.
-    await (update(links)..where((l) => l.collectionId.equals(id)))
-        .write(const LinksCompanion(collectionId: Value(null)));
+    await (update(links)..where((l) => l.collectionId.equals(id))).write(
+      const LinksCompanion(collectionId: Value(null)),
+    );
     // Delete the collection record.
     await (delete(collections)..where((c) => c.id.equals(id))).go();
   }
@@ -388,7 +438,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> updateCustomFilter(CustomFiltersCompanion entry) async {
-    await (update(customFilters)..where((f) => f.id.equals(entry.id.value))).write(entry);
+    await (update(
+      customFilters,
+    )..where((f) => f.id.equals(entry.id.value))).write(entry);
   }
 
   Future<void> deleteCustomFilter(String id) async {
@@ -415,13 +467,15 @@ class AppDatabase extends _$AppDatabase {
   // ── Settings ──────────────────────────────────────────────────────────
 
   Future<AppSetting?> getSettings() async {
-    return (select(appSettings)..where((s) => s.id.equals(1)))
-        .getSingleOrNull();
+    return (select(
+      appSettings,
+    )..where((s) => s.id.equals(1))).getSingleOrNull();
   }
 
   Stream<AppSetting?> watchSettings() {
-    return (select(appSettings)..where((s) => s.id.equals(1)))
-        .watchSingleOrNull();
+    return (select(
+      appSettings,
+    )..where((s) => s.id.equals(1))).watchSingleOrNull();
   }
 
   Future<void> upsertSettings(AppSettingsCompanion entry) async {

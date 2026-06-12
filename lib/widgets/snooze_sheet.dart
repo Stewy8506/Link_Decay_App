@@ -19,7 +19,12 @@ class SnoozeSheet extends ConsumerWidget {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceLG, kSpaceMD, kSpaceMD),
+        padding: const EdgeInsets.fromLTRB(
+          kSpaceMD,
+          kSpaceLG,
+          kSpaceMD,
+          kSpaceMD,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,8 +66,8 @@ class SnoozeSheet extends ConsumerWidget {
               final icon = days <= 2
                   ? Icons.bedtime_outlined
                   : (days <= 6
-                      ? Icons.calendar_view_week_outlined
-                      : Icons.calendar_month_outlined);
+                        ? Icons.calendar_view_week_outlined
+                        : Icons.calendar_month_outlined);
               return Padding(
                 padding: const EdgeInsets.only(bottom: kSpaceSM),
                 child: _SnoozeOption(
@@ -74,9 +79,7 @@ class SnoozeSheet extends ConsumerWidget {
                 ),
               );
             }),
-            _CustomSnoozeOption(
-              linkId: linkId,
-            ),
+            _CustomSnoozeOption(linkId: linkId),
             const SizedBox(height: kSpaceMD),
           ],
         ),
@@ -113,9 +116,7 @@ class _SnoozeOption extends ConsumerWidget {
         onTap: () async {
           HapticFeedback.lightImpact();
           Navigator.of(context).pop();
-          await ref
-              .read(linkActionsProvider.notifier)
-              .snooze(linkId, duration);
+          await ref.read(linkActionsProvider.notifier).snooze(linkId, duration);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -212,10 +213,7 @@ class _CustomSnoozeOption extends ConsumerWidget {
             firstDate: now,
             lastDate: now.add(const Duration(days: 365)),
             builder: (context, child) {
-              return Theme(
-                data: Theme.of(context),
-                child: child!,
-              );
+              return Theme(data: Theme.of(context), child: child!);
             },
           );
 
@@ -232,7 +230,9 @@ class _CustomSnoozeOption extends ConsumerWidget {
             if (difference.isNegative) return;
 
             Navigator.of(context).pop();
-            await ref.read(linkActionsProvider.notifier).snooze(linkId, difference);
+            await ref
+                .read(linkActionsProvider.notifier)
+                .snooze(linkId, difference);
 
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -308,8 +308,19 @@ class _CustomSnoozeOption extends ConsumerWidget {
 
   String _formatDate(DateTime dt) {
     final months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${dt.day} ${months[dt.month]} ${dt.year}';
   }

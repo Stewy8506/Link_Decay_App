@@ -104,7 +104,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       width: active ? 16 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: active ? cs.onSurface : cs.outline.withValues(alpha: 0.4),
+                        color: active
+                            ? cs.onSurface
+                            : cs.outline.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     );
@@ -126,7 +128,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             curve: Curves.easeInOutCubic,
                           );
                         } else {
-                          ref.read(onboardingCompletedProvider.notifier).completeOnboarding();
+                          ref
+                              .read(onboardingCompletedProvider.notifier)
+                              .completeOnboarding();
                         }
                       },
                       style: FilledButton.styleFrom(
@@ -244,7 +248,8 @@ class _DashedCirclePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _DashedCirclePainter oldDelegate) => color != oldDelegate.color;
+  bool shouldRepaint(covariant _DashedCirclePainter oldDelegate) =>
+      color != oldDelegate.color;
 }
 
 // ── Slide 1: Welcome Slide ───────────────────────────────────────────────────
@@ -256,7 +261,8 @@ class _WelcomeSlide extends StatefulWidget {
   State<_WelcomeSlide> createState() => _WelcomeSlideState();
 }
 
-class _WelcomeSlideState extends State<_WelcomeSlide> with TickerProviderStateMixin {
+class _WelcomeSlideState extends State<_WelcomeSlide>
+    with TickerProviderStateMixin {
   late AnimationController _rotationController;
   late AnimationController _textController;
   late Animation<double> _textFade;
@@ -275,13 +281,15 @@ class _WelcomeSlideState extends State<_WelcomeSlide> with TickerProviderStateMi
       duration: const Duration(milliseconds: 650),
     );
 
-    _textFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.easeOut),
-    );
+    _textFade = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeOut));
 
-    _textSlide = Tween<Offset>(begin: const Offset(0.0, 0.2), end: Offset.zero).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.easeOutCubic),
-    );
+    _textSlide = Tween<Offset>(begin: const Offset(0.0, 0.2), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _textController, curve: Curves.easeOutCubic),
+        );
 
     if (widget.isActive) {
       _textController.forward();
@@ -320,7 +328,9 @@ class _WelcomeSlideState extends State<_WelcomeSlide> with TickerProviderStateMi
                 turns: _rotationController,
                 child: CustomPaint(
                   size: const Size(160, 160),
-                  painter: _DashedCirclePainter(color: cs.outline.withValues(alpha: 0.3)),
+                  painter: _DashedCirclePainter(
+                    color: cs.outline.withValues(alpha: 0.3),
+                  ),
                 ),
               ),
               Container(
@@ -410,7 +420,8 @@ class _DecaySlide extends StatefulWidget {
   State<_DecaySlide> createState() => _DecaySlideState();
 }
 
-class _DecaySlideState extends State<_DecaySlide> with TickerProviderStateMixin {
+class _DecaySlideState extends State<_DecaySlide>
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late List<Animation<double>> _scaleAnimations;
 
@@ -590,7 +601,8 @@ class _AutomationSlide extends StatefulWidget {
   State<_AutomationSlide> createState() => _AutomationSlideState();
 }
 
-class _AutomationSlideState extends State<_AutomationSlide> with TickerProviderStateMixin {
+class _AutomationSlideState extends State<_AutomationSlide>
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late List<Animation<Offset>> _slideAnimations;
   late List<Animation<double>> _opacityAnimations;
@@ -606,7 +618,10 @@ class _AutomationSlideState extends State<_AutomationSlide> with TickerProviderS
     _slideAnimations = List.generate(3, (index) {
       final start = index * 0.15;
       final end = start + 0.5;
-      return Tween<Offset>(begin: const Offset(0.0, 0.4), end: Offset.zero).animate(
+      return Tween<Offset>(
+        begin: const Offset(0.0, 0.4),
+        end: Offset.zero,
+      ).animate(
         CurvedAnimation(
           parent: _controller,
           curve: Interval(start, end, curve: Curves.easeOutCubic),
@@ -653,10 +668,7 @@ class _AutomationSlideState extends State<_AutomationSlide> with TickerProviderS
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: cs.outline,
-          width: 0.5,
-        ),
+        border: Border.all(color: cs.outline, width: 0.5),
       ),
       child: Text(
         label,
@@ -760,7 +772,8 @@ class _NotificationSlide extends StatefulWidget {
   State<_NotificationSlide> createState() => _NotificationSlideState();
 }
 
-class _NotificationSlideState extends State<_NotificationSlide> with SingleTickerProviderStateMixin {
+class _NotificationSlideState extends State<_NotificationSlide>
+    with SingleTickerProviderStateMixin {
   late AnimationController _bellController;
   late Animation<double> _bellRotation;
   bool _requested = false;
@@ -774,13 +787,31 @@ class _NotificationSlideState extends State<_NotificationSlide> with SingleTicke
       duration: const Duration(milliseconds: 500),
     );
 
-    _bellRotation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: -0.15), weight: 1),
-      TweenSequenceItem(tween: Tween<double>(begin: -0.15, end: 0.15), weight: 2),
-      TweenSequenceItem(tween: Tween<double>(begin: 0.15, end: -0.1), weight: 2),
-      TweenSequenceItem(tween: Tween<double>(begin: -0.1, end: 0.1), weight: 2),
-      TweenSequenceItem(tween: Tween<double>(begin: 0.1, end: 0.0), weight: 1),
-    ]).animate(CurvedAnimation(parent: _bellController, curve: Curves.easeInOut));
+    _bellRotation =
+        TweenSequence<double>([
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 0.0, end: -0.15),
+            weight: 1,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: -0.15, end: 0.15),
+            weight: 2,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 0.15, end: -0.1),
+            weight: 2,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: -0.1, end: 0.1),
+            weight: 2,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 0.1, end: 0.0),
+            weight: 1,
+          ),
+        ]).animate(
+          CurvedAnimation(parent: _bellController, curve: Curves.easeInOut),
+        );
 
     if (widget.isActive) {
       _startBellWiggleLoop();
@@ -842,9 +873,24 @@ class _NotificationSlideState extends State<_NotificationSlide> with SingleTicke
                   duration: const Duration(milliseconds: 300),
                   child: _requested
                       ? (_granted
-                          ? const Icon(Icons.check_circle_outline_rounded, color: kFreshnessHigh, size: 44, key: ValueKey('granted'))
-                          : Icon(Icons.notifications_active_rounded, color: cs.primary, size: 40, key: const ValueKey('denied')))
-                      : Icon(Icons.notifications_none_rounded, color: cs.onSurface.withValues(alpha: 0.6), size: 40, key: const ValueKey('bell')),
+                            ? const Icon(
+                                Icons.check_circle_outline_rounded,
+                                color: kFreshnessHigh,
+                                size: 44,
+                                key: ValueKey('granted'),
+                              )
+                            : Icon(
+                                Icons.notifications_active_rounded,
+                                color: cs.primary,
+                                size: 40,
+                                key: const ValueKey('denied'),
+                              ))
+                      : Icon(
+                          Icons.notifications_none_rounded,
+                          color: cs.onSurface.withValues(alpha: 0.6),
+                          size: 40,
+                          key: const ValueKey('bell'),
+                        ),
                 ),
               ),
             ),
@@ -878,11 +924,15 @@ class _NotificationSlideState extends State<_NotificationSlide> with SingleTicke
               child: _requested
                   ? Center(
                       child: Text(
-                        _granted ? '✓ Notification Access Enabled' : 'Access Denied (Continuing...)',
+                        _granted
+                            ? '✓ Notification Access Enabled'
+                            : 'Access Denied (Continuing...)',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: _granted ? kFreshnessHigh : cs.onSurface.withValues(alpha: 0.5),
+                          color: _granted
+                              ? kFreshnessHigh
+                              : cs.onSurface.withValues(alpha: 0.5),
                         ),
                       ),
                     )
@@ -893,7 +943,10 @@ class _NotificationSlideState extends State<_NotificationSlide> with SingleTicke
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                       ),
                       child: Text(
                         'Enable Notifications',
@@ -921,7 +974,8 @@ class _PrivacySlide extends StatefulWidget {
   State<_PrivacySlide> createState() => _PrivacySlideState();
 }
 
-class _PrivacySlideState extends State<_PrivacySlide> with SingleTickerProviderStateMixin {
+class _PrivacySlideState extends State<_PrivacySlide>
+    with SingleTickerProviderStateMixin {
   late AnimationController _lockController;
   late Animation<double> _lockAnimation;
 

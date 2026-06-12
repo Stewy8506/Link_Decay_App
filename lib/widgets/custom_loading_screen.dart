@@ -10,7 +10,8 @@ class CustomLoadingScreen extends StatefulWidget {
   State<CustomLoadingScreen> createState() => _CustomLoadingScreenState();
 }
 
-class _CustomLoadingScreenState extends State<CustomLoadingScreen> with SingleTickerProviderStateMixin {
+class _CustomLoadingScreenState extends State<CustomLoadingScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -72,7 +73,8 @@ class _CustomLoadingScreenState extends State<CustomLoadingScreen> with SingleTi
               animation: _controller,
               builder: (context, child) {
                 // Smooth breathing opacity using cosine curve
-                final double opacity = 0.35 + 0.45 * (0.5 - 0.5 * cos(_controller.value * 2 * pi));
+                final double opacity =
+                    0.35 + 0.45 * (0.5 - 0.5 * cos(_controller.value * 2 * pi));
                 return Opacity(
                   opacity: opacity,
                   child: Text(
@@ -110,7 +112,11 @@ class _RipplePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     // Draw central dot
-    canvas.drawCircle(center, 4, basePaint..color = color.withValues(alpha: 0.5));
+    canvas.drawCircle(
+      center,
+      4,
+      basePaint..color = color.withValues(alpha: 0.5),
+    );
 
     // Three waves of ripples
     for (int i = 0; i < 3; i++) {

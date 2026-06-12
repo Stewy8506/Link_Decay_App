@@ -17,7 +17,10 @@ class MultiSelectBar extends ConsumerWidget {
         final cs = Theme.of(context).colorScheme;
         return AlertDialog(
           backgroundColor: Theme.of(context).cardColor,
-          title: Text('Add Tag to Selected', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          title: Text(
+            'Add Tag to Selected',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
           content: TextField(
             controller: controller,
             decoration: const InputDecoration(hintText: 'e.g. readlater'),
@@ -26,7 +29,10 @@ class MultiSelectBar extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5))),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -38,7 +44,13 @@ class MultiSelectBar extends ConsumerWidget {
                   HapticFeedback.mediumImpact();
                 }
               },
-              child: Text('Add', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600)),
+              child: Text(
+                'Add',
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
@@ -60,9 +72,7 @@ class MultiSelectBar extends ConsumerWidget {
       builder: (context) {
         return SafeArea(
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: screenHeight * 0.65,
-            ),
+            constraints: BoxConstraints(maxHeight: screenHeight * 0.65),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -71,15 +81,27 @@ class MultiSelectBar extends ConsumerWidget {
                   padding: const EdgeInsets.all(kSpaceMD),
                   child: Text(
                     'Move Selected to Folder',
-                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurface),
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
                   ),
                 ),
                 const Divider(height: 0),
                 ListTile(
-                  leading: Icon(Icons.folder_off_outlined, color: cs.onSurface.withValues(alpha: 0.6)),
-                  title: Text('No Folder (Uncategorized)', style: GoogleFonts.inter(color: cs.onSurface)),
+                  leading: Icon(
+                    Icons.folder_off_outlined,
+                    color: cs.onSurface.withValues(alpha: 0.6),
+                  ),
+                  title: Text(
+                    'No Folder (Uncategorized)',
+                    style: GoogleFonts.inter(color: cs.onSurface),
+                  ),
                   onTap: () {
-                    ref.read(linkActionsProvider.notifier).bulkMoveToCollection(ids, null);
+                    ref
+                        .read(linkActionsProvider.notifier)
+                        .bulkMoveToCollection(ids, null);
                     ref.read(selectedLinkIdsProvider.notifier).state = const {};
                     Navigator.pop(context);
                     HapticFeedback.mediumImpact();
@@ -88,7 +110,8 @@ class MultiSelectBar extends ConsumerWidget {
                 const Divider(height: 0),
                 Expanded(
                   child: collectionsAsync.when(
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                     error: (e, st) => const SizedBox.shrink(),
                     data: (folders) {
                       return ListView.builder(
@@ -96,11 +119,20 @@ class MultiSelectBar extends ConsumerWidget {
                         itemBuilder: (context, index) {
                           final folder = folders[index];
                           return ListTile(
-                            leading: Text(folder.emoji ?? '📁', style: const TextStyle(fontSize: 16)),
-                            title: Text(folder.name, style: GoogleFonts.inter(color: cs.onSurface)),
+                            leading: Text(
+                              folder.emoji ?? '📁',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            title: Text(
+                              folder.name,
+                              style: GoogleFonts.inter(color: cs.onSurface),
+                            ),
                             onTap: () {
-                              ref.read(linkActionsProvider.notifier).bulkMoveToCollection(ids, folder.id);
-                              ref.read(selectedLinkIdsProvider.notifier).state = const {};
+                              ref
+                                  .read(linkActionsProvider.notifier)
+                                  .bulkMoveToCollection(ids, folder.id);
+                              ref.read(selectedLinkIdsProvider.notifier).state =
+                                  const {};
                               Navigator.pop(context);
                               HapticFeedback.mediumImpact();
                             },
@@ -127,12 +159,20 @@ class MultiSelectBar extends ConsumerWidget {
         final cs = Theme.of(context).colorScheme;
         return AlertDialog(
           backgroundColor: Theme.of(context).cardColor,
-          title: Text('Delete Selected Links?', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-          content: Text('Are you sure you want to delete ${ids.length} selected links permanently?'),
+          title: Text(
+            'Delete Selected Links?',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          content: Text(
+            'Are you sure you want to delete ${ids.length} selected links permanently?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5))),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -141,7 +181,13 @@ class MultiSelectBar extends ConsumerWidget {
                 Navigator.pop(context);
                 HapticFeedback.heavyImpact();
               },
-              child: Text('Delete', style: TextStyle(color: kFreshnessLow, fontWeight: FontWeight.w600)),
+              child: Text(
+                'Delete',
+                style: TextStyle(
+                  color: kFreshnessLow,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
@@ -212,8 +258,11 @@ class MultiSelectBar extends ConsumerWidget {
                     icon: Icons.check_circle_outline,
                     tooltip: 'Mark as Read',
                     onPressed: () {
-                      ref.read(linkActionsProvider.notifier).bulkMarkRead(selectedIds);
-                      ref.read(selectedLinkIdsProvider.notifier).state = const {};
+                      ref
+                          .read(linkActionsProvider.notifier)
+                          .bulkMarkRead(selectedIds);
+                      ref.read(selectedLinkIdsProvider.notifier).state =
+                          const {};
                       HapticFeedback.mediumImpact();
                     },
                   ),
@@ -221,20 +270,25 @@ class MultiSelectBar extends ConsumerWidget {
                     icon: Icons.archive_outlined,
                     tooltip: 'Archive All',
                     onPressed: () {
-                      ref.read(linkActionsProvider.notifier).bulkArchive(selectedIds);
-                      ref.read(selectedLinkIdsProvider.notifier).state = const {};
+                      ref
+                          .read(linkActionsProvider.notifier)
+                          .bulkArchive(selectedIds);
+                      ref.read(selectedLinkIdsProvider.notifier).state =
+                          const {};
                       HapticFeedback.mediumImpact();
                     },
                   ),
                   _ActionButton(
                     icon: Icons.folder_outlined,
                     tooltip: 'Move to Folder',
-                    onPressed: () => _showFolderPicker(context, ref, selectedIds),
+                    onPressed: () =>
+                        _showFolderPicker(context, ref, selectedIds),
                   ),
                   _ActionButton(
                     icon: Icons.label_outline,
                     tooltip: 'Add Tag',
-                    onPressed: () => _showAddTagDialog(context, ref, selectedIds),
+                    onPressed: () =>
+                        _showAddTagDialog(context, ref, selectedIds),
                   ),
                   _ActionButton(
                     icon: Icons.delete_outline,

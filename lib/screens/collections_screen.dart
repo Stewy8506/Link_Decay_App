@@ -88,17 +88,19 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen>
                 final name = nameController.text.trim();
                 final emoji = emojiController.text.trim();
                 if (name.isNotEmpty) {
-                  ref.read(linkActionsProvider.notifier).addCollection(
-                        name,
-                        emoji.isNotEmpty ? emoji : '📁',
-                      );
+                  ref
+                      .read(linkActionsProvider.notifier)
+                      .addCollection(name, emoji.isNotEmpty ? emoji : '📁');
                   HapticFeedback.lightImpact();
                   Navigator.pop(context);
                 }
               },
               child: Text(
                 'Create',
-                style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -121,7 +123,12 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen>
           children: [
             // Custom Header Tab Switcher
             Padding(
-              padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceMD, kSpaceMD, kSpaceSM),
+              padding: const EdgeInsets.fromLTRB(
+                kSpaceMD,
+                kSpaceMD,
+                kSpaceMD,
+                kSpaceSM,
+              ),
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
@@ -141,8 +148,14 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen>
                   ),
                   labelColor: cs.onSurface,
                   unselectedLabelColor: cs.onSurface.withValues(alpha: 0.45),
-                  labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
-                  unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w400, fontSize: 13),
+                  labelStyle: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                  unselectedLabelStyle: GoogleFonts.inter(
+                    fontWeight: FontWeight.w400,
+                    fontSize: 13,
+                  ),
                   tabs: const [
                     Tab(text: 'Folders'),
                     Tab(text: 'Archive'),
@@ -155,7 +168,9 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _FoldersTab(onCreatePressed: () => _showCreateCollectionDialog(context)),
+                  _FoldersTab(
+                    onCreatePressed: () => _showCreateCollectionDialog(context),
+                  ),
                   const ArchiveScreen(), // Embedded archive
                 ],
               ),
@@ -178,7 +193,8 @@ class _FoldersTab extends ConsumerWidget {
     final isWide = MediaQuery.of(context).size.width > 600;
 
     return collectionsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+      loading: () =>
+          const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (folders) {
         if (folders.isEmpty) {
@@ -213,12 +229,14 @@ class _FoldersTab extends ConsumerWidget {
           }
         }
 
-        final avgFreshness = organizedCount > 0 ? (freshnessSum / organizedCount) : 1.0;
+        final avgFreshness = organizedCount > 0
+            ? (freshnessSum / organizedCount)
+            : 1.0;
         final freshColor = avgFreshness > 0.66
             ? kFreshnessHigh
             : avgFreshness > 0.33
-                ? kFreshnessMid
-                : kFreshnessLow;
+            ? kFreshnessMid
+            : kFreshnessLow;
 
         return CustomScrollView(
           physics: const BouncingScrollPhysics(),
@@ -238,60 +256,68 @@ class _FoldersTab extends ConsumerWidget {
             ),
 
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceMD, kSpaceMD, kSpaceMD),
+              padding: const EdgeInsets.fromLTRB(
+                kSpaceMD,
+                kSpaceMD,
+                kSpaceMD,
+                kSpaceMD,
+              ),
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isWide 
-                      ? ((MediaQuery.of(context).size.width - 240) / 220).floor().clamp(2, 6) 
+                  crossAxisCount: isWide
+                      ? ((MediaQuery.of(context).size.width - 240) / 220)
+                            .floor()
+                            .clamp(2, 6)
                       : 2,
                   crossAxisSpacing: kSpaceMD,
                   mainAxisSpacing: kSpaceMD,
                   childAspectRatio: isWide ? 1.25 : 1.15,
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    Widget card;
-                    if (index == folders.length) {
-                      // Create New Folder Card
-                      card = _CreateFolderCard(onTap: onCreatePressed);
-                    } else {
-                      final folder = folders[index];
-                      // Compute link counts in inbox
-                      final folderInboxLinks = allLinks
-                          .where((l) => l.collectionId == folder.id && l.status == LinkStatus.inbox)
-                          .toList();
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  Widget card;
+                  if (index == folders.length) {
+                    // Create New Folder Card
+                    card = _CreateFolderCard(onTap: onCreatePressed);
+                  } else {
+                    final folder = folders[index];
+                    // Compute link counts in inbox
+                    final folderInboxLinks = allLinks
+                        .where(
+                          (l) =>
+                              l.collectionId == folder.id &&
+                              l.status == LinkStatus.inbox,
+                        )
+                        .toList();
 
-                      card = _FolderCard(
-                        collection: folder,
-                        inboxCount: folderInboxLinks.length,
-                        links: folderInboxLinks,
-                      );
-                    }
-
-                    // Staggered-like entry animation
-                    return TweenAnimationBuilder<double>(
-                      tween: Tween<double>(begin: 0.0, end: 1.0),
-                      duration: Duration(milliseconds: 300 + (index * 60).clamp(0, 300)),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, 16 * (1 - value)),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: card,
+                    card = _FolderCard(
+                      collection: folder,
+                      inboxCount: folderInboxLinks.length,
+                      links: folderInboxLinks,
                     );
-                  },
-                  childCount: folders.length + 1,
-                ),
+                  }
+
+                  // Staggered-like entry animation
+                  return TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0.0, end: 1.0),
+                    duration: Duration(
+                      milliseconds: 300 + (index * 60).clamp(0, 300),
+                    ),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Transform.translate(
+                          offset: Offset(0, 16 * (1 - value)),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: card,
+                  );
+                }, childCount: folders.length + 1),
               ),
             ),
-            SliverToBoxAdapter(
-              child: SizedBox(height: isWide ? 40 : 120),
-            ),
+            SliverToBoxAdapter(child: SizedBox(height: isWide ? 40 : 120)),
           ],
         );
       },
@@ -321,10 +347,15 @@ class _FoldersDashboardPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final totalInbox = organizedCount + uncategorizedCount;
-    final orgPercent = totalInbox > 0 ? (organizedCount / totalInbox * 100).round() : 0;
+    final orgPercent = totalInbox > 0
+        ? (organizedCount / totalInbox * 100).round()
+        : 0;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: kSpaceSM),
+      margin: const EdgeInsets.symmetric(
+        horizontal: kSpaceMD,
+        vertical: kSpaceSM,
+      ),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(kRadiusLG),
@@ -554,7 +585,10 @@ class _EmptyFoldersView extends StatelessWidget {
                 onCreatePressed();
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: kSpaceLG, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: kSpaceLG,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: cs.onSurface,
                   borderRadius: BorderRadius.circular(kRadiusXL),
@@ -629,7 +663,10 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
               const Divider(height: 0),
               ListTile(
                 leading: Icon(Icons.edit_outlined, color: cs.onSurface),
-                title: Text('Rename Folder', style: GoogleFonts.inter(color: cs.onSurface)),
+                title: Text(
+                  'Rename Folder',
+                  style: GoogleFonts.inter(color: cs.onSurface),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _showRenameDialog(context);
@@ -637,10 +674,17 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
               ),
               ListTile(
                 leading: Icon(Icons.delete_outline, color: kFreshnessLow),
-                title: Text('Delete Folder', style: GoogleFonts.inter(color: kFreshnessLow)),
-                subtitle: const Text('Links will be moved back to general Inbox'),
+                title: Text(
+                  'Delete Folder',
+                  style: GoogleFonts.inter(color: kFreshnessLow),
+                ),
+                subtitle: const Text(
+                  'Links will be moved back to general Inbox',
+                ),
                 onTap: () {
-                  ref.read(linkActionsProvider.notifier).deleteCollection(widget.collection.id);
+                  ref
+                      .read(linkActionsProvider.notifier)
+                      .deleteCollection(widget.collection.id);
                   Navigator.pop(context);
                   HapticFeedback.heavyImpact();
                 },
@@ -655,7 +699,9 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
 
   void _showRenameDialog(BuildContext context) {
     final nameController = TextEditingController(text: widget.collection.name);
-    final emojiController = TextEditingController(text: widget.collection.emoji ?? '📁');
+    final emojiController = TextEditingController(
+      text: widget.collection.emoji ?? '📁',
+    );
 
     showDialog<void>(
       context: context,
@@ -663,7 +709,10 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
         final cs = Theme.of(context).colorScheme;
         return AlertDialog(
           backgroundColor: Theme.of(context).cardColor,
-          title: Text('Edit Folder', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          title: Text(
+            'Edit Folder',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -684,14 +733,19 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5))),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+              ),
             ),
             TextButton(
               onPressed: () {
                 final name = nameController.text.trim();
                 final emoji = emojiController.text.trim();
                 if (name.isNotEmpty) {
-                  ref.read(linkActionsProvider.notifier).updateCollection(
+                  ref
+                      .read(linkActionsProvider.notifier)
+                      .updateCollection(
                         widget.collection.id,
                         name,
                         emoji.isNotEmpty ? emoji : '📁',
@@ -700,7 +754,13 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
                   HapticFeedback.lightImpact();
                 }
               },
-              child: Text('Save', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600)),
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
@@ -735,8 +795,8 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
     final freshColor = avgFreshness > 0.66
         ? kFreshnessHigh
         : avgFreshness > 0.33
-            ? kFreshnessMid
-            : kFreshnessLow;
+        ? kFreshnessMid
+        : kFreshnessLow;
 
     return AnimatedScale(
       scale: _scale,
@@ -770,7 +830,9 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
             child: Container(
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHighest.withValues(alpha: 0.85),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(kRadiusMD)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(kRadiusMD),
+                ),
                 border: Border.all(color: cs.outline, width: 0.5),
               ),
             ),
@@ -791,7 +853,9 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
                 border: Border.all(color: cs.outline, width: 0.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? 0.25 : 0.04),
+                    color: Colors.black.withValues(
+                      alpha: theme.brightness == Brightness.dark ? 0.25 : 0.04,
+                    ),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -807,7 +871,9 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
                     Navigator.push<void>(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => CollectionDetailScreen(collection: widget.collection),
+                        builder: (_) => CollectionDetailScreen(
+                          collection: widget.collection,
+                        ),
                       ),
                     );
                   },
@@ -828,7 +894,10 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
                               style: const TextStyle(fontSize: 26),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: cs.onSurface.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(12),
@@ -865,13 +934,17 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
                               else
                                 ...widget.links.take(2).map((l) {
                                   return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 1.5),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 1.5,
+                                    ),
                                     child: Row(
                                       children: [
                                         Icon(
                                           Icons.link,
                                           size: 10,
-                                          color: cs.onSurface.withValues(alpha: 0.3),
+                                          color: cs.onSurface.withValues(
+                                            alpha: 0.3,
+                                          ),
                                         ),
                                         const SizedBox(width: 4),
                                         Expanded(
@@ -881,7 +954,9 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
                                             overflow: TextOverflow.ellipsis,
                                             style: GoogleFonts.inter(
                                               fontSize: 10.5,
-                                              color: cs.onSurface.withValues(alpha: 0.55),
+                                              color: cs.onSurface.withValues(
+                                                alpha: 0.55,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -919,8 +994,13 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
                                       child: LinearProgressIndicator(
                                         value: avgFreshness,
                                         minHeight: 3,
-                                        backgroundColor: cs.outline.withValues(alpha: 0.4),
-                                        valueColor: AlwaysStoppedAnimation<Color>(freshColor),
+                                        backgroundColor: cs.outline.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              freshColor,
+                                            ),
                                       ),
                                     ),
                                   ),
@@ -930,7 +1010,9 @@ class _FolderCardState extends ConsumerState<_FolderCard> {
                                     style: GoogleFonts.inter(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
-                                      color: cs.onSurface.withValues(alpha: 0.45),
+                                      color: cs.onSurface.withValues(
+                                        alpha: 0.45,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -989,12 +1071,20 @@ class _CreateFolderCardState extends State<_CreateFolderCard> {
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(kRadiusMD),
-              border: Border.all(color: cs.outline, width: 1.0, style: BorderStyle.solid),
+              border: Border.all(
+                color: cs.outline,
+                width: 1.0,
+                style: BorderStyle.solid,
+              ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.create_new_folder_outlined, color: cs.onSurface.withValues(alpha: 0.4), size: 28),
+                Icon(
+                  Icons.create_new_folder_outlined,
+                  color: cs.onSurface.withValues(alpha: 0.4),
+                  size: 28,
+                ),
                 const SizedBox(height: kSpaceSM),
                 Text(
                   'Add Folder',
@@ -1038,9 +1128,14 @@ class CollectionDetailScreen extends ConsumerWidget {
             tooltip: 'Export Public Read List',
             onPressed: () {
               final allInbox = linksAsync.valueOrNull ?? [];
-              final folderLinks = allInbox.where((l) => l.collectionId == collection.id).toList();
+              final folderLinks = allInbox
+                  .where((l) => l.collectionId == collection.id)
+                  .toList();
               if (folderLinks.isNotEmpty) {
-                ExportService.instance.shareCollectionAsHtml(collection, folderLinks);
+                ExportService.instance.shareCollectionAsHtml(
+                  collection,
+                  folderLinks,
+                );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -1055,17 +1150,24 @@ class CollectionDetailScreen extends ConsumerWidget {
       ),
 
       body: linksAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+        loading: () =>
+            const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (allInbox) {
-          final folderLinks = allInbox.where((l) => l.collectionId == collection.id).toList();
+          final folderLinks = allInbox
+              .where((l) => l.collectionId == collection.id)
+              .toList();
 
           if (folderLinks.isEmpty) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.folder_open_outlined, size: 64, color: cs.onSurface.withValues(alpha: 0.25)),
+                  Icon(
+                    Icons.folder_open_outlined,
+                    size: 64,
+                    color: cs.onSurface.withValues(alpha: 0.25),
+                  ),
                   const SizedBox(height: kSpaceMD),
                   Text(
                     'No links in this folder',
@@ -1088,7 +1190,10 @@ class CollectionDetailScreen extends ConsumerWidget {
                 final isWide = MediaQuery.of(context).size.width > 600;
                 return SizedBox(height: isWide ? 40 : 100);
               }
-              return LinkCard(key: ValueKey(folderLinks[i].id), link: folderLinks[i]);
+              return LinkCard(
+                key: ValueKey(folderLinks[i].id),
+                link: folderLinks[i],
+              );
             },
           );
         },
@@ -1102,7 +1207,10 @@ class CollectionDetailScreen extends ConsumerWidget {
               builder: (_) => Dialog(
                 backgroundColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent,
-                insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 460),
                   child: ClipRRect(
@@ -1115,7 +1223,8 @@ class CollectionDetailScreen extends ConsumerWidget {
           } else {
             showModalBottomSheet<void>(
               context: context,
-              builder: (_) => AddLinkSheet(preSelectedCollectionId: collection.id),
+              builder: (_) =>
+                  AddLinkSheet(preSelectedCollectionId: collection.id),
               isScrollControlled: true,
               useSafeArea: true,
             );

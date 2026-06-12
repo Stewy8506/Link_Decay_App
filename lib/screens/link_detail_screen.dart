@@ -33,7 +33,9 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
   }
 
   void _saveNotes(Link link) {
-    ref.read(linkActionsProvider.notifier).updateNotes(link.id, _notesController.text.trim());
+    ref
+        .read(linkActionsProvider.notifier)
+        .updateNotes(link.id, _notesController.text.trim());
     setState(() => _isNotesEditing = false);
     HapticFeedback.lightImpact();
   }
@@ -54,7 +56,10 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
         final cs = Theme.of(context).colorScheme;
         return AlertDialog(
           backgroundColor: Theme.of(context).cardColor,
-          title: Text('Rename Link', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          title: Text(
+            'Rename Link',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
           content: TextField(
             controller: controller,
             maxLines: 2,
@@ -67,18 +72,29 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5))),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+              ),
             ),
             TextButton(
               onPressed: () {
                 final txt = controller.text.trim();
                 if (txt.isNotEmpty) {
-                  ref.read(linkActionsProvider.notifier).updateTitle(link.id, txt);
+                  ref
+                      .read(linkActionsProvider.notifier)
+                      .updateTitle(link.id, txt);
                   Navigator.pop(context);
                   HapticFeedback.lightImpact();
                 }
               },
-              child: Text('Save', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600)),
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
@@ -94,7 +110,10 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
         final cs = Theme.of(context).colorScheme;
         return AlertDialog(
           backgroundColor: Theme.of(context).cardColor,
-          title: Text('Add Highlight', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          title: Text(
+            'Add Highlight',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
           content: TextField(
             controller: _highlightController,
             maxLines: 4,
@@ -107,18 +126,29 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5))),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+              ),
             ),
             TextButton(
               onPressed: () {
                 final txt = _highlightController.text.trim();
                 if (txt.isNotEmpty) {
-                  ref.read(linkActionsProvider.notifier).addHighlight(widget.linkId, txt);
+                  ref
+                      .read(linkActionsProvider.notifier)
+                      .addHighlight(widget.linkId, txt);
                   Navigator.pop(context);
                   HapticFeedback.lightImpact();
                 }
               },
-              child: Text('Add', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600)),
+              child: Text(
+                'Add',
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
@@ -175,7 +205,9 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final highlightsStream = ref.watch(firestoreServiceProvider).watchHighlightsForLink(link.id);
+    final highlightsStream = ref
+        .watch(firestoreServiceProvider)
+        .watchHighlightsForLink(link.id);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -194,7 +226,11 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   onPressed: () => Navigator.maybePop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -210,7 +246,8 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                     Image.network(
                       link.ogImageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _fallbackCover(context, link),
+                      errorBuilder: (context, error, stackTrace) =>
+                          _fallbackCover(context, link),
                     )
                   else
                     _fallbackCover(context, link),
@@ -248,7 +285,8 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                           child: link.faviconUrl != null
                               ? Image.network(
                                   link.faviconUrl!,
-                                  errorBuilder: (context, error, stackTrace) => _fallbackFavicon(link.domain, cs),
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      _fallbackFavicon(link.domain, cs),
                                 )
                               : _fallbackFavicon(link.domain, cs),
                         ),
@@ -282,8 +320,13 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.edit, size: 16, color: Colors.white70),
-                                    onPressed: () => _showEditTitleDialog(context, link),
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      size: 16,
+                                      color: Colors.white70,
+                                    ),
+                                    onPressed: () =>
+                                        _showEditTitleDialog(context, link),
                                     constraints: const BoxConstraints(),
                                     padding: const EdgeInsets.all(4),
                                     tooltip: 'Rename Link',
@@ -306,12 +349,20 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
             delegate: SliverChildListDelegate([
               // ── General Link Status Info ──────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceLG, kSpaceMD, kSpaceSM),
+                padding: const EdgeInsets.fromLTRB(
+                  kSpaceMD,
+                  kSpaceLG,
+                  kSpaceMD,
+                  kSpaceSM,
+                ),
                 child: Row(
                   children: [
                     // Freshness Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: freshnessColor(score).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
@@ -343,7 +394,11 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                     if (link.estimatedReadMinutes != null)
                       Row(
                         children: [
-                          Icon(Icons.auto_stories_outlined, size: 14, color: cs.onSurface.withValues(alpha: 0.4)),
+                          Icon(
+                            Icons.auto_stories_outlined,
+                            size: 14,
+                            color: cs.onSurface.withValues(alpha: 0.4),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '~${link.estimatedReadMinutes} min read',
@@ -369,32 +424,41 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                         .split(',')
                         .map((t) => t.trim())
                         .where((t) => t.isNotEmpty)
-                        .map((tag) => Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: cs.outline.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: cs.outline.withValues(alpha: 0.15),
-                                  width: 0.5,
+                        .map(
+                          (tag) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cs.outline.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: cs.outline.withValues(alpha: 0.15),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.tag,
+                                  size: 12,
+                                  color: cs.onSurface.withValues(alpha: 0.5),
                                 ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.tag, size: 12, color: cs.onSurface.withValues(alpha: 0.5)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    tag,
-                                    style: GoogleFonts.inter(
-                                      color: cs.onSurface.withValues(alpha: 0.7),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  tag,
+                                  style: GoogleFonts.inter(
+                                    color: cs.onSurface.withValues(alpha: 0.7),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                ],
-                              ),
-                            ))
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -405,23 +469,45 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
               _CardWrapper(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceMD, kSpaceMD, 4),
+                    padding: const EdgeInsets.fromLTRB(
+                      kSpaceMD,
+                      kSpaceMD,
+                      kSpaceMD,
+                      4,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          link.customHalfLifeDays == null ? 'Using Global Lifespan' : 'Custom Lifespan Override',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface),
+                          link.customHalfLifeDays == null
+                              ? 'Using Global Lifespan'
+                              : 'Custom Lifespan Override',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: cs.onSurface,
+                          ),
                         ),
                         if (link.customHalfLifeDays != null)
                           TextButton(
                             onPressed: () {
-                              ref.read(linkActionsProvider.notifier).updateCustomHalfLife(link.id, null);
+                              ref
+                                  .read(linkActionsProvider.notifier)
+                                  .updateCustomHalfLife(link.id, null);
                               HapticFeedback.lightImpact();
                             },
-                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                            child: Text('Reset', style: GoogleFonts.inter(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.5))),
-                          )
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                            ),
+                            child: Text(
+                              'Reset',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: cs.onSurface.withValues(alpha: 0.5),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -431,14 +517,24 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                     max: 60,
                     divisions: 58,
                     onChanged: (val) {
-                      ref.read(linkActionsProvider.notifier).updateCustomHalfLife(link.id, val / 2.0);
+                      ref
+                          .read(linkActionsProvider.notifier)
+                          .updateCustomHalfLife(link.id, val / 2.0);
                     },
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(kSpaceMD, 0, kSpaceMD, kSpaceMD),
+                    padding: const EdgeInsets.fromLTRB(
+                      kSpaceMD,
+                      0,
+                      kSpaceMD,
+                      kSpaceMD,
+                    ),
                     child: Text(
                       'This link has a total lifespan of ${(currentHalfLife * 2).toStringAsFixed(0)} days before it is considered stale.',
-                      style: GoogleFonts.inter(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.45)),
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: cs.onSurface.withValues(alpha: 0.45),
+                      ),
                     ),
                   ),
                 ],
@@ -457,10 +553,14 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                           GestureDetector(
                             onTap: () => setState(() => _isNotesEditing = true),
                             child: Text(
-                              link.notes?.isNotEmpty == true ? link.notes! : 'Tap to write down key takeaways, quotes, or why you saved this link…',
+                              link.notes?.isNotEmpty == true
+                                  ? link.notes!
+                                  : 'Tap to write down key takeaways, quotes, or why you saved this link…',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
-                                color: link.notes?.isNotEmpty == true ? cs.onSurface : cs.onSurface.withValues(alpha: 0.35),
+                                color: link.notes?.isNotEmpty == true
+                                    ? cs.onSurface
+                                    : cs.onSurface.withValues(alpha: 0.35),
                                 height: 1.5,
                               ),
                             ),
@@ -473,15 +573,25 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                               hintText: 'Write notes here…',
                               border: InputBorder.none,
                             ),
-                            style: GoogleFonts.inter(fontSize: 14, height: 1.5, color: cs.onSurface),
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              height: 1.5,
+                              color: cs.onSurface,
+                            ),
                             autofocus: true,
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               TextButton(
-                                onPressed: () => setState(() => _isNotesEditing = false),
-                                child: Text('Cancel', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5))),
+                                onPressed: () =>
+                                    setState(() => _isNotesEditing = false),
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: cs.onSurface.withValues(alpha: 0.5),
+                                  ),
+                                ),
                               ),
                               ElevatedButton(
                                 onPressed: () => _saveNotes(link),
@@ -494,7 +604,7 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                               ),
                             ],
                           ),
-                        ]
+                        ],
                       ],
                     ),
                   ),
@@ -503,7 +613,12 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
 
               // ── Highlights Section ────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceLG, kSpaceMD, kSpaceSM),
+                padding: const EdgeInsets.fromLTRB(
+                  kSpaceMD,
+                  kSpaceLG,
+                  kSpaceMD,
+                  kSpaceSM,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -557,16 +672,26 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                           color: kFreshnessLow.withValues(alpha: 0.2),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: kSpaceLG),
-                          child: Icon(Icons.delete_outline, color: kFreshnessLow),
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: kFreshnessLow,
+                          ),
                         ),
                         onDismissed: (_) {
-                          ref.read(linkActionsProvider.notifier).deleteHighlight(highlight.id);
+                          ref
+                              .read(linkActionsProvider.notifier)
+                              .deleteHighlight(highlight.id);
                           HapticFeedback.lightImpact();
                         },
                         child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: 5),
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: kSpaceMD,
+                            vertical: 5,
+                          ),
                           decoration: BoxDecoration(
-                            color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                            color: cs.surfaceContainerHighest.withValues(
+                              alpha: 0.5,
+                            ),
                             borderRadius: const BorderRadius.only(
                               topRight: Radius.circular(kRadiusMD),
                               bottomRight: Radius.circular(kRadiusMD),
@@ -576,9 +701,18 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                                 color: freshnessColor(score),
                                 width: 3.5,
                               ),
-                              top: BorderSide(color: cs.outline.withValues(alpha: 0.3), width: 0.5),
-                              right: BorderSide(color: cs.outline.withValues(alpha: 0.3), width: 0.5),
-                              bottom: BorderSide(color: cs.outline.withValues(alpha: 0.3), width: 0.5),
+                              top: BorderSide(
+                                color: cs.outline.withValues(alpha: 0.3),
+                                width: 0.5,
+                              ),
+                              right: BorderSide(
+                                color: cs.outline.withValues(alpha: 0.3),
+                                width: 0.5,
+                              ),
+                              bottom: BorderSide(
+                                color: cs.outline.withValues(alpha: 0.3),
+                                width: 0.5,
+                              ),
                             ),
                           ),
                           child: Padding(
@@ -586,7 +720,13 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.format_quote, size: 18, color: freshnessColor(score).withValues(alpha: 0.5)),
+                                Icon(
+                                  Icons.format_quote,
+                                  size: 18,
+                                  color: freshnessColor(
+                                    score,
+                                  ).withValues(alpha: 0.5),
+                                ),
                                 const SizedBox(width: kSpaceSM),
                                 Expanded(
                                   child: Text(
@@ -620,13 +760,17 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                   ],
                   if (link.archivedAt != null) ...[
                     const Divider(height: 0),
-                    _InfoRow(label: 'Archived', value: _formatDate(link.archivedAt!)),
+                    _InfoRow(
+                      label: 'Archived',
+                      value: _formatDate(link.archivedAt!),
+                    ),
                   ],
                   if (link.snoozedSeconds > 0) ...[
                     const Divider(height: 0),
                     _InfoRow(
                       label: 'Snoozes Accumulation',
-                      value: '${(link.snoozedSeconds / 3600).toStringAsFixed(1)} hours',
+                      value:
+                          '${(link.snoozedSeconds / 3600).toStringAsFixed(1)} hours',
                     ),
                   ],
                 ],
@@ -634,7 +778,7 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
 
               const SizedBox(height: kSpaceXL),
             ]),
-          )
+          ),
         ],
       ),
 
@@ -642,12 +786,7 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: cs.surfaceContainerHighest,
-          border: Border(
-            top: BorderSide(
-              color: cs.outline,
-              width: 0.5,
-            ),
-          ),
+          border: Border(top: BorderSide(color: cs.outline, width: 0.5)),
         ),
         child: SafeArea(
           top: false,
@@ -696,7 +835,9 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                     icon: Icons.check_circle_outline,
                     label: 'Mark Read',
                     onPressed: () {
-                      ref.read(linkActionsProvider.notifier).markAsRead(link.id);
+                      ref
+                          .read(linkActionsProvider.notifier)
+                          .markAsRead(link.id);
                       HapticFeedback.mediumImpact();
                       Navigator.pop(context);
                     },
@@ -706,14 +847,18 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
                     icon: Icons.restore_page_outlined,
                     label: 'To Inbox',
                     onPressed: () async {
-                      final success = await ref.read(linkActionsProvider.notifier).restoreToInbox(link.id);
+                      final success = await ref
+                          .read(linkActionsProvider.notifier)
+                          .restoreToInbox(link.id);
                       if (!success) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
                                 'Archived links cannot be unarchived once they have completely decayed.',
-                                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               backgroundColor: kFreshnessLow,
                             ),
@@ -769,11 +914,7 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
         children: [
           Opacity(
             opacity: 0.04,
-            child: Icon(
-              Icons.image_outlined,
-              size: 140,
-              color: cs.onSurface,
-            ),
+            child: Icon(Icons.image_outlined, size: 140, color: cs.onSurface),
           ),
           Center(
             child: Column(
@@ -818,8 +959,19 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
 
   String _formatDate(DateTime dt) {
     final months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${dt.day} ${months[dt.month]} ${dt.year}';
   }
@@ -835,7 +987,12 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceLG, kSpaceMD, kSpaceSM),
+      padding: const EdgeInsets.fromLTRB(
+        kSpaceMD,
+        kSpaceLG,
+        kSpaceMD,
+        kSpaceSM,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -900,11 +1057,18 @@ class _InfoRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.inter(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.w500),
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: cs.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           Text(
             value,
-            style: GoogleFonts.inter(fontSize: 13, color: cs.onSurface.withValues(alpha: 0.5)),
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: cs.onSurface.withValues(alpha: 0.5),
+            ),
           ),
         ],
       ),
@@ -942,7 +1106,11 @@ class _ActionButton extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
-              style: GoogleFonts.inter(fontSize: 10, color: displayColor, fontWeight: FontWeight.w500),
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                color: displayColor,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),

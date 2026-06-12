@@ -61,17 +61,19 @@ class CollectionPickerSheet extends ConsumerWidget {
                 final name = nameController.text.trim();
                 final emoji = emojiController.text.trim();
                 if (name.isNotEmpty) {
-                  ref.read(linkActionsProvider.notifier).addCollection(
-                        name,
-                        emoji.isNotEmpty ? emoji : '📁',
-                      );
+                  ref
+                      .read(linkActionsProvider.notifier)
+                      .addCollection(name, emoji.isNotEmpty ? emoji : '📁');
                   HapticFeedback.lightImpact();
                   Navigator.pop(context);
                 }
               },
               child: Text(
                 'Create',
-                style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -100,9 +102,7 @@ class CollectionPickerSheet extends ConsumerWidget {
       ),
       child: SafeArea(
         child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: screenHeight * 0.65,
-          ),
+          constraints: BoxConstraints(maxHeight: screenHeight * 0.65),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,14 +140,18 @@ class CollectionPickerSheet extends ConsumerWidget {
                   'No Folder (Uncategorized)',
                   style: GoogleFonts.inter(
                     color: cs.onSurface,
-                    fontWeight: currentCollectionId == null ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: currentCollectionId == null
+                        ? FontWeight.w600
+                        : FontWeight.w400,
                   ),
                 ),
                 trailing: currentCollectionId == null
                     ? Icon(Icons.check, color: cs.onSurface, size: 18)
                     : null,
                 onTap: () {
-                  ref.read(linkActionsProvider.notifier).updateLinkCollection(linkId, null);
+                  ref
+                      .read(linkActionsProvider.notifier)
+                      .updateLinkCollection(linkId, null);
                   HapticFeedback.lightImpact();
                   Navigator.pop(context);
                 },
@@ -159,7 +163,9 @@ class CollectionPickerSheet extends ConsumerWidget {
                 child: collectionsAsync.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.all(kSpaceLG),
-                    child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+                    child: Center(
+                      child: CircularProgressIndicator(strokeWidth: 1.5),
+                    ),
                   ),
                   error: (e, _) => Padding(
                     padding: const EdgeInsets.all(kSpaceLG),
@@ -175,8 +181,8 @@ class CollectionPickerSheet extends ConsumerWidget {
                             Text(
                               'No folders created yet.',
                               style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  color: cs.onSurface.withValues(alpha: 0.4),
+                                fontSize: 14,
+                                color: cs.onSurface.withValues(alpha: 0.4),
                               ),
                             ),
                           ],
@@ -199,14 +205,18 @@ class CollectionPickerSheet extends ConsumerWidget {
                             folder.name,
                             style: GoogleFonts.inter(
                               color: cs.onSurface,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
                           trailing: isSelected
                               ? Icon(Icons.check, color: cs.onSurface, size: 18)
                               : null,
                           onTap: () {
-                            ref.read(linkActionsProvider.notifier).updateLinkCollection(linkId, folder.id);
+                            ref
+                                .read(linkActionsProvider.notifier)
+                                .updateLinkCollection(linkId, folder.id);
                             HapticFeedback.lightImpact();
                             Navigator.pop(context);
                           },

@@ -28,7 +28,9 @@ class AuthService {
   Future<AuthCredential?> getGoogleCredential() async {
     try {
       if (kIsWeb) {
-        throw UnsupportedError('getGoogleCredential is not supported on Web. Use linkWithGoogle.');
+        throw UnsupportedError(
+          'getGoogleCredential is not supported on Web. Use linkWithGoogle.',
+        );
       }
 
       // For native platforms (Android, iOS, macOS)
@@ -41,7 +43,8 @@ class AuthService {
         return null; // User canceled sign-in
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       return GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,

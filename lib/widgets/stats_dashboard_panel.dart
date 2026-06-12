@@ -34,15 +34,21 @@ class StatsDashboardPanel extends ConsumerWidget {
             alignment: Alignment.center,
             child: Text(
               'No stats available yet. Save and read links first!',
-              style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.45)),
+              style: GoogleFonts.inter(
+                color: cs.onSurface.withValues(alpha: 0.45),
+              ),
               textAlign: TextAlign.center,
             ),
           );
         }
 
         // ── Metrics Calculations ──────────────────────────────────────────
-        final totalRead = links.where((l) => l.status == LinkStatus.read).length;
-        final totalInbox = links.where((l) => l.status == LinkStatus.inbox).length;
+        final totalRead = links
+            .where((l) => l.status == LinkStatus.read)
+            .length;
+        final totalInbox = links
+            .where((l) => l.status == LinkStatus.inbox)
+            .length;
 
         // Freshness Distribution
         int freshCount = 0;
@@ -84,12 +90,16 @@ class StatsDashboardPanel extends ConsumerWidget {
         for (int i = 6; i >= 0; i--) {
           final date = now.subtract(Duration(days: i));
           daysOfWeek.add(_dayAbbreviation(date.weekday));
-          
+
           // Count saved on this day
-          savedActivity[6 - i] = links.where((l) => _isSameDay(l.createdAt, date)).length;
-          
+          savedActivity[6 - i] = links
+              .where((l) => _isSameDay(l.createdAt, date))
+              .length;
+
           // Count read on this day
-          readActivity[6 - i] = links.where((l) => l.readAt != null && _isSameDay(l.readAt!, date)).length;
+          readActivity[6 - i] = links
+              .where((l) => l.readAt != null && _isSameDay(l.readAt!, date))
+              .length;
         }
 
         // Heatmap calculation (last 28 days)
@@ -99,26 +109,29 @@ class StatsDashboardPanel extends ConsumerWidget {
 
         for (int i = 27; i >= 0; i--) {
           final date = todayDateOnly.subtract(Duration(days: i));
-          heatmapData[27 - i] = links.where((l) => l.readAt != null && _isSameDay(l.readAt!, date)).length;
+          heatmapData[27 - i] = links
+              .where((l) => l.readAt != null && _isSameDay(l.readAt!, date))
+              .length;
         }
 
         // Reading Streak
-        final readDates = links
-            .where((l) => l.readAt != null)
-            .map((l) => DateUtils.dateOnly(l.readAt!))
-            .toSet()
-            .toList()
-          ..sort((a, b) => b.compareTo(a));
+        final readDates =
+            links
+                .where((l) => l.readAt != null)
+                .map((l) => DateUtils.dateOnly(l.readAt!))
+                .toSet()
+                .toList()
+              ..sort((a, b) => b.compareTo(a));
 
         int currentStreak = 0;
         if (readDates.isNotEmpty) {
           final today = DateUtils.dateOnly(now);
           final yesterday = today.subtract(const Duration(days: 1));
-          
+
           if (readDates.contains(today) || readDates.contains(yesterday)) {
             currentStreak = 1;
             var checkDate = readDates.contains(today) ? today : yesterday;
-            
+
             while (true) {
               checkDate = checkDate.subtract(const Duration(days: 1));
               if (readDates.contains(checkDate)) {
@@ -135,7 +148,12 @@ class StatsDashboardPanel extends ConsumerWidget {
             color: cs.surfaceContainerHighest,
             border: Border(bottom: BorderSide(color: cs.outline, width: 0.5)),
           ),
-          padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceSM, kSpaceMD, kSpaceMD),
+          padding: const EdgeInsets.fromLTRB(
+            kSpaceMD,
+            kSpaceSM,
+            kSpaceMD,
+            kSpaceMD,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -145,7 +163,11 @@ class StatsDashboardPanel extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.analytics_outlined, size: 18, color: cs.onSurface),
+                      Icon(
+                        Icons.analytics_outlined,
+                        size: 18,
+                        color: cs.onSurface,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Performance Insights',
@@ -161,7 +183,7 @@ class StatsDashboardPanel extends ConsumerWidget {
                     icon: const Icon(Icons.keyboard_arrow_up, size: 20),
                     onPressed: onClose,
                     visualDensity: VisualDensity.compact,
-                  )
+                  ),
                 ],
               ),
               const Divider(height: 10),
@@ -179,7 +201,12 @@ class StatsDashboardPanel extends ConsumerWidget {
                   ),
                 ),
               ),
-              _buildActivityBarChart(cs, daysOfWeek, savedActivity, readActivity),
+              _buildActivityBarChart(
+                cs,
+                daysOfWeek,
+                savedActivity,
+                readActivity,
+              ),
 
               const SizedBox(height: kSpaceSM),
 
@@ -187,15 +214,30 @@ class StatsDashboardPanel extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildMetricCard(cs, 'Streak', '$currentStreak days', Icons.local_fire_department_outlined),
+                    child: _buildMetricCard(
+                      cs,
+                      'Streak',
+                      '$currentStreak days',
+                      Icons.local_fire_department_outlined,
+                    ),
                   ),
                   const SizedBox(width: kSpaceSM),
                   Expanded(
-                    child: _buildMetricCard(cs, 'Total Read', '$totalRead links', Icons.done_all),
+                    child: _buildMetricCard(
+                      cs,
+                      'Total Read',
+                      '$totalRead links',
+                      Icons.done_all,
+                    ),
                   ),
                   const SizedBox(width: kSpaceSM),
                   Expanded(
-                    child: _buildMetricCard(cs, 'Inbox Active', '$totalInbox links', Icons.inbox_outlined),
+                    child: _buildMetricCard(
+                      cs,
+                      'Inbox Active',
+                      '$totalInbox links',
+                      Icons.inbox_outlined,
+                    ),
                   ),
                 ],
               ),
@@ -233,7 +275,13 @@ class StatsDashboardPanel extends ConsumerWidget {
                     ),
                   ),
                 ),
-                _buildFreshnessDistribution(cs, totalInbox, freshCount, fadingCount, staleCount),
+                _buildFreshnessDistribution(
+                  cs,
+                  totalInbox,
+                  freshCount,
+                  fadingCount,
+                  staleCount,
+                ),
               ],
 
               // Top Domains list
@@ -260,11 +308,14 @@ class StatsDashboardPanel extends ConsumerWidget {
                       backgroundColor: cs.outline.withValues(alpha: 0.3),
                       side: BorderSide.none,
                       padding: EdgeInsets.zero,
-                      labelStyle: GoogleFonts.inter(fontSize: 11, color: cs.onSurface),
+                      labelStyle: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: cs.onSurface,
+                      ),
                     );
                   }).toList(),
-                )
-              ]
+                ),
+              ],
             ],
           ),
         );
@@ -272,7 +323,12 @@ class StatsDashboardPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricCard(ColorScheme cs, String label, String value, IconData icon) {
+  Widget _buildMetricCard(
+    ColorScheme cs,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
@@ -292,7 +348,10 @@ class StatsDashboardPanel extends ConsumerWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 10, color: cs.onSurface.withValues(alpha: 0.45)),
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: cs.onSurface.withValues(alpha: 0.45),
+                  ),
                 ),
               ),
             ],
@@ -300,7 +359,11 @@ class StatsDashboardPanel extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             value,
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurface,
+            ),
           ),
         ],
       ),
@@ -334,9 +397,21 @@ class StatsDashboardPanel extends ConsumerWidget {
               height: 10,
               child: Row(
                 children: [
-                  if (fresh > 0) Expanded(flex: (freshPct * 100).round(), child: Container(color: kFreshnessHigh)),
-                  if (fading > 0) Expanded(flex: (fadingPct * 100).round(), child: Container(color: kFreshnessMid)),
-                  if (stale > 0) Expanded(flex: (stalePct * 100).round(), child: Container(color: kFreshnessLow)),
+                  if (fresh > 0)
+                    Expanded(
+                      flex: (freshPct * 100).round(),
+                      child: Container(color: kFreshnessHigh),
+                    ),
+                  if (fading > 0)
+                    Expanded(
+                      flex: (fadingPct * 100).round(),
+                      child: Container(color: kFreshnessMid),
+                    ),
+                  if (stale > 0)
+                    Expanded(
+                      flex: (stalePct * 100).round(),
+                      child: Container(color: kFreshnessLow),
+                    ),
                 ],
               ),
             ),
@@ -350,7 +425,7 @@ class StatsDashboardPanel extends ConsumerWidget {
               _buildLegendBadge(kFreshnessMid, 'Fading ($fading)'),
               _buildLegendBadge(kFreshnessLow, 'Stale ($stale)'),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -359,14 +434,25 @@ class StatsDashboardPanel extends ConsumerWidget {
   Widget _buildLegendBadge(Color color, String label) {
     return Row(
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 6),
-        Text(label, style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
 
-  Widget _buildHeatmapGrid(ColorScheme cs, List<int> heatmapData, int dailyGoal) {
+  Widget _buildHeatmapGrid(
+    ColorScheme cs,
+    List<int> heatmapData,
+    int dailyGoal,
+  ) {
     final weekLabels = ['3w ago', '2w ago', '1w ago', 'This wk'];
     final dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -383,18 +469,21 @@ class StatsDashboardPanel extends ConsumerWidget {
           Row(
             children: [
               const SizedBox(width: 50),
-              ...List.generate(7, (i) => Expanded(
-                child: Center(
-                  child: Text(
-                    dayLabels[i],
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface.withValues(alpha: 0.4),
+              ...List.generate(
+                7,
+                (i) => Expanded(
+                  child: Center(
+                    child: Text(
+                      dayLabels[i],
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface.withValues(alpha: 0.4),
+                      ),
                     ),
                   ),
                 ),
-              )),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -417,7 +506,7 @@ class StatsDashboardPanel extends ConsumerWidget {
                   ...List.generate(7, (dayIndex) {
                     final dataIndex = weekIndex * 7 + dayIndex;
                     final readCount = heatmapData[dataIndex];
-                    
+
                     Color cellColor = cs.outline.withValues(alpha: 0.12);
                     if (readCount >= dailyGoal) {
                       cellColor = kFreshnessHigh;
@@ -453,7 +542,10 @@ class StatsDashboardPanel extends ConsumerWidget {
             children: [
               Text(
                 '0 reads',
-                style: GoogleFonts.inter(fontSize: 8.5, color: cs.onSurface.withValues(alpha: 0.4)),
+                style: GoogleFonts.inter(
+                  fontSize: 8.5,
+                  color: cs.onSurface.withValues(alpha: 0.4),
+                ),
               ),
               const SizedBox(width: 4),
               Container(
@@ -476,7 +568,10 @@ class StatsDashboardPanel extends ConsumerWidget {
               const SizedBox(width: 4),
               Text(
                 'Progress',
-                style: GoogleFonts.inter(fontSize: 8.5, color: cs.onSurface.withValues(alpha: 0.4)),
+                style: GoogleFonts.inter(
+                  fontSize: 8.5,
+                  color: cs.onSurface.withValues(alpha: 0.4),
+                ),
               ),
               const SizedBox(width: 8),
               Container(
@@ -490,7 +585,10 @@ class StatsDashboardPanel extends ConsumerWidget {
               const SizedBox(width: 4),
               Text(
                 'Goal met ($dailyGoal+)',
-                style: GoogleFonts.inter(fontSize: 8.5, color: cs.onSurface.withValues(alpha: 0.4)),
+                style: GoogleFonts.inter(
+                  fontSize: 8.5,
+                  color: cs.onSurface.withValues(alpha: 0.4),
+                ),
               ),
             ],
           ),
@@ -601,14 +699,22 @@ class StatsDashboardPanel extends ConsumerWidget {
 
   String _dayAbbreviation(int weekday) {
     switch (weekday) {
-      case DateTime.monday: return 'M';
-      case DateTime.tuesday: return 'T';
-      case DateTime.wednesday: return 'W';
-      case DateTime.thursday: return 'T';
-      case DateTime.friday: return 'F';
-      case DateTime.saturday: return 'S';
-      case DateTime.sunday: return 'S';
-      default: return '';
+      case DateTime.monday:
+        return 'M';
+      case DateTime.tuesday:
+        return 'T';
+      case DateTime.wednesday:
+        return 'W';
+      case DateTime.thursday:
+        return 'T';
+      case DateTime.friday:
+        return 'F';
+      case DateTime.saturday:
+        return 'S';
+      case DateTime.sunday:
+        return 'S';
+      default:
+        return '';
     }
   }
 

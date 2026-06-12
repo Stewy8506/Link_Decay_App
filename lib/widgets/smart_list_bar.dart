@@ -10,7 +10,12 @@ import '../screens/custom_filter_creator.dart';
 class SmartListBar extends ConsumerWidget {
   const SmartListBar({super.key});
 
-  void _confirmDeleteFilter(BuildContext context, WidgetRef ref, String id, String name) {
+  void _confirmDeleteFilter(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+    String name,
+  ) {
     HapticFeedback.mediumImpact();
     showDialog<void>(
       context: context,
@@ -18,12 +23,18 @@ class SmartListBar extends ConsumerWidget {
         final cs = Theme.of(context).colorScheme;
         return AlertDialog(
           backgroundColor: Theme.of(context).cardColor,
-          title: Text('Delete Smart List?', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          title: Text(
+            'Delete Smart List?',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
           content: Text('Are you sure you want to delete "$name"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5))),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -35,7 +46,13 @@ class SmartListBar extends ConsumerWidget {
                 Navigator.pop(context);
                 HapticFeedback.heavyImpact();
               },
-              child: Text('Delete', style: TextStyle(color: kFreshnessLow, fontWeight: FontWeight.w600)),
+              child: Text(
+                'Delete',
+                style: TextStyle(
+                  color: kFreshnessLow,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
@@ -82,10 +99,16 @@ class SmartListBar extends ConsumerWidget {
                     label: filter.name,
                     isSelected: isSelected,
                     onTap: () {
-                      ref.read(selectedFilterIdProvider.notifier).state = filter.id;
+                      ref.read(selectedFilterIdProvider.notifier).state =
+                          filter.id;
                       HapticFeedback.lightImpact();
                     },
-                    onLongPress: () => _confirmDeleteFilter(context, ref, filter.id, filter.name),
+                    onLongPress: () => _confirmDeleteFilter(
+                      context,
+                      ref,
+                      filter.id,
+                      filter.name,
+                    ),
                   ),
                 );
               }),
@@ -98,7 +121,9 @@ class SmartListBar extends ConsumerWidget {
                     HapticFeedback.lightImpact();
                     Navigator.push<void>(
                       context,
-                      MaterialPageRoute(builder: (_) => const CustomFilterCreatorScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const CustomFilterCreatorScreen(),
+                      ),
                     );
                   },
                   borderRadius: BorderRadius.circular(20),
@@ -110,7 +135,11 @@ class SmartListBar extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Row(
                       children: [
-                        Icon(Icons.add, size: 14, color: cs.onSurface.withValues(alpha: 0.6)),
+                        Icon(
+                          Icons.add,
+                          size: 14,
+                          color: cs.onSurface.withValues(alpha: 0.6),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'New List',

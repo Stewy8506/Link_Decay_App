@@ -3,7 +3,11 @@ import '../utils/constants.dart';
 import '../utils/google_fonts.dart';
 
 class FaviconWidget extends StatelessWidget {
-  const FaviconWidget({super.key, required this.faviconUrl, required this.domain});
+  const FaviconWidget({
+    super.key,
+    required this.faviconUrl,
+    required this.domain,
+  });
 
   final String? faviconUrl;
   final String domain;
@@ -87,8 +91,19 @@ class SnoozeBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final month = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ][snoozedUntil.month];
     final label = '${snoozedUntil.day} $month';
 
@@ -201,7 +216,11 @@ class SwipeBackground extends StatelessWidget {
 }
 
 class ShimmerPlaceholder extends StatefulWidget {
-  const ShimmerPlaceholder({super.key, required this.width, required this.height});
+  const ShimmerPlaceholder({
+    super.key,
+    required this.width,
+    required this.height,
+  });
   final double width;
   final double height;
 

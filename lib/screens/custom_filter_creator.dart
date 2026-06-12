@@ -10,10 +10,12 @@ class CustomFilterCreatorScreen extends ConsumerStatefulWidget {
   const CustomFilterCreatorScreen({super.key});
 
   @override
-  ConsumerState<CustomFilterCreatorScreen> createState() => _CustomFilterCreatorScreenState();
+  ConsumerState<CustomFilterCreatorScreen> createState() =>
+      _CustomFilterCreatorScreenState();
 }
 
-class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorScreen> {
+class _CustomFilterCreatorScreenState
+    extends ConsumerState<CustomFilterCreatorScreen> {
   final _nameController = TextEditingController();
   final _iconController = TextEditingController(text: '⚡');
   final _tagsController = TextEditingController();
@@ -25,7 +27,8 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
   int? _maxReadTime;
 
   String _snoozeFilter = 'all'; // 'all', 'exclude_snoozed', 'only_snoozed'
-  String _sortField = 'freshness_asc'; // 'freshness_asc', 'freshness_desc', 'created_desc', 'created_asc', 'read_time_asc', 'title_asc'
+  String _sortField =
+      'freshness_asc'; // 'freshness_asc', 'freshness_desc', 'created_desc', 'created_asc', 'read_time_asc', 'title_asc'
 
   final List<String> _selectedCollections = [];
 
@@ -43,20 +46,28 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
     final icon = _iconController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a list name')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a list name')));
       return;
     }
 
-    ref.read(linkActionsProvider.notifier).addCustomFilter(
+    ref
+        .read(linkActionsProvider.notifier)
+        .addCustomFilter(
           name: name,
           icon: icon.isNotEmpty ? icon : '⚡',
           minFreshness: _minFreshness,
           maxFreshness: _maxFreshness,
-          tags: _tagsController.text.trim().isNotEmpty ? _tagsController.text.trim() : null,
-          collections: _selectedCollections.isNotEmpty ? _selectedCollections.join(',') : null,
-          domains: _domainsController.text.trim().isNotEmpty ? _domainsController.text.trim() : null,
+          tags: _tagsController.text.trim().isNotEmpty
+              ? _tagsController.text.trim()
+              : null,
+          collections: _selectedCollections.isNotEmpty
+              ? _selectedCollections.join(',')
+              : null,
+          domains: _domainsController.text.trim().isNotEmpty
+              ? _domainsController.text.trim()
+              : null,
           minReadTime: _minReadTime,
           maxReadTime: _maxReadTime,
           snoozeFilter: _snoozeFilter,
@@ -79,10 +90,7 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
         title: const Text('Create Smart List'),
         backgroundColor: theme.scaffoldBackgroundColor,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _saveFilter,
-          ),
+          IconButton(icon: const Icon(Icons.check), onPressed: _saveFilter),
         ],
       ),
       body: SingleChildScrollView(
@@ -169,10 +177,16 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: kSpaceSM),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: kSpaceMD,
+                      vertical: kSpaceSM,
+                    ),
                     child: Text(
                       'Shows links between ${(_minFreshness! * 100).toStringAsFixed(0)}% and ${(_maxFreshness! * 100).toStringAsFixed(0)}% freshness.',
-                      style: GoogleFonts.inter(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.5)),
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: cs.onSurface.withValues(alpha: 0.5),
+                      ),
                     ),
                   ),
                 ],
@@ -203,7 +217,10 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: kSpaceMD),
                     child: RangeSlider(
-                      values: RangeValues(_minReadTime!.toDouble(), _maxReadTime!.toDouble()),
+                      values: RangeValues(
+                        _minReadTime!.toDouble(),
+                        _maxReadTime!.toDouble(),
+                      ),
                       min: 1,
                       max: 60,
                       divisions: 59,
@@ -220,10 +237,16 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: kSpaceSM),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: kSpaceMD,
+                      vertical: kSpaceSM,
+                    ),
                     child: Text(
                       'Shows links taking between $_minReadTime and $_maxReadTime minutes to read.',
-                      style: GoogleFonts.inter(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.5)),
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: cs.onSurface.withValues(alpha: 0.5),
+                      ),
                     ),
                   ),
                 ],
@@ -253,7 +276,8 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
               title: 'Filter by Folders',
               children: [
                 collectionsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (e, st) => const SizedBox.shrink(),
                   data: (folders) {
                     if (folders.isEmpty) {
@@ -261,7 +285,9 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
                         padding: const EdgeInsets.all(kSpaceMD),
                         child: Text(
                           'No folders created yet.',
-                          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.4)),
+                          style: TextStyle(
+                            color: cs.onSurface.withValues(alpha: 0.4),
+                          ),
                         ),
                       );
                     }
@@ -271,7 +297,9 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
                       child: Wrap(
                         spacing: 8,
                         children: folders.map((folder) {
-                          final isSelected = _selectedCollections.contains(folder.id);
+                          final isSelected = _selectedCollections.contains(
+                            folder.id,
+                          );
                           return FilterChip(
                             avatar: Text(folder.emoji ?? '📁'),
                             label: Text(folder.name),
@@ -305,7 +333,8 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
                   child: TextField(
                     controller: _domainsController,
                     decoration: const InputDecoration(
-                      hintText: 'e.g. youtube.com, medium.com (comma-separated)',
+                      hintText:
+                          'e.g. youtube.com, medium.com (comma-separated)',
                       labelText: 'Domains (Inclusions)',
                     ),
                   ),
@@ -322,8 +351,14 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
                   child: SegmentedButton<String>(
                     segments: const [
                       ButtonSegment(value: 'all', label: Text('All')),
-                      ButtonSegment(value: 'exclude_snoozed', label: Text('No Snooze')),
-                      ButtonSegment(value: 'only_snoozed', label: Text('Snoozed')),
+                      ButtonSegment(
+                        value: 'exclude_snoozed',
+                        label: Text('No Snooze'),
+                      ),
+                      ButtonSegment(
+                        value: 'only_snoozed',
+                        label: Text('Snoozed'),
+                      ),
                     ],
                     selected: {_snoozeFilter},
                     showSelectedIcon: false,
@@ -344,19 +379,58 @@ class _CustomFilterCreatorScreenState extends ConsumerState<CustomFilterCreatorS
               title: 'Default Sorting for this List',
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: kSpaceMD, vertical: kSpaceSM),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: kSpaceMD,
+                    vertical: kSpaceSM,
+                  ),
                   child: DropdownButton<String>(
                     value: _sortField,
                     isExpanded: true,
                     underline: const SizedBox.shrink(),
                     onChanged: (val) => setState(() => _sortField = val!),
                     items: [
-                      DropdownMenuItem(value: 'freshness_asc', child: Text('Stalest first (Score Asc)', style: GoogleFonts.inter())),
-                      DropdownMenuItem(value: 'freshness_desc', child: Text('Freshest first (Score Desc)', style: GoogleFonts.inter())),
-                      DropdownMenuItem(value: 'created_desc', child: Text('Newest saved first', style: GoogleFonts.inter())),
-                      DropdownMenuItem(value: 'created_asc', child: Text('Oldest saved first', style: GoogleFonts.inter())),
-                      DropdownMenuItem(value: 'read_time_asc', child: Text('Shortest read time first', style: GoogleFonts.inter())),
-                      DropdownMenuItem(value: 'title_asc', child: Text('Alphabetical (Title A-Z)', style: GoogleFonts.inter())),
+                      DropdownMenuItem(
+                        value: 'freshness_asc',
+                        child: Text(
+                          'Stalest first (Score Asc)',
+                          style: GoogleFonts.inter(),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'freshness_desc',
+                        child: Text(
+                          'Freshest first (Score Desc)',
+                          style: GoogleFonts.inter(),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'created_desc',
+                        child: Text(
+                          'Newest saved first',
+                          style: GoogleFonts.inter(),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'created_asc',
+                        child: Text(
+                          'Oldest saved first',
+                          style: GoogleFonts.inter(),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'read_time_asc',
+                        child: Text(
+                          'Shortest read time first',
+                          style: GoogleFonts.inter(),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'title_asc',
+                        child: Text(
+                          'Alphabetical (Title A-Z)',
+                          style: GoogleFonts.inter(),
+                        ),
+                      ),
                     ],
                   ),
                 ),

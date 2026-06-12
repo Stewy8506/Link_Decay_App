@@ -23,7 +23,7 @@ class LinkShelfApp extends ConsumerWidget {
     final isDark = ref.watch(isDarkModeProvider);
     final activePalette = ref.watch(themePaletteProvider);
     final fontFamily = ref.watch(fontFamilyProvider);
-    
+
     // Update global font family for local GoogleFonts delegator
     GoogleFonts.currentFont = fontFamily;
     final customAccentHex = ref.watch(customAccentColorProvider);
@@ -67,7 +67,8 @@ class LinkShelfApp extends ConsumerWidget {
       ),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: onboardingCompleted.when(
-        data: (completed) => completed ? const _AppShell() : const OnboardingScreen(),
+        data: (completed) =>
+            completed ? const _AppShell() : const OnboardingScreen(),
         error: (error, stackTrace) => const _AppShell(),
         loading: () => const CustomLoadingScreen(),
       ),
@@ -243,7 +244,10 @@ class _AppShellState extends ConsumerState<_AppShell> {
                     icon: const Icon(Icons.add, size: 20),
                     label: Text(
                       'Add link',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(kRadiusXL),
@@ -524,7 +528,10 @@ class _DesktopSidebar extends StatelessWidget {
           children: [
             // Branding/Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 28.0,
+              ),
               child: Row(
                 children: [
                   Container(
@@ -567,10 +574,13 @@ class _DesktopSidebar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
-                          color: isSelected 
-                              ? cs.onSurface.withValues(alpha: 0.08) 
+                          color: isSelected
+                              ? cs.onSurface.withValues(alpha: 0.08)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -578,7 +588,9 @@ class _DesktopSidebar extends StatelessWidget {
                           children: [
                             Icon(
                               isSelected ? item.selectedIcon : item.icon,
-                              color: isSelected ? cs.onSurface : cs.onSurface.withValues(alpha: 0.55),
+                              color: isSelected
+                                  ? cs.onSurface
+                                  : cs.onSurface.withValues(alpha: 0.55),
                               size: 20,
                             ),
                             const SizedBox(width: 14),
@@ -586,8 +598,12 @@ class _DesktopSidebar extends StatelessWidget {
                               item.label,
                               style: GoogleFonts.inter(
                                 fontSize: 14,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                color: isSelected ? cs.onSurface : cs.onSurface.withValues(alpha: 0.7),
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: isSelected
+                                    ? cs.onSurface
+                                    : cs.onSurface.withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -613,7 +629,10 @@ class _DesktopSidebar extends StatelessWidget {
                         builder: (_) => Dialog(
                           backgroundColor: Colors.transparent,
                           surfaceTintColor: Colors.transparent,
-                          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                          insetPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 24,
+                          ),
                           child: Container(
                             constraints: const BoxConstraints(maxWidth: 460),
                             child: ClipRRect(

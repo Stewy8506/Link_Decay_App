@@ -94,11 +94,13 @@ class MetadataService {
       // Extract OG Image
       String? ogImageUrl = document.head
           ?.querySelector('meta[property="og:image"]')
-          ?.attributes['content']?.trim();
+          ?.attributes['content']
+          ?.trim();
       if (ogImageUrl == null || ogImageUrl.isEmpty) {
         ogImageUrl = document.head
             ?.querySelector('meta[name="twitter:image"]')
-            ?.attributes['content']?.trim();
+            ?.attributes['content']
+            ?.trim();
       }
 
       // Estimate Reading Time from word count
@@ -107,9 +109,16 @@ class MetadataService {
       if (body != null) {
         // Clone/copy body text elements and strip script, style, noscript, etc.
         final cleanBody = body.clone(true);
-        cleanBody.querySelectorAll('script, style, noscript, iframe, header, footer, nav').forEach((e) => e.remove());
+        cleanBody
+            .querySelectorAll(
+              'script, style, noscript, iframe, header, footer, nav',
+            )
+            .forEach((e) => e.remove());
         final text = cleanBody.text.trim();
-        final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+        final words = text
+            .split(RegExp(r'\s+'))
+            .where((w) => w.isNotEmpty)
+            .length;
         if (words > 0) {
           readMinutes = (words / 200).ceil();
           if (readMinutes < 1) readMinutes = 1;

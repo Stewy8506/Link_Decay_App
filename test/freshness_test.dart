@@ -15,7 +15,7 @@ void main() {
 
     test('Freshness score decays exponentially correctly', () {
       final createdAt = DateTime.now();
-      
+
       // Exactly 7 days later with 7 days half-life should be exactly 0.5
       final now7DaysLater = createdAt.add(const Duration(days: 7));
       final score7 = computeFreshness(
@@ -39,7 +39,7 @@ void main() {
 
     test('Freshness score decays linearly correctly', () {
       final createdAt = DateTime.now();
-      
+
       // In linear decay, lifespan is halfLifeDays * 2 (e.g. 14 days)
       // Exactly 7 days later with 7 days half-life should be 1.0 - (7 / 14) = 0.5
       final now7DaysLater = createdAt.add(const Duration(days: 7));
@@ -52,7 +52,9 @@ void main() {
       expect(score7, closeTo(0.5, 0.001));
 
       // Exactly 10.5 days later with 7 days half-life should be 1.0 - (10.5 / 14) = 0.25
-      final now105DaysLater = createdAt.add(const Duration(hours: 252)); // 10.5 days
+      final now105DaysLater = createdAt.add(
+        const Duration(hours: 252),
+      ); // 10.5 days
       final score105 = computeFreshness(
         createdAt: createdAt,
         now: now105DaysLater,
@@ -74,7 +76,7 @@ void main() {
 
     test('Active snooze pauses decay and freezes the freshness score', () {
       final createdAt = DateTime.now();
-      
+
       // Let it decay for 3 days without snooze. Freshness should be 0.5 ^ (3/7) = ~0.743
       final now3DaysLater = createdAt.add(const Duration(days: 3));
       final scoreBeforeSnooze = computeFreshness(
@@ -86,8 +88,10 @@ void main() {
       // Now snooze it for 2 days. Check freshness 1 day into the snooze period (now4DaysLater).
       // The score should remain exactly what it was at day 3 (~0.743).
       final snoozedUntil = now3DaysLater.add(const Duration(days: 2));
-      final now4DaysLater = now3DaysLater.add(const Duration(days: 1)); // 1 day into snooze
-      
+      final now4DaysLater = now3DaysLater.add(
+        const Duration(days: 1),
+      ); // 1 day into snooze
+
       final scoreDuringSnooze = computeFreshness(
         createdAt: createdAt,
         now: now4DaysLater,
@@ -101,13 +105,17 @@ void main() {
     test('Expired snooze does not freeze decay anymore', () {
       final createdAt = DateTime.now();
       final now3DaysLater = createdAt.add(const Duration(days: 3));
-      final snoozedUntil = now3DaysLater.add(const Duration(days: 2)); // Snoozed until day 5
-      
+      final snoozedUntil = now3DaysLater.add(
+        const Duration(days: 2),
+      ); // Snoozed until day 5
+
       // Check freshness at day 6 (now6DaysLater) which is 1 day after snooze expired.
       // Since snooze is expired, decay catches up to raw age (6 days).
       // Expected score: 0.5 ^ (6/7) = ~0.552
-      final now6DaysLater = now3DaysLater.add(const Duration(days: 3)); // 3 days after day 3 = day 6
-      
+      final now6DaysLater = now3DaysLater.add(
+        const Duration(days: 3),
+      ); // 3 days after day 3 = day 6
+
       final scoreAfterSnooze = computeFreshness(
         createdAt: createdAt,
         now: now6DaysLater,
@@ -127,7 +135,7 @@ void main() {
     test('Zero or negative half-life handles boundary correctly', () {
       final createdAt = DateTime.now();
       final now = createdAt.add(const Duration(days: 1));
-      
+
       final scoreZero = computeFreshness(
         createdAt: createdAt,
         now: now,

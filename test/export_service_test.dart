@@ -22,7 +22,8 @@ class MockFirestoreService implements FirestoreService {
   }
 
   @override
-  Future<List<CustomFilter>> getFiltersFuture() async => customFilters.values.toList();
+  Future<List<CustomFilter>> getFiltersFuture() async =>
+      customFilters.values.toList();
 
   @override
   Future<AppSetting?> getSettings() async => settings;
@@ -40,10 +41,12 @@ class MockFirestoreService implements FirestoreService {
   Future<void> insertLink(Link link) async => links[link.id] = link;
 
   @override
-  Future<void> insertCollection(Collection collection) async => collections[collection.id] = collection;
+  Future<void> insertCollection(Collection collection) async =>
+      collections[collection.id] = collection;
 
   @override
-  Future<void> insertCustomFilter(CustomFilter filter) async => customFilters[filter.id] = filter;
+  Future<void> insertCustomFilter(CustomFilter filter) async =>
+      customFilters[filter.id] = filter;
 
   @override
   Future<void> upsertSettings(AppSetting setting) async => settings = setting;
@@ -56,13 +59,28 @@ class MockFirestoreService implements FirestoreService {
   @override
   Stream<List<Link>> watchArchiveLinks() => Stream.value([]);
   @override
-  Future<void> updateLinkStatus(String id, LinkStatus status, {DateTime? readAt, DateTime? archivedAt}) async {}
+  Future<void> updateLinkStatus(
+    String id,
+    LinkStatus status, {
+    DateTime? readAt,
+    DateTime? archivedAt,
+  }) async {}
   @override
-  Future<void> snoozeLink(String id, DateTime snoozedUntil, int snoozedSeconds) async {}
+  Future<void> snoozeLink(
+    String id,
+    DateTime snoozedUntil,
+    int snoozedSeconds,
+  ) async {}
   @override
   Future<void> clearSnooze(String id) async {}
   @override
-  Future<void> updateMetadata(String id, {String? title, String? faviconUrl, String? ogImageUrl, int? estimatedReadMinutes}) async {}
+  Future<void> updateMetadata(
+    String id, {
+    String? title,
+    String? faviconUrl,
+    String? ogImageUrl,
+    int? estimatedReadMinutes,
+  }) async {}
   @override
   Future<void> updateLinkDeadStatus(String id, bool isDead) async {}
   @override
@@ -72,7 +90,10 @@ class MockFirestoreService implements FirestoreService {
   @override
   Future<void> updateLinkCollection(String id, String? collectionId) async {}
   @override
-  Future<void> updateCustomHalfLife(String id, double? customHalfLifeDays) async {}
+  Future<void> updateCustomHalfLife(
+    String id,
+    double? customHalfLifeDays,
+  ) async {}
   @override
   Stream<List<Collection>> watchCollections() => Stream.value([]);
   @override
@@ -82,7 +103,8 @@ class MockFirestoreService implements FirestoreService {
   @override
   Future<void> updateCustomFilter(CustomFilter filter) async {}
   @override
-  Stream<List<LinkHighlight>> watchHighlightsForLink(String linkId) => Stream.value([]);
+  Stream<List<LinkHighlight>> watchHighlightsForLink(String linkId) =>
+      Stream.value([]);
   @override
   Future<void> insertHighlight(LinkHighlight highlight) async {}
   @override
@@ -90,7 +112,11 @@ class MockFirestoreService implements FirestoreService {
   @override
   Stream<AppSetting?> watchSettings() => Stream.value(null);
   @override
-  Future<void> migrateUserData(String sourceUid, String targetUid, {bool onlyLinks = false}) async {}
+  Future<void> migrateUserData(
+    String sourceUid,
+    String targetUid, {
+    bool onlyLinks = false,
+  }) async {}
 }
 
 void main() {
@@ -102,7 +128,6 @@ void main() {
   });
 
   group('ExportService Import & Export Tests', () {
-
     test('JSON Import: Overwrite mode purges database first', () async {
       final exporter = ExportService.instance;
 
@@ -142,7 +167,7 @@ void main() {
             'name': 'Backup Collection',
             'createdAt': DateTime.now().toIso8601String(),
             'sortOrder': 0,
-          }
+          },
         ],
         'links': [
           {
@@ -151,12 +176,15 @@ void main() {
             'domain': 'dart.dev',
             'createdAt': DateTime.now().toIso8601String(),
             'status': 'inbox',
-          }
-        ]
+          },
+        ],
       };
 
       // 3. Run import in overwrite mode (merge: false)
-      final count = await exporter.importFromJson(jsonEncode(backupJson), merge: false);
+      final count = await exporter.importFromJson(
+        jsonEncode(backupJson),
+        merge: false,
+      );
       expect(count, 1);
 
       // 4. Verify local data is purged and replaced by backup data
@@ -198,12 +226,15 @@ void main() {
             'domain': 'dart.dev',
             'createdAt': DateTime.now().toIso8601String(),
             'status': 'inbox',
-          }
-        ]
+          },
+        ],
       };
 
       // 3. Run import in merge mode (merge: true)
-      final count = await exporter.importFromJson(jsonEncode(backupJson), merge: true);
+      final count = await exporter.importFromJson(
+        jsonEncode(backupJson),
+        merge: true,
+      );
       expect(count, 1);
 
       // 4. Verify both items exist in the database
@@ -215,10 +246,12 @@ void main() {
       expect(ids.contains('link_backup'), true);
     });
 
-    test('HTML Bookmarks Ingestion: Regex extracts HREF and title correctly', () async {
-      final exporter = ExportService.instance;
+    test(
+      'HTML Bookmarks Ingestion: Regex extracts HREF and title correctly',
+      () async {
+        final exporter = ExportService.instance;
 
-      final bookmarksHtml = '''
+        final bookmarksHtml = '''
 <!DOCTYPE NETSCAPE-Bookmark-file-1>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 <TITLE>Bookmarks</TITLE>
@@ -229,82 +262,92 @@ void main() {
 </DL><p>
 ''';
 
-      final count = await exporter.importFromHtml(bookmarksHtml);
-      expect(count, 2);
+        final count = await exporter.importFromHtml(bookmarksHtml);
+        expect(count, 2);
 
-      final imported = await mockFs.getAllLinksFuture();
-      expect(imported.length, 2);
+        final imported = await mockFs.getAllLinksFuture();
+        expect(imported.length, 2);
 
-      final hn = imported.firstWhere((l) => l.domain == 'news.ycombinator.com');
-      expect(hn.url, 'https://news.ycombinator.com');
-      expect(hn.title, 'Hacker News');
-      expect(hn.tags, 'dev, news');
+        final hn = imported.firstWhere(
+          (l) => l.domain == 'news.ycombinator.com',
+        );
+        expect(hn.url, 'https://news.ycombinator.com');
+        expect(hn.title, 'Hacker News');
+        expect(hn.tags, 'dev, news');
 
-      final gh = imported.firstWhere((l) => l.domain == 'github.com');
-      expect(gh.url, 'https://github.com');
-      expect(gh.title, 'GitHub');
-      expect(gh.tags, 'code');
-    });
+        final gh = imported.firstWhere((l) => l.domain == 'github.com');
+        expect(gh.url, 'https://github.com');
+        expect(gh.title, 'GitHub');
+        expect(gh.tags, 'code');
+      },
+    );
 
-    test('JSON Import: Malformed JSON rolls back cleanly and doesn\'t save partial data', () async {
-      final exporter = ExportService.instance;
+    test(
+      'JSON Import: Malformed JSON rolls back cleanly and doesn\'t save partial data',
+      () async {
+        final exporter = ExportService.instance;
 
-      // 1. Insert local link first
-      await mockFs.insertLink(
-        Link(
-          id: 'link_local',
-          url: 'https://flutter.dev',
-          domain: 'flutter.dev',
-          createdAt: DateTime.now(),
-          status: LinkStatus.inbox,
-          snoozedSeconds: 0,
-          isDead: false,
-          tags: '',
-        ),
-      );
+        // 1. Insert local link first
+        await mockFs.insertLink(
+          Link(
+            id: 'link_local',
+            url: 'https://flutter.dev',
+            domain: 'flutter.dev',
+            createdAt: DateTime.now(),
+            status: LinkStatus.inbox,
+            snoozedSeconds: 0,
+            isDead: false,
+            tags: '',
+          ),
+        );
 
-      // 2. Prepare malformed JSON (contains invalid date format which throws)
-      final malformedBackupJson = {
-        'version': 2,
-        'collections': [
-          {
-            'id': 'col_success',
-            'name': 'Success Coll',
-            'createdAt': DateTime.now().toIso8601String(),
-          }
-        ],
-        'links': [
-          {
-            'id': 'link_success',
-            'url': 'https://success.com',
-            'domain': 'success.com',
-            'createdAt': DateTime.now().toIso8601String(),
-            'status': 'inbox',
-          },
-          {
-            'id': 'link_fail',
-            'url': 'https://fail.com',
-            'domain': 'fail.com',
-            'createdAt': 'this-is-not-a-valid-date-format', // Will crash DateTime.parse()
-            'status': 'inbox',
-          }
-        ]
-      };
+        // 2. Prepare malformed JSON (contains invalid date format which throws)
+        final malformedBackupJson = {
+          'version': 2,
+          'collections': [
+            {
+              'id': 'col_success',
+              'name': 'Success Coll',
+              'createdAt': DateTime.now().toIso8601String(),
+            },
+          ],
+          'links': [
+            {
+              'id': 'link_success',
+              'url': 'https://success.com',
+              'domain': 'success.com',
+              'createdAt': DateTime.now().toIso8601String(),
+              'status': 'inbox',
+            },
+            {
+              'id': 'link_fail',
+              'url': 'https://fail.com',
+              'domain': 'fail.com',
+              'createdAt':
+                  'this-is-not-a-valid-date-format', // Will crash DateTime.parse()
+              'status': 'inbox',
+            },
+          ],
+        };
 
-      // 3. Try to run import in overwrite mode. This should throw format exception.
-      expect(
-        () async => await exporter.importFromJson(jsonEncode(malformedBackupJson), merge: false),
-        throwsA(isA<FormatException>()),
-      );
+        // 3. Try to run import in overwrite mode. This should throw format exception.
+        expect(
+          () async => await exporter.importFromJson(
+            jsonEncode(malformedBackupJson),
+            merge: false,
+          ),
+          throwsA(isA<FormatException>()),
+        );
 
-      // 4. Verify transaction rolled back: original 'link_local' was restored
-      final links = await mockFs.getAllLinksFuture();
-      expect(links.length, 1);
-      expect(links.first.id, 'link_local');
+        // 4. Verify transaction rolled back: original 'link_local' was restored
+        final links = await mockFs.getAllLinksFuture();
+        expect(links.length, 1);
+        expect(links.first.id, 'link_local');
 
-      // Verify no collections were saved either
-      final colls = await mockFs.getCollectionsFuture();
-      expect(colls.isEmpty, true);
-    });
+        // Verify no collections were saved either
+        final colls = await mockFs.getCollectionsFuture();
+        expect(colls.isEmpty, true);
+      },
+    );
   });
 }

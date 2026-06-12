@@ -14,8 +14,7 @@ class HealthCheckProgressDialog extends StatefulWidget {
       _HealthCheckProgressDialogState();
 }
 
-class _HealthCheckProgressDialogState
-    extends State<HealthCheckProgressDialog> {
+class _HealthCheckProgressDialogState extends State<HealthCheckProgressDialog> {
   int _currentIndex = 0;
   int _deadCount = 0;
   bool _isFinished = false;

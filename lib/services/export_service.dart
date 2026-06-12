@@ -24,61 +24,75 @@ class ExportService {
     return {
       'version': 2,
       'exportedAt': DateTime.now().toIso8601String(),
-      'links': links.map((l) => {
-        'id': l.id,
-        'url': l.url,
-        'title': l.title,
-        'domain': l.domain,
-        'faviconUrl': l.faviconUrl,
-        'createdAt': l.createdAt.toIso8601String(),
-        'snoozedUntil': l.snoozedUntil?.toIso8601String(),
-        'status': l.status.name,
-        'tags': l.tags,
-        'snoozedSeconds': l.snoozedSeconds,
-        'collectionId': l.collectionId,
-        'notes': l.notes,
-        'ogImageUrl': l.ogImageUrl,
-        'estimatedReadMinutes': l.estimatedReadMinutes,
-        'customHalfLifeDays': l.customHalfLifeDays,
-      }).toList(),
-      'collections': collections.map((c) => {
-        'id': c.id,
-        'name': c.name,
-        'emoji': c.emoji,
-        'createdAt': c.createdAt.toIso8601String(),
-        'sortOrder': c.sortOrder,
-      }).toList(),
-      'customFilters': customFilters.map((f) => {
-        'id': f.id,
-        'name': f.name,
-        'icon': f.icon,
-        'minFreshness': f.minFreshness,
-        'maxFreshness': f.maxFreshness,
-        'tags': f.tags,
-        'collections': f.collections,
-        'domains': f.domains,
-        'minReadTime': f.minReadTime,
-        'maxReadTime': f.maxReadTime,
-        'snoozeFilter': f.snoozeFilter,
-        'sortField': f.sortField,
-      }).toList(),
-      'settings': settings == null ? null : {
-        'halfLifeDays': settings.halfLifeDays,
-        'notificationThreshold': settings.notificationThreshold,
-        'notificationsEnabled': settings.notificationsEnabled,
-        'isDarkMode': settings.isDarkMode,
-        'themePalette': settings.themePalette,
-        'swipeLeftAction': settings.swipeLeftAction,
-        'swipeRightAction': settings.swipeRightAction,
-        'domainHalfLifeOverrides': settings.domainHalfLifeOverrides,
-        'tagHalfLifeOverrides': settings.tagHalfLifeOverrides,
-        'dailyReadingGoal': settings.dailyReadingGoal,
-        'snoozePresets': settings.snoozePresets,
-        'fontFamily': settings.fontFamily,
-        'customAccentColor': settings.customAccentColor,
-        'customBgColor': settings.customBgColor,
-        'decayCurveType': settings.decayCurveType,
-      },
+      'links': links
+          .map(
+            (l) => {
+              'id': l.id,
+              'url': l.url,
+              'title': l.title,
+              'domain': l.domain,
+              'faviconUrl': l.faviconUrl,
+              'createdAt': l.createdAt.toIso8601String(),
+              'snoozedUntil': l.snoozedUntil?.toIso8601String(),
+              'status': l.status.name,
+              'tags': l.tags,
+              'snoozedSeconds': l.snoozedSeconds,
+              'collectionId': l.collectionId,
+              'notes': l.notes,
+              'ogImageUrl': l.ogImageUrl,
+              'estimatedReadMinutes': l.estimatedReadMinutes,
+              'customHalfLifeDays': l.customHalfLifeDays,
+            },
+          )
+          .toList(),
+      'collections': collections
+          .map(
+            (c) => {
+              'id': c.id,
+              'name': c.name,
+              'emoji': c.emoji,
+              'createdAt': c.createdAt.toIso8601String(),
+              'sortOrder': c.sortOrder,
+            },
+          )
+          .toList(),
+      'customFilters': customFilters
+          .map(
+            (f) => {
+              'id': f.id,
+              'name': f.name,
+              'icon': f.icon,
+              'minFreshness': f.minFreshness,
+              'maxFreshness': f.maxFreshness,
+              'tags': f.tags,
+              'collections': f.collections,
+              'domains': f.domains,
+              'minReadTime': f.minReadTime,
+              'maxReadTime': f.maxReadTime,
+              'snoozeFilter': f.snoozeFilter,
+              'sortField': f.sortField,
+            },
+          )
+          .toList(),
+      'settings': settings == null
+          ? null
+          : {
+              'halfLifeDays': settings.halfLifeDays,
+              'notificationThreshold': settings.notificationThreshold,
+              'notificationsEnabled': settings.notificationsEnabled,
+              'isDarkMode': settings.isDarkMode,
+              'themePalette': settings.themePalette,
+              'swipeLeftAction': settings.swipeLeftAction,
+              'swipeRightAction': settings.swipeRightAction,
+              'domainHalfLifeOverrides': settings.domainHalfLifeOverrides,
+              'tagHalfLifeOverrides': settings.tagHalfLifeOverrides,
+              'dailyReadingGoal': settings.dailyReadingGoal,
+              'snoozePresets': settings.snoozePresets,
+              'fontFamily': settings.fontFamily,
+              'customAccentColor': settings.customAccentColor,
+              'customBgColor': settings.customBgColor,
+              'decayCurveType': settings.decayCurveType,
+            },
     };
   }
 
@@ -98,12 +112,16 @@ class ExportService {
   Future<void> shareHtmlExport() async {
     final fs = FirestoreService.instance;
     final links = await fs.getAllLinksFuture();
-    
+
     final buffer = StringBuffer()
       ..writeln('<!DOCTYPE NETSCAPE-Bookmark-file-1>')
       ..writeln('<!-- This is an automatically generated file.')
-      ..writeln('     It will be read and imported by browser bookmark tools. -->')
-      ..writeln('<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">')
+      ..writeln(
+        '     It will be read and imported by browser bookmark tools. -->',
+      )
+      ..writeln(
+        '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+      )
       ..writeln('<TITLE>Bookmarks</TITLE>')
       ..writeln('<H1>LinkShelf Bookmarks</H1>')
       ..writeln('<DL><p>');
@@ -111,7 +129,9 @@ class ExportService {
     for (final link in links) {
       final addedUnix = (link.createdAt.millisecondsSinceEpoch / 1000).round();
       final title = link.title ?? link.domain;
-      buffer.writeln('    <DT><A HREF="${link.url}" ADD_DATE="$addedUnix" TAGS="${link.tags}">$title</A>');
+      buffer.writeln(
+        '    <DT><A HREF="${link.url}" ADD_DATE="$addedUnix" TAGS="${link.tags}">$title</A>',
+      );
     }
 
     buffer.writeln('</DL><p>');
@@ -205,7 +225,9 @@ class ExportService {
           DateTime? parsedCreated;
           if (createdAtStr != null) {
             parsedCreated = DateTime.tryParse(createdAtStr);
-            if (parsedCreated == null && createdAtStr is String && createdAtStr.isNotEmpty) {
+            if (parsedCreated == null &&
+                createdAtStr is String &&
+                createdAtStr.isNotEmpty) {
               throw FormatException('Invalid date format: $createdAtStr');
             }
           }
@@ -214,7 +236,9 @@ class ExportService {
           DateTime? parsedSnoozed;
           if (snoozedUntilStr != null) {
             parsedSnoozed = DateTime.tryParse(snoozedUntilStr);
-            if (parsedSnoozed == null && snoozedUntilStr is String && snoozedUntilStr.isNotEmpty) {
+            if (parsedSnoozed == null &&
+                snoozedUntilStr is String &&
+                snoozedUntilStr.isNotEmpty) {
               throw FormatException('Invalid date format: $snoozedUntilStr');
             }
           }
@@ -248,9 +272,13 @@ class ExportService {
         final s = data['settings'];
         await fs.upsertSettings(
           AppSetting(
-            halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
-            notificationThreshold: (s['notificationThreshold'] ?? kDefaultNotificationThreshold).toDouble(),
-            notificationsEnabled: s['notificationsEnabled'] ?? kDefaultNotificationsEnabled,
+            halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays)
+                .toDouble(),
+            notificationThreshold:
+                (s['notificationThreshold'] ?? kDefaultNotificationThreshold)
+                    .toDouble(),
+            notificationsEnabled:
+                s['notificationsEnabled'] ?? kDefaultNotificationsEnabled,
             isDarkMode: s['isDarkMode'] ?? true,
             themePalette: s['themePalette'] ?? 'warm_stone',
             swipeLeftAction: s['swipeLeftAction'] ?? 'archive',
@@ -268,15 +296,20 @@ class ExportService {
 
         // Reschedule notifications outside transaction if settings were imported
         try {
-          final enabled = s['notificationsEnabled'] ?? kDefaultNotificationsEnabled;
+          final enabled =
+              s['notificationsEnabled'] ?? kDefaultNotificationsEnabled;
           if (enabled) {
             await NotificationService.instance.scheduleDailyCheck(
-              halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
-              threshold: (s['notificationThreshold'] ?? kDefaultNotificationThreshold).toDouble(),
+              halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays)
+                  .toDouble(),
+              threshold:
+                  (s['notificationThreshold'] ?? kDefaultNotificationThreshold)
+                      .toDouble(),
               decayCurveType: s['decayCurveType'] ?? 'exponential',
             );
             await NotificationService.instance.scheduleWeeklyDigest(
-              halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
+              halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays)
+                  .toDouble(),
               decayCurveType: s['decayCurveType'] ?? 'exponential',
             );
           } else {
@@ -335,7 +368,7 @@ class ExportService {
       final url = hrefMatch.group(1)!;
       final titleMatch = titleRegex.firstMatch(line);
       final title = titleMatch?.group(1);
-      
+
       final tagsMatch = tagsRegex.firstMatch(line);
       final tags = tagsMatch != null ? tagsMatch.group(1) ?? '' : '';
 
@@ -372,59 +405,97 @@ class ExportService {
   }
 
   /// Exports a collection's links as a beautiful, self-contained HTML page
-  Future<void> shareCollectionAsHtml(Collection collection, List<Link> links) async {
+  Future<void> shareCollectionAsHtml(
+    Collection collection,
+    List<Link> links,
+  ) async {
     final buffer = StringBuffer()
       ..writeln('<!DOCTYPE html>')
       ..writeln('<html lang="en">')
       ..writeln('<head>')
       ..writeln('  <meta charset="UTF-8">')
-      ..writeln('  <meta name="viewport" content="width=device-width, initial-scale=1.0">')
+      ..writeln(
+        '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
+      )
       ..writeln('  <title>${collection.name} - Curated List</title>')
       ..writeln('  <link rel="preconnect" href="https://fonts.googleapis.com">')
-      ..writeln('  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
-      ..writeln('  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">')
+      ..writeln(
+        '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+      )
+      ..writeln(
+        '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">',
+      )
       ..writeln('  <style>')
-      ..writeln("    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #FAF9F6; color: #1C1917; margin: 0; padding: 40px 20px; line-height: 1.5; }")
+      ..writeln(
+        "    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #FAF9F6; color: #1C1917; margin: 0; padding: 40px 20px; line-height: 1.5; }",
+      )
       ..writeln('    .container { max-width: 600px; margin: 0 auto; }')
       ..writeln('    .header { margin-bottom: 40px; }')
       ..writeln('    .folder-emoji { font-size: 48px; margin-bottom: 8px; }')
-      ..writeln('    h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.5px; }')
+      ..writeln(
+        '    h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.5px; }',
+      )
       ..writeln('    .meta { font-size: 14px; color: #78716C; }')
       ..writeln('    .links-list { list-style: none; padding: 0; margin: 0; }')
-      ..writeln('    .link-item { background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition: transform 0.2s ease, box-shadow 0.2s ease; }')
-      ..writeln('    .link-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }')
-      ..writeln('    .link-title { font-size: 16px; font-weight: 600; margin: 0 0 6px 0; line-height: 1.4; }')
+      ..writeln(
+        '    .link-item { background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition: transform 0.2s ease, box-shadow 0.2s ease; }',
+      )
+      ..writeln(
+        '    .link-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }',
+      )
+      ..writeln(
+        '    .link-title { font-size: 16px; font-weight: 600; margin: 0 0 6px 0; line-height: 1.4; }',
+      )
       ..writeln('    .link-title a { color: #1C1917; text-decoration: none; }')
       ..writeln('    .link-title a:hover { text-decoration: underline; }')
-      ..writeln('    .link-meta { font-size: 12px; color: #78716C; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }')
+      ..writeln(
+        '    .link-meta { font-size: 12px; color: #78716C; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }',
+      )
       ..writeln('    .link-domain { font-weight: 500; }')
       ..writeln('    .bullet { color: #D6D3D1; }')
-      ..writeln('    .tag { background: #F5F5F4; color: #57534E; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; }')
-      ..writeln('    .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #A8A29E; }')
+      ..writeln(
+        '    .tag { background: #F5F5F4; color: #57534E; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; }',
+      )
+      ..writeln(
+        '    .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #A8A29E; }',
+      )
       ..writeln('    .footer a { color: #78716C; text-decoration: none; }')
       ..writeln('  </style>')
       ..writeln('</head>')
       ..writeln('<body>')
       ..writeln('  <div class="container">')
       ..writeln('    <div class="header">')
-      ..writeln('      <div class="folder-emoji">${collection.emoji ?? "📁"}</div>')
+      ..writeln(
+        '      <div class="folder-emoji">${collection.emoji ?? "📁"}</div>',
+      )
       ..writeln('      <h1>${collection.name}</h1>')
-      ..writeln('      <div class="meta">${links.length} links &bull; Curated via LinkShelf</div>')
+      ..writeln(
+        '      <div class="meta">${links.length} links &bull; Curated via LinkShelf</div>',
+      )
       ..writeln('    </div>')
       ..writeln('    <ul class="links-list">');
 
     for (final link in links) {
       final title = link.title ?? link.domain;
       buffer.writeln('      <li class="link-item">');
-      buffer.writeln('        <h2 class="link-title"><a href="${link.url}" target="_blank" rel="noopener noreferrer">$title</a></h2>');
+      buffer.writeln(
+        '        <h2 class="link-title"><a href="${link.url}" target="_blank" rel="noopener noreferrer">$title</a></h2>',
+      );
       buffer.writeln('        <div class="link-meta">');
-      buffer.writeln('          <span class="link-domain">${link.domain}</span>');
+      buffer.writeln(
+        '          <span class="link-domain">${link.domain}</span>',
+      );
       if (link.estimatedReadMinutes != null) {
         buffer.writeln('          <span class="bullet">&bull;</span>');
-        buffer.writeln('          <span>${link.estimatedReadMinutes} min read</span>');
+        buffer.writeln(
+          '          <span>${link.estimatedReadMinutes} min read</span>',
+        );
       }
       if (link.tags.isNotEmpty) {
-        final tagList = link.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty);
+        final tagList = link.tags
+            .split(',')
+            .map((t) => t.trim())
+            .where((t) => t.isNotEmpty);
         for (final tag in tagList) {
           buffer.writeln('          <span class="tag">$tag</span>');
         }
@@ -436,17 +507,24 @@ class ExportService {
     buffer
       ..writeln('    </ul>')
       ..writeln('    <div class="footer">')
-      ..writeln('      Generated with <a href="https://github.com/Stewy8506/Link_Decay_App" target="_blank" rel="noopener noreferrer">LinkShelf</a>')
+      ..writeln(
+        '      Generated with <a href="https://github.com/Stewy8506/Link_Decay_App" target="_blank" rel="noopener noreferrer">LinkShelf</a>',
+      )
       ..writeln('    </div>')
       ..writeln('  </div>')
       ..writeln('</body>')
       ..writeln('</html>');
 
     final dir = await getTemporaryDirectory();
-    final safeName = collection.name.replaceAll(RegExp(r'[^\w\s\-]'), '').trim().replaceAll(' ', '_');
+    final safeName = collection.name
+        .replaceAll(RegExp(r'[^\w\s\-]'), '')
+        .trim()
+        .replaceAll(' ', '_');
     final file = File('${dir.path}/${safeName}_read_list.html');
     await file.writeAsString(buffer.toString());
 
-    await Share.shareXFiles([XFile(file.path)], text: '${collection.emoji ?? "📁"} ${collection.name} Read List');
+    await Share.shareXFiles([
+      XFile(file.path),
+    ], text: '${collection.emoji ?? "📁"} ${collection.name} Read List');
   }
 }

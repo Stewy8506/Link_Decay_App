@@ -69,9 +69,15 @@ class _LinkCardState extends ConsumerState<LinkCard> {
     );
   }
 
-  Future<bool> _confirmDismiss(DismissDirection dir, String leftAction, String rightAction) async {
+  Future<bool> _confirmDismiss(
+    DismissDirection dir,
+    String leftAction,
+    String rightAction,
+  ) async {
     HapticFeedback.lightImpact();
-    final action = dir == DismissDirection.startToEnd ? rightAction : leftAction;
+    final action = dir == DismissDirection.startToEnd
+        ? rightAction
+        : leftAction;
     if (action == 'snooze' || action == 'collection' || action == 'none') {
       if (action == 'snooze') {
         _showSnooze();
@@ -83,17 +89,29 @@ class _LinkCardState extends ConsumerState<LinkCard> {
     return true;
   }
 
-  void _onDismissed(DismissDirection dir, String leftAction, String rightAction) {
+  void _onDismissed(
+    DismissDirection dir,
+    String leftAction,
+    String rightAction,
+  ) {
     HapticFeedback.mediumImpact();
     final actions = ref.read(linkActionsProvider.notifier);
-    final action = dir == DismissDirection.startToEnd ? rightAction : leftAction;
+    final action = dir == DismissDirection.startToEnd
+        ? rightAction
+        : leftAction;
 
     if (action == 'read') {
       actions.markAsRead(widget.link.id);
-      _showUndoSnackBar('Marked as read', () => actions.restoreToInbox(widget.link.id, force: true));
+      _showUndoSnackBar(
+        'Marked as read',
+        () => actions.restoreToInbox(widget.link.id, force: true),
+      );
     } else if (action == 'archive') {
       actions.archive(widget.link.id);
-      _showUndoSnackBar('Archived', () => actions.restoreToInbox(widget.link.id, force: true));
+      _showUndoSnackBar(
+        'Archived',
+        () => actions.restoreToInbox(widget.link.id, force: true),
+      );
     } else if (action == 'delete') {
       final linkData = widget.link;
       actions.delete(widget.link.id);
@@ -109,10 +127,7 @@ class _LinkCardState extends ConsumerState<LinkCard> {
       ..showSnackBar(
         SnackBar(
           content: Text(message),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: onUndo,
-          ),
+          action: SnackBarAction(label: 'Undo', onPressed: onUndo),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -121,17 +136,41 @@ class _LinkCardState extends ConsumerState<LinkCard> {
   _SwipeDetails _getSwipeDetails(String action) {
     switch (action) {
       case 'read':
-        return const _SwipeDetails(color: kSwipeReadColor, icon: Icons.check_circle_outline, label: 'Read');
+        return const _SwipeDetails(
+          color: kSwipeReadColor,
+          icon: Icons.check_circle_outline,
+          label: 'Read',
+        );
       case 'archive':
-        return const _SwipeDetails(color: kSwipeArchiveColor, icon: Icons.archive_outlined, label: 'Archive');
+        return const _SwipeDetails(
+          color: kSwipeArchiveColor,
+          icon: Icons.archive_outlined,
+          label: 'Archive',
+        );
       case 'delete':
-        return const _SwipeDetails(color: kFreshnessLow, icon: Icons.delete_outline, label: 'Delete');
+        return const _SwipeDetails(
+          color: kFreshnessLow,
+          icon: Icons.delete_outline,
+          label: 'Delete',
+        );
       case 'snooze':
-        return const _SwipeDetails(color: kAccentMuted, icon: Icons.bedtime_outlined, label: 'Snooze');
+        return const _SwipeDetails(
+          color: kAccentMuted,
+          icon: Icons.bedtime_outlined,
+          label: 'Snooze',
+        );
       case 'collection':
-        return const _SwipeDetails(color: kAccent, icon: Icons.folder_outlined, label: 'Folder');
+        return const _SwipeDetails(
+          color: kAccent,
+          icon: Icons.folder_outlined,
+          label: 'Folder',
+        );
       default:
-        return const _SwipeDetails(color: Colors.transparent, icon: Icons.block, label: '');
+        return const _SwipeDetails(
+          color: Colors.transparent,
+          icon: Icons.block,
+          label: '',
+        );
     }
   }
 
@@ -155,13 +194,19 @@ class _LinkCardState extends ConsumerState<LinkCard> {
             Navigator.pop(context);
             final actions = ref.read(linkActionsProvider.notifier);
             actions.markAsRead(widget.link.id);
-            _showUndoSnackBar('Marked as read', () => actions.restoreToInbox(widget.link.id, force: true));
+            _showUndoSnackBar(
+              'Marked as read',
+              () => actions.restoreToInbox(widget.link.id, force: true),
+            );
           },
           onArchive: () {
             Navigator.pop(context);
             final actions = ref.read(linkActionsProvider.notifier);
             actions.archive(widget.link.id);
-            _showUndoSnackBar('Archived', () => actions.restoreToInbox(widget.link.id, force: true));
+            _showUndoSnackBar(
+              'Archived',
+              () => actions.restoreToInbox(widget.link.id, force: true),
+            );
           },
           onSelect: () {
             Navigator.pop(context);
@@ -214,7 +259,9 @@ class _LinkCardState extends ConsumerState<LinkCard> {
     } else if (domainOverrides.containsKey(widget.link.domain.toLowerCase())) {
       currentHalfLife = domainOverrides[widget.link.domain.toLowerCase()]!;
     } else {
-      final tags = widget.link.tags.split(',').map((t) => t.trim().toLowerCase());
+      final tags = widget.link.tags
+          .split(',')
+          .map((t) => t.trim().toLowerCase());
       for (final tag in tags) {
         if (tagOverrides.containsKey(tag)) {
           currentHalfLife = tagOverrides[tag]!;
@@ -231,14 +278,17 @@ class _LinkCardState extends ConsumerState<LinkCard> {
       snoozedUntil: widget.link.snoozedUntil,
       decayCurveType: decayCurveType,
     );
-    final isSnoozed = widget.link.snoozedUntil != null &&
+    final isSnoozed =
+        widget.link.snoozedUntil != null &&
         widget.link.snoozedUntil!.isAfter(now);
 
     final leftSwipe = _getSwipeDetails(leftAction);
     final rightSwipe = _getSwipeDetails(rightAction);
 
     final isMultiSelect = ref.watch(selectedLinkIdsProvider).isNotEmpty;
-    final isSelected = ref.watch(selectedLinkIdsProvider).contains(widget.link.id);
+    final isSelected = ref
+        .watch(selectedLinkIdsProvider)
+        .contains(widget.link.id);
 
     Widget cardBody = _CardContent(
       link: widget.link,
@@ -283,8 +333,8 @@ class _LinkCardState extends ConsumerState<LinkCard> {
       direction: leftAction == 'none'
           ? DismissDirection.startToEnd
           : rightAction == 'none'
-              ? DismissDirection.endToStart
-              : DismissDirection.horizontal,
+          ? DismissDirection.endToStart
+          : DismissDirection.horizontal,
       background: rightAction != 'none'
           ? SwipeBackground(
               direction: DismissDirection.startToEnd,
@@ -310,7 +360,11 @@ class _SwipeDetails {
   final Color color;
   final IconData icon;
   final String label;
-  const _SwipeDetails({required this.color, required this.icon, required this.label});
+  const _SwipeDetails({
+    required this.color,
+    required this.icon,
+    required this.label,
+  });
 }
 
 // ─── Card Content ──────────────────────────────────────────────────────────
@@ -363,12 +417,18 @@ class _CardContentState extends State<_CardContent> {
               : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(kRadiusMD),
           border: Border.all(
-            color: widget.isSelected ? cs.onSurface : cs.outline.withValues(alpha: 0.5),
+            color: widget.isSelected
+                ? cs.onSurface
+                : cs.outline.withValues(alpha: 0.5),
             width: widget.isSelected ? 1.0 : 0.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.12 : 0.015),
+              color: Colors.black.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.12
+                    : 0.015,
+              ),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -383,7 +443,8 @@ class _CardContentState extends State<_CardContent> {
             onTapCancel: () => setState(() => _scale = 1.0),
             onTap: widget.onTap,
             onLongPress: widget.onLongPress,
-            onSecondaryTap: widget.onLongPress, // Right-click support for desktop/web
+            onSecondaryTap:
+                widget.onLongPress, // Right-click support for desktop/web
             borderRadius: BorderRadius.circular(kRadiusMD),
             splashColor: cs.onSurface.withValues(alpha: 0.05),
             highlightColor: cs.onSurface.withValues(alpha: 0.03),
@@ -394,12 +455,15 @@ class _CardContentState extends State<_CardContent> {
                   top: 0,
                   bottom: 0,
                   width: 3.5,
-                  child: Container(
-                    color: color,
-                  ),
+                  child: Container(color: color),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(kSpaceMD + 3.5, kSpaceMD, kSpaceMD, kSpaceMD),
+                  padding: const EdgeInsets.fromLTRB(
+                    kSpaceMD + 3.5,
+                    kSpaceMD,
+                    kSpaceMD,
+                    kSpaceMD,
+                  ),
                   child: Row(
                     children: [
                       if (widget.isMultiSelectMode) ...[
@@ -426,7 +490,8 @@ class _CardContentState extends State<_CardContent> {
                                 const SizedBox(width: kSpaceMD),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         title,
@@ -442,17 +507,29 @@ class _CardContentState extends State<_CardContent> {
                                       ),
                                       const SizedBox(height: kSpaceXS),
                                       Wrap(
-                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        crossAxisAlignment:
+                                            WrapCrossAlignment.center,
                                         children: [
                                           if (widget.link.isDead) ...[
                                             Container(
-                                              margin: const EdgeInsets.only(right: 6),
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              margin: const EdgeInsets.only(
+                                                right: 6,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
                                               decoration: BoxDecoration(
-                                                color: cs.error.withValues(alpha: 0.12),
-                                                borderRadius: BorderRadius.circular(4),
+                                                color: cs.error.withValues(
+                                                  alpha: 0.12,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                                 border: Border.all(
-                                                  color: cs.error.withValues(alpha: 0.25),
+                                                  color: cs.error.withValues(
+                                                    alpha: 0.25,
+                                                  ),
                                                   width: 0.5,
                                                 ),
                                               ),
@@ -469,7 +546,8 @@ class _CardContentState extends State<_CardContent> {
                                                     'DEAD LINK',
                                                     style: GoogleFonts.inter(
                                                       fontSize: 8,
-                                                      fontWeight: FontWeight.w700,
+                                                      fontWeight:
+                                                          FontWeight.w700,
                                                       color: cs.error,
                                                       letterSpacing: 0.3,
                                                     ),
@@ -482,15 +560,21 @@ class _CardContentState extends State<_CardContent> {
                                             widget.link.domain,
                                             style: GoogleFonts.inter(
                                               fontSize: 12,
-                                              color: cs.onSurface.withValues(alpha: 0.45),
+                                              color: cs.onSurface.withValues(
+                                                alpha: 0.45,
+                                              ),
                                             ),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 5),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 5,
+                                            ),
                                             child: Text(
                                               '·',
                                               style: TextStyle(
-                                                color: cs.onSurface.withValues(alpha: 0.25),
+                                                color: cs.onSurface.withValues(
+                                                  alpha: 0.25,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -498,16 +582,25 @@ class _CardContentState extends State<_CardContent> {
                                             age,
                                             style: GoogleFonts.inter(
                                               fontSize: 12,
-                                              color: cs.onSurface.withValues(alpha: 0.45),
+                                              color: cs.onSurface.withValues(
+                                                alpha: 0.45,
+                                              ),
                                             ),
                                           ),
-                                          if (widget.link.estimatedReadMinutes != null) ...[
+                                          if (widget
+                                                  .link
+                                                  .estimatedReadMinutes !=
+                                              null) ...[
                                             Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 5,
+                                                  ),
                                               child: Text(
                                                 '·',
                                                 style: TextStyle(
-                                                  color: cs.onSurface.withValues(alpha: 0.25),
+                                                  color: cs.onSurface
+                                                      .withValues(alpha: 0.25),
                                                 ),
                                               ),
                                             ),
@@ -515,10 +608,12 @@ class _CardContentState extends State<_CardContent> {
                                               '${widget.link.estimatedReadMinutes} min read',
                                               style: GoogleFonts.inter(
                                                 fontSize: 12,
-                                                color: cs.onSurface.withValues(alpha: 0.45),
+                                                color: cs.onSurface.withValues(
+                                                  alpha: 0.45,
+                                                ),
                                               ),
                                             ),
-                                          ]
+                                          ],
                                         ],
                                       ),
                                     ],
@@ -529,7 +624,10 @@ class _CardContentState extends State<_CardContent> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    ScoreBadge(score: widget.score, color: color),
+                                    ScoreBadge(
+                                      score: widget.score,
+                                      color: color,
+                                    ),
                                     if (!widget.isMultiSelectMode) ...[
                                       const SizedBox(height: 6),
                                       InkWell(
@@ -540,11 +638,13 @@ class _CardContentState extends State<_CardContent> {
                                           child: Icon(
                                             Icons.open_in_new,
                                             size: 14,
-                                            color: cs.onSurface.withValues(alpha: 0.4),
+                                            color: cs.onSurface.withValues(
+                                              alpha: 0.4,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ]
+                                    ],
                                   ],
                                 ),
                               ],
@@ -557,7 +657,9 @@ class _CardContentState extends State<_CardContent> {
 
                             if (widget.isSnoozed) ...[
                               const SizedBox(height: kSpaceSM),
-                              SnoozeBadge(snoozedUntil: widget.link.snoozedUntil!),
+                              SnoozeBadge(
+                                snoozedUntil: widget.link.snoozedUntil!,
+                              ),
                             ],
 
                             if (widget.link.tags.isNotEmpty) ...[

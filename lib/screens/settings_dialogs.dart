@@ -67,9 +67,7 @@ void showDomainOverrideDialog(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Cancel',
-                  style: TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.5),
-                  ),
+                  style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
                 ),
               ),
               TextButton(
@@ -161,9 +159,7 @@ void showTagOverrideDialog(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Cancel',
-                  style: TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.5),
-                  ),
+                  style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
                 ),
               ),
               TextButton(
@@ -281,9 +277,7 @@ void showSnoozePresetsDialog(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Cancel',
-                  style: TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.5),
-                  ),
+                  style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
                 ),
               ),
               TextButton(

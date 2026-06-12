@@ -40,7 +40,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         await authSvc.linkWithGoogle();
         _showSnackBar('Successfully linked Google account!');
       } on FirebaseAuthException catch (e) {
-        if (e.code == 'credential-already-in-use' || e.code == 'email-already-in-use') {
+        if (e.code == 'credential-already-in-use' ||
+            e.code == 'email-already-in-use') {
           final conflictCredential = e.credential;
           if (conflictCredential == null) {
             _showSnackBar('Linking failed: Account already in use.');
@@ -72,7 +73,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onPressed: () => Navigator.pop(context, false),
                     child: Text(
                       'Cancel',
-                      style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+                      style: TextStyle(
+                        color: cs.onSurface.withValues(alpha: 0.5),
+                      ),
                     ),
                   ),
                   TextButton(
@@ -95,15 +98,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             final fs = ref.read(firestoreServiceProvider);
             final anonLinks = await fs.getAllLinksFuture();
 
-            final userCred = await authSvc.signInWithCredential(conflictCredential);
+            final userCred = await authSvc.signInWithCredential(
+              conflictCredential,
+            );
             final googleUid = userCred.user?.uid;
-            
-            if (googleUid != null && anonUid != null && googleUid != anonUid && anonLinks.isNotEmpty) {
+
+            if (googleUid != null &&
+                anonUid != null &&
+                googleUid != anonUid &&
+                anonLinks.isNotEmpty) {
               for (final link in anonLinks) {
                 await fs.insertLink(link);
               }
             }
-            _showSnackBar('Successfully switched account and merged offline links!');
+            _showSnackBar(
+              'Successfully switched account and merged offline links!',
+            );
           }
         } else if (e.code == 'sign-in-canceled') {
           // Silently handle cancellation
@@ -398,7 +408,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
                                         color: cs.onSurface,
-                                    ),
+                                      ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
@@ -406,7 +416,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       style: getFontTextStyle(
                                         ref.watch(fontFamilyProvider),
                                         fontSize: 12,
-                                        color: cs.onSurface.withValues(alpha: 0.45),
+                                        color: cs.onSurface.withValues(
+                                          alpha: 0.45,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -434,7 +446,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     ),
                                   )
                                 : FilledButton.icon(
-                                    icon: const Icon(Icons.sync_outlined, size: 18),
+                                    icon: const Icon(
+                                      Icons.sync_outlined,
+                                      size: 18,
+                                    ),
                                     label: const Text('Link Google Account'),
                                     onPressed: _linkGoogleAccount,
                                   ),
@@ -447,7 +462,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 24,
-                                backgroundColor: cs.primary.withValues(alpha: 0.1),
+                                backgroundColor: cs.primary.withValues(
+                                  alpha: 0.1,
+                                ),
                                 backgroundImage: user.photoURL != null
                                     ? NetworkImage(user.photoURL!)
                                     : null,
@@ -482,8 +499,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: kFreshnessHigh.withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(4),
+                                            color: kFreshnessHigh.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                           ),
                                           child: Text(
                                             'Synced',
@@ -503,7 +524,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       style: getFontTextStyle(
                                         ref.watch(fontFamilyProvider),
                                         fontSize: 12,
-                                        color: cs.onSurface.withValues(alpha: 0.45),
+                                        color: cs.onSurface.withValues(
+                                          alpha: 0.45,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -634,7 +657,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           size: 20,
                           color: cs.onSurface,
                         ),
-                        onTap: () => showSnoozePresetsDialog(context, ref, snoozePresets),
+                        onTap: () => showSnoozePresetsDialog(
+                          context,
+                          ref,
+                          snoozePresets,
+                        ),
                       ),
                     ],
                   ),
@@ -969,7 +996,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           size: 20,
                           color: cs.onSurface,
                         ),
-                        onTap: () => showDomainOverrideDialog(context, ref, domainOverrides),
+                        onTap: () => showDomainOverrideDialog(
+                          context,
+                          ref,
+                          domainOverrides,
+                        ),
                       ),
                       if (domainOverrides.isNotEmpty) ...[
                         const Divider(height: 0),
@@ -1039,7 +1070,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           size: 20,
                           color: cs.onSurface,
                         ),
-                        onTap: () => showTagOverrideDialog(context, ref, tagOverrides),
+                        onTap: () =>
+                            showTagOverrideDialog(context, ref, tagOverrides),
                       ),
                       if (tagOverrides.isNotEmpty) ...[
                         const Divider(height: 0),
@@ -1188,10 +1220,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const Divider(height: 0),
                       InfoRow(
                         label: 'Storage',
-                        value: isAnonymous ? 'Cloud Firestore (Anonymous)' : 'Cloud Firestore (Synced)',
+                        value: isAnonymous
+                            ? 'Cloud Firestore (Anonymous)'
+                            : 'Cloud Firestore (Synced)',
                       ),
                       const Divider(height: 0),
-                      const InfoRow(label: 'License', value: 'MIT (Open Source)'),
+                      const InfoRow(
+                        label: 'License',
+                        value: 'MIT (Open Source)',
+                      ),
                       const Divider(height: 0),
                       ListTile(
                         leading: Icon(
@@ -1234,7 +1271,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: MediaQuery.of(context).size.width > 600 ? 40 : 120),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.width > 600 ? 40 : 120,
+                  ),
                 ]),
               );
             },

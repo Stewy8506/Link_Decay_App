@@ -64,11 +64,7 @@ Future<void> main() async {
     debugPrint('Failed to initialize notifications: $e\n$stack');
   }
 
-  runApp(
-    const ProviderScope(
-      child: _ShareIntentWrapper(),
-    ),
-  );
+  runApp(const ProviderScope(child: _ShareIntentWrapper()));
 }
 
 /// Wraps the app to handle share intent initialization after Riverpod is ready.
@@ -76,7 +72,8 @@ class _ShareIntentWrapper extends ConsumerStatefulWidget {
   const _ShareIntentWrapper();
 
   @override
-  ConsumerState<_ShareIntentWrapper> createState() => _ShareIntentWrapperState();
+  ConsumerState<_ShareIntentWrapper> createState() =>
+      _ShareIntentWrapperState();
 }
 
 class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
@@ -91,7 +88,8 @@ class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
     ShareIntentService.instance.startListening(
       onUrl: (url) async {
         await ref.read(linkActionsProvider.notifier).saveLink(url);
-        final isForeground = WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+        final isForeground =
+            WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
         if (isForeground) {
           scaffoldMessengerKey.currentState?.showSnackBar(
             SnackBar(
@@ -143,7 +141,6 @@ class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
       debugPrint('Error scheduling notifications: $e\n$stack');
     }
   }
-
 
   @override
   void dispose() {

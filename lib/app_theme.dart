@@ -144,32 +144,72 @@ TextStyle getFontTextStyle(
 }) {
   switch (font.toLowerCase()) {
     case 'outfit':
-      return GoogleFonts.outfit(fontSize: fontSize, fontWeight: fontWeight, color: color, letterSpacing: letterSpacing);
+      return GoogleFonts.outfit(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
     case 'playfair':
     case 'playfair display':
-      return GoogleFonts.playfairDisplay(fontSize: fontSize, fontWeight: fontWeight, color: color, letterSpacing: letterSpacing);
+      return GoogleFonts.playfairDisplay(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
     case 'jetbrains mono':
     case 'mono':
-      return GoogleFonts.jetBrainsMono(fontSize: fontSize, fontWeight: fontWeight, color: color, letterSpacing: letterSpacing);
+      return GoogleFonts.jetBrainsMono(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
     case 'inter':
     default:
-      return GoogleFonts.inter(fontSize: fontSize, fontWeight: fontWeight, color: color, letterSpacing: letterSpacing);
+      return GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
   }
 }
 
 TextStyle getTitleStyle(String font, {required Color color}) {
   switch (font.toLowerCase()) {
     case 'outfit':
-      return GoogleFonts.outfit(color: color, fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: -0.3);
+      return GoogleFonts.outfit(
+        color: color,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.3,
+      );
     case 'playfair':
     case 'playfair display':
-      return GoogleFonts.playfairDisplay(color: color, fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.3);
+      return GoogleFonts.playfairDisplay(
+        color: color,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.3,
+      );
     case 'jetbrains mono':
     case 'mono':
-      return GoogleFonts.jetBrainsMono(color: color, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.3);
+      return GoogleFonts.jetBrainsMono(
+        color: color,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.3,
+      );
     case 'inter':
     default:
-      return GoogleFonts.inter(color: color, fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: -0.3);
+      return GoogleFonts.inter(
+        color: color,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.3,
+      );
   }
 }
 
@@ -181,22 +221,23 @@ ThemeData buildDarkTheme(
   Color? customBg,
   String fontFamily = 'inter',
 }) {
-  final basePalette = _darkPalettes[paletteName] ?? _darkPalettes['warm_stone']!;
-  
+  final basePalette =
+      _darkPalettes[paletteName] ?? _darkPalettes['warm_stone']!;
+
   // Custom accent / bg override
   final accentColor = customAccent ?? basePalette.accent;
-  final accentMutedColor = customAccent != null 
-      ? customAccent.withValues(alpha: 0.6) 
+  final accentMutedColor = customAccent != null
+      ? customAccent.withValues(alpha: 0.6)
       : basePalette.accentMuted;
-      
+
   final bg = customBg ?? basePalette.bg;
-  final surface = customBg != null 
+  final surface = customBg != null
       ? Color.alphaBlend(Colors.white.withValues(alpha: 0.05), customBg)
       : basePalette.surface;
-  final card = customBg != null 
+  final card = customBg != null
       ? Color.alphaBlend(Colors.white.withValues(alpha: 0.1), customBg)
       : basePalette.card;
-  final border = customBg != null 
+  final border = customBg != null
       ? Color.alphaBlend(Colors.white.withValues(alpha: 0.18), customBg)
       : basePalette.border;
 
@@ -211,7 +252,7 @@ ThemeData buildDarkTheme(
   );
 
   final base = ThemeData.dark(useMaterial3: true);
-  
+
   return base.copyWith(
     scaffoldBackgroundColor: p.bg,
     cardColor: p.card,
@@ -224,10 +265,10 @@ ThemeData buildDarkTheme(
       onSurface: p.text,
       onPrimary: p.bg,
     ),
-    textTheme: getTextTheme(fontFamily, base.textTheme).apply(
-      bodyColor: p.text,
-      displayColor: p.text,
-    ),
+    textTheme: getTextTheme(
+      fontFamily,
+      base.textTheme,
+    ).apply(bodyColor: p.text, displayColor: p.text),
     appBarTheme: AppBarTheme(
       backgroundColor: p.bg,
       foregroundColor: p.text,
@@ -276,7 +317,11 @@ ThemeData buildDarkTheme(
         borderRadius: BorderRadius.circular(kRadiusMD),
         borderSide: BorderSide(color: p.accent, width: 1.5),
       ),
-      hintStyle: getFontTextStyle(fontFamily, color: p.accentMuted, fontSize: 15),
+      hintStyle: getFontTextStyle(
+        fontFamily,
+        color: p.accentMuted,
+        fontSize: 15,
+      ),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: kSpaceMD,
         vertical: kSpaceMD,
@@ -291,14 +336,14 @@ ThemeData buildDarkTheme(
       ),
       margin: EdgeInsets.zero,
     ),
-    dividerTheme: DividerThemeData(
-      color: p.border,
-      thickness: 0.5,
-      space: 0,
-    ),
+    dividerTheme: DividerThemeData(color: p.border, thickness: 0.5, space: 0),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: p.card,
-      contentTextStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 14),
+      contentTextStyle: getFontTextStyle(
+        fontFamily,
+        color: p.text,
+        fontSize: 14,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
         side: BorderSide(color: p.border),
@@ -355,11 +400,7 @@ ThemeData buildDarkTheme(
         borderRadius: BorderRadius.circular(kRadiusMD),
         side: BorderSide(color: p.border, width: 0.5),
       ),
-      textStyle: getFontTextStyle(
-        fontFamily,
-        color: p.text,
-        fontSize: 14,
-      ),
+      textStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 14),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: p.surface,
@@ -367,7 +408,11 @@ ThemeData buildDarkTheme(
       selectedColor: p.accent,
       secondarySelectedColor: p.accent,
       labelStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 12),
-      secondaryLabelStyle: getFontTextStyle(fontFamily, color: p.bg, fontSize: 12),
+      secondaryLabelStyle: getFontTextStyle(
+        fontFamily,
+        color: p.bg,
+        fontSize: 12,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: p.border, width: 0.5),
@@ -378,14 +423,24 @@ ThemeData buildDarkTheme(
       style: FilledButton.styleFrom(
         backgroundColor: p.accent,
         foregroundColor: p.bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusMD)),
-        textStyle: getFontTextStyle(fontFamily, fontWeight: FontWeight.w600, fontSize: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusMD),
+        ),
+        textStyle: getFontTextStyle(
+          fontFamily,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: p.accent,
-        textStyle: getFontTextStyle(fontFamily, fontWeight: FontWeight.w500, fontSize: 14),
+        textStyle: getFontTextStyle(
+          fontFamily,
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
       ),
     ),
   );
@@ -397,20 +452,21 @@ ThemeData buildLightTheme(
   Color? customBg,
   String fontFamily = 'inter',
 }) {
-  final basePalette = _lightPalettes[paletteName] ?? _lightPalettes['warm_stone']!;
-  
+  final basePalette =
+      _lightPalettes[paletteName] ?? _lightPalettes['warm_stone']!;
+
   // Custom accent / bg override
   final accentColor = customAccent ?? basePalette.accent;
-  final accentMutedColor = customAccent != null 
-      ? customAccent.withValues(alpha: 0.6) 
+  final accentMutedColor = customAccent != null
+      ? customAccent.withValues(alpha: 0.6)
       : basePalette.accentMuted;
-      
+
   final bg = customBg ?? basePalette.bg;
   final card = customBg != null ? Colors.white : basePalette.card;
-  final surface = customBg != null 
+  final surface = customBg != null
       ? Color.alphaBlend(Colors.black.withValues(alpha: 0.04), customBg)
       : basePalette.surface;
-  final border = customBg != null 
+  final border = customBg != null
       ? Color.alphaBlend(Colors.black.withValues(alpha: 0.08), customBg)
       : basePalette.border;
 
@@ -438,10 +494,10 @@ ThemeData buildLightTheme(
       onSurface: p.text,
       onPrimary: p.bg,
     ),
-    textTheme: getTextTheme(fontFamily, base.textTheme).apply(
-      bodyColor: p.text,
-      displayColor: p.text,
-    ),
+    textTheme: getTextTheme(
+      fontFamily,
+      base.textTheme,
+    ).apply(bodyColor: p.text, displayColor: p.text),
     appBarTheme: AppBarTheme(
       backgroundColor: p.bg,
       foregroundColor: p.text,
@@ -490,7 +546,11 @@ ThemeData buildLightTheme(
         borderRadius: BorderRadius.circular(kRadiusMD),
         borderSide: BorderSide(color: p.accent, width: 1.5),
       ),
-      hintStyle: getFontTextStyle(fontFamily, color: p.accentMuted, fontSize: 15),
+      hintStyle: getFontTextStyle(
+        fontFamily,
+        color: p.accentMuted,
+        fontSize: 15,
+      ),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: kSpaceMD,
         vertical: kSpaceMD,
@@ -505,14 +565,14 @@ ThemeData buildLightTheme(
       ),
       margin: EdgeInsets.zero,
     ),
-    dividerTheme: DividerThemeData(
-      color: p.border,
-      thickness: 0.5,
-      space: 0,
-    ),
+    dividerTheme: DividerThemeData(color: p.border, thickness: 0.5, space: 0),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: p.card,
-      contentTextStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 14),
+      contentTextStyle: getFontTextStyle(
+        fontFamily,
+        color: p.text,
+        fontSize: 14,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(kRadiusMD),
         side: BorderSide(color: p.border),
@@ -569,11 +629,7 @@ ThemeData buildLightTheme(
         borderRadius: BorderRadius.circular(kRadiusMD),
         side: BorderSide(color: p.border, width: 0.5),
       ),
-      textStyle: getFontTextStyle(
-        fontFamily,
-        color: p.text,
-        fontSize: 14,
-      ),
+      textStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 14),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: p.surface,
@@ -581,7 +637,11 @@ ThemeData buildLightTheme(
       selectedColor: p.accent,
       secondarySelectedColor: p.accent,
       labelStyle: getFontTextStyle(fontFamily, color: p.text, fontSize: 12),
-      secondaryLabelStyle: getFontTextStyle(fontFamily, color: p.bg, fontSize: 12),
+      secondaryLabelStyle: getFontTextStyle(
+        fontFamily,
+        color: p.bg,
+        fontSize: 12,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: p.border, width: 0.5),
@@ -592,14 +652,24 @@ ThemeData buildLightTheme(
       style: FilledButton.styleFrom(
         backgroundColor: p.accent,
         foregroundColor: p.bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusMD)),
-        textStyle: getFontTextStyle(fontFamily, fontWeight: FontWeight.w600, fontSize: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusMD),
+        ),
+        textStyle: getFontTextStyle(
+          fontFamily,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: p.accent,
-        textStyle: getFontTextStyle(fontFamily, fontWeight: FontWeight.w500, fontSize: 14),
+        textStyle: getFontTextStyle(
+          fontFamily,
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
       ),
     ),
   );

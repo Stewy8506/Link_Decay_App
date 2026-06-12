@@ -11,7 +11,6 @@ import '../models/link_status.dart';
 import '../utils/freshness.dart';
 import 'firestore_service.dart';
 
-
 class NotificationService {
   NotificationService._internal();
   static final NotificationService instance = NotificationService._internal();
@@ -40,8 +39,9 @@ class NotificationService {
       } catch (_) {}
     }
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/launcher_icon',
+    );
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -63,14 +63,16 @@ class NotificationService {
     if (Platform.isAndroid) {
       final android = _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       return await android?.requestNotificationsPermission() ?? false;
     }
 
     if (Platform.isIOS) {
       final ios = _plugin
           .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>();
+            IOSFlutterLocalNotificationsPlugin
+          >();
       return await ios?.requestPermissions(
             alert: true,
             badge: true,
@@ -98,16 +100,26 @@ class NotificationService {
     Map<String, double> tagOverrides = const {};
 
     if (settings != null) {
-      if (settings.domainHalfLifeOverrides != null && settings.domainHalfLifeOverrides!.isNotEmpty) {
+      if (settings.domainHalfLifeOverrides != null &&
+          settings.domainHalfLifeOverrides!.isNotEmpty) {
         try {
-          final Map<String, dynamic> decoded = jsonDecode(settings.domainHalfLifeOverrides!);
-          domainOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+          final Map<String, dynamic> decoded = jsonDecode(
+            settings.domainHalfLifeOverrides!,
+          );
+          domainOverrides = decoded.map(
+            (key, val) => MapEntry(key, (val as num).toDouble()),
+          );
         } catch (_) {}
       }
-      if (settings.tagHalfLifeOverrides != null && settings.tagHalfLifeOverrides!.isNotEmpty) {
+      if (settings.tagHalfLifeOverrides != null &&
+          settings.tagHalfLifeOverrides!.isNotEmpty) {
         try {
-          final Map<String, dynamic> decoded = jsonDecode(settings.tagHalfLifeOverrides!);
-          tagOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+          final Map<String, dynamic> decoded = jsonDecode(
+            settings.tagHalfLifeOverrides!,
+          );
+          tagOverrides = decoded.map(
+            (key, val) => MapEntry(key, (val as num).toDouble()),
+          );
         } catch (_) {}
       }
     }
@@ -210,16 +222,26 @@ class NotificationService {
     Map<String, double> tagOverrides = const {};
 
     if (settings != null) {
-      if (settings.domainHalfLifeOverrides != null && settings.domainHalfLifeOverrides!.isNotEmpty) {
+      if (settings.domainHalfLifeOverrides != null &&
+          settings.domainHalfLifeOverrides!.isNotEmpty) {
         try {
-          final Map<String, dynamic> decoded = jsonDecode(settings.domainHalfLifeOverrides!);
-          domainOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+          final Map<String, dynamic> decoded = jsonDecode(
+            settings.domainHalfLifeOverrides!,
+          );
+          domainOverrides = decoded.map(
+            (key, val) => MapEntry(key, (val as num).toDouble()),
+          );
         } catch (_) {}
       }
-      if (settings.tagHalfLifeOverrides != null && settings.tagHalfLifeOverrides!.isNotEmpty) {
+      if (settings.tagHalfLifeOverrides != null &&
+          settings.tagHalfLifeOverrides!.isNotEmpty) {
         try {
-          final Map<String, dynamic> decoded = jsonDecode(settings.tagHalfLifeOverrides!);
-          tagOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+          final Map<String, dynamic> decoded = jsonDecode(
+            settings.tagHalfLifeOverrides!,
+          );
+          tagOverrides = decoded.map(
+            (key, val) => MapEntry(key, (val as num).toDouble()),
+          );
         } catch (_) {}
       }
     }
@@ -259,25 +281,30 @@ class NotificationService {
 
     // 2. Read links in last 7 days
     final sevenDaysAgo = nowTime.subtract(const Duration(days: 7));
-    final readLast7Days = links.where((l) => l.readAt != null && l.readAt!.isAfter(sevenDaysAgo)).length;
+    final readLast7Days = links
+        .where((l) => l.readAt != null && l.readAt!.isAfter(sevenDaysAgo))
+        .length;
 
     // 3. Current reading streak
-    final readDates = links
-        .where((l) => l.readAt != null)
-        .map((l) => DateTime(l.readAt!.year, l.readAt!.month, l.readAt!.day))
-        .toSet()
-        .toList()
-      ..sort((a, b) => b.compareTo(a));
+    final readDates =
+        links
+            .where((l) => l.readAt != null)
+            .map(
+              (l) => DateTime(l.readAt!.year, l.readAt!.month, l.readAt!.day),
+            )
+            .toSet()
+            .toList()
+          ..sort((a, b) => b.compareTo(a));
 
     int currentStreak = 0;
     if (readDates.isNotEmpty) {
       final today = DateTime(nowTime.year, nowTime.month, nowTime.day);
       final yesterday = today.subtract(const Duration(days: 1));
-      
+
       if (readDates.contains(today) || readDates.contains(yesterday)) {
         currentStreak = 1;
         var checkDate = readDates.contains(today) ? today : yesterday;
-        
+
         while (true) {
           checkDate = checkDate.subtract(const Duration(days: 1));
           if (readDates.contains(checkDate)) {
@@ -291,7 +318,8 @@ class NotificationService {
 
     // Compose notification content
     final title = 'Your Weekly LinkShelf Digest';
-    final body = 'You read $readLast7Days links this week! 🔥 Current streak: $currentStreak days. $staleCount links are getting stale and need your attention.';
+    final body =
+        'You read $readLast7Days links this week! 🔥 Current streak: $currentStreak days. $staleCount links are getting stale and need your attention.';
 
     // Schedule for next Sunday at 6 PM
     final now = tz.TZDateTime.now(tz.local);
@@ -372,12 +400,6 @@ class NotificationService {
     // Use a unique ID for each immediate notification
     final notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
 
-    await _plugin.show(
-      notificationId,
-      title,
-      body,
-      details,
-    );
+    await _plugin.show(notificationId, title, body, details);
   }
 }
-

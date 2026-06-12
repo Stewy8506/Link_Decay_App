@@ -6,7 +6,8 @@ import 'firestore_service.dart';
 
 class MigrationService {
   MigrationService._privateConstructor();
-  static final MigrationService instance = MigrationService._privateConstructor();
+  static final MigrationService instance =
+      MigrationService._privateConstructor();
 
   static const String _migratedPrefsKey = 'sqlite_migrated_to_firestore';
 
@@ -18,7 +19,9 @@ class MigrationService {
       final prefs = await SharedPreferences.getInstance();
       final alreadyMigrated = prefs.getBool(_migratedPrefsKey) ?? false;
       if (alreadyMigrated) {
-        debugPrint('Legacy SQLite database has already been migrated to Firestore.');
+        debugPrint(
+          'Legacy SQLite database has already been migrated to Firestore.',
+        );
         return;
       }
 
@@ -27,16 +30,22 @@ class MigrationService {
       final driftColls = await driftDb.select(driftDb.collections).get();
 
       if (driftLinks.isEmpty && driftColls.isEmpty) {
-        debugPrint('Legacy SQLite database is empty. Marking migration as complete.');
+        debugPrint(
+          'Legacy SQLite database is empty. Marking migration as complete.',
+        );
         await prefs.setBool(_migratedPrefsKey, true);
         return;
       }
 
-      debugPrint('Legacy SQLite data detected! Migrating ${driftLinks.length} links and ${driftColls.length} collections...');
+      debugPrint(
+        'Legacy SQLite data detected! Migrating ${driftLinks.length} links and ${driftColls.length} collections...',
+      );
 
       // Fetch other data
       final driftFilters = await driftDb.select(driftDb.customFilters).get();
-      final driftHighlights = await driftDb.select(driftDb.linkHighlights).get();
+      final driftHighlights = await driftDb
+          .select(driftDb.linkHighlights)
+          .get();
       final driftSettings = await driftDb.getSettings();
 
       // 1. Copy Settings
@@ -135,7 +144,9 @@ class MigrationService {
 
       // 6. Mark migration as finished
       await prefs.setBool(_migratedPrefsKey, true);
-      debugPrint('Successfully completed SQLite to Firestore migration for user: $uid');
+      debugPrint(
+        'Successfully completed SQLite to Firestore migration for user: $uid',
+      );
     } catch (e) {
       debugPrint('Error migrating SQLite to Firestore: $e');
     }

@@ -36,7 +36,10 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         builder: (_) => Dialog(
           backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
           child: Container(
             constraints: const BoxConstraints(maxWidth: 460),
             child: ClipRRect(
@@ -58,12 +61,18 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
 
   String _getSortModeLabel(String mode) {
     switch (mode) {
-      case 'stalest': return 'Stalest';
-      case 'freshness_desc': return 'Freshest';
-      case 'newest': return 'Newest';
-      case 'read_time': return 'Read Time';
-      case 'domain': return 'Domain';
-      default: return 'Sort';
+      case 'stalest':
+        return 'Stalest';
+      case 'freshness_desc':
+        return 'Freshest';
+      case 'newest':
+        return 'Newest';
+      case 'read_time':
+        return 'Read Time';
+      case 'domain':
+        return 'Domain';
+      default:
+        return 'Sort';
     }
   }
 
@@ -97,7 +106,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                       ? SafeArea(
                           bottom: false,
                           child: StatsDashboardPanel(
-                            onClose: () => setState(() => _isStatsExpanded = false),
+                            onClose: () =>
+                                setState(() => _isStatsExpanded = false),
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -116,7 +126,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                     ? IconButton(
                         icon: const Icon(Icons.close),
                         onPressed: () {
-                          ref.read(selectedLinkIdsProvider.notifier).state = const {};
+                          ref.read(selectedLinkIdsProvider.notifier).state =
+                              const {};
                           HapticFeedback.lightImpact();
                         },
                       )
@@ -160,7 +171,9 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                   if (isMultiSelectMode)
                     TextButton(
                       onPressed: () {
-                        final notifier = ref.read(selectedLinkIdsProvider.notifier);
+                        final notifier = ref.read(
+                          selectedLinkIdsProvider.notifier,
+                        );
                         if (selectedIds.length == links.length) {
                           notifier.state = const {};
                         } else {
@@ -169,7 +182,9 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                         HapticFeedback.lightImpact();
                       },
                       child: Text(
-                        selectedIds.length == links.length ? 'Deselect All' : 'Select All',
+                        selectedIds.length == links.length
+                            ? 'Deselect All'
+                            : 'Select All',
                         style: GoogleFonts.inter(
                           color: cs.onSurface,
                           fontWeight: FontWeight.w600,
@@ -180,7 +195,9 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                     // Pull-down toggle indicator
                     IconButton(
                       icon: Icon(
-                        _isStatsExpanded ? Icons.analytics : Icons.analytics_outlined,
+                        _isStatsExpanded
+                            ? Icons.analytics
+                            : Icons.analytics_outlined,
                       ),
                       onPressed: () {
                         setState(() {
@@ -197,7 +214,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                       tooltip: 'Add link',
                     ),
                     const SizedBox(width: kSpaceXS),
-                  ]
+                  ],
                 ],
               ),
 
@@ -206,18 +223,32 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 // Search Bar & Sort Button Row
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(kSpaceMD, 4, kSpaceMD, kSpaceSM),
+                    padding: const EdgeInsets.fromLTRB(
+                      kSpaceMD,
+                      4,
+                      kSpaceMD,
+                      kSpaceSM,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
                           child: TextField(
                             controller: _searchController,
-                            onChanged: (v) => ref.read(inboxSearchQueryProvider.notifier).state = v,
-                            style: GoogleFonts.inter(fontSize: 14, color: cs.onSurface),
+                            onChanged: (v) =>
+                                ref
+                                        .read(inboxSearchQueryProvider.notifier)
+                                        .state =
+                                    v,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: cs.onSurface,
+                            ),
                             decoration: InputDecoration(
                               hintText: 'Search title, domain, or tag…',
                               filled: true,
-                              fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                              fillColor: cs.surfaceContainerHighest.withValues(
+                                alpha: 0.4,
+                              ),
                               prefixIcon: Icon(
                                 Icons.search,
                                 size: 18,
@@ -228,22 +259,40 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                                       icon: const Icon(Icons.clear, size: 16),
                                       onPressed: () {
                                         _searchController.clear();
-                                        ref.read(inboxSearchQueryProvider.notifier).state = '';
+                                        ref
+                                                .read(
+                                                  inboxSearchQueryProvider
+                                                      .notifier,
+                                                )
+                                                .state =
+                                            '';
                                       },
                                     )
                                   : null,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: kSpaceMD),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 0,
+                                horizontal: kSpaceMD,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(24),
-                                borderSide: BorderSide(color: cs.outline, width: 0.5),
+                                borderSide: BorderSide(
+                                  color: cs.outline,
+                                  width: 0.5,
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(24),
-                                borderSide: BorderSide(color: cs.outline, width: 0.5),
+                                borderSide: BorderSide(
+                                  color: cs.outline,
+                                  width: 0.5,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: BorderSide(color: cs.primary, width: 1.0),
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide(
+                                  color: cs.primary,
+                                  width: 1.0,
+                                ),
                               ),
                             ),
                           ),
@@ -252,28 +301,65 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                         PopupMenuButton<String>(
                           initialValue: activeSortMode,
                           onSelected: (val) {
-                            ref.read(inboxSortModeProvider.notifier).state = val;
+                            ref.read(inboxSortModeProvider.notifier).state =
+                                val;
                             HapticFeedback.lightImpact();
                           },
                           itemBuilder: (context) => [
-                            PopupMenuItem(value: 'stalest', child: Text('Stalest first', style: GoogleFonts.inter(fontSize: 12))),
-                            PopupMenuItem(value: 'freshness_desc', child: Text('Freshest first', style: GoogleFonts.inter(fontSize: 12))),
-                            PopupMenuItem(value: 'newest', child: Text('Newest first', style: GoogleFonts.inter(fontSize: 12))),
-                            PopupMenuItem(value: 'read_time', child: Text('Read time', style: GoogleFonts.inter(fontSize: 12))),
-                            PopupMenuItem(value: 'domain', child: Text('Domain name', style: GoogleFonts.inter(fontSize: 12))),
+                            PopupMenuItem(
+                              value: 'stalest',
+                              child: Text(
+                                'Stalest first',
+                                style: GoogleFonts.inter(fontSize: 12),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'freshness_desc',
+                              child: Text(
+                                'Freshest first',
+                                style: GoogleFonts.inter(fontSize: 12),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'newest',
+                              child: Text(
+                                'Newest first',
+                                style: GoogleFonts.inter(fontSize: 12),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'read_time',
+                              child: Text(
+                                'Read time',
+                                style: GoogleFonts.inter(fontSize: 12),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'domain',
+                              child: Text(
+                                'Domain name',
+                                style: GoogleFonts.inter(fontSize: 12),
+                              ),
+                            ),
                           ],
                           child: Container(
                             height: 48,
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
-                              color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                              color: cs.surfaceContainerHighest.withValues(
+                                alpha: 0.4,
+                              ),
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(color: cs.outline, width: 0.5),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.sort, size: 16, color: cs.onSurface.withValues(alpha: 0.6)),
+                                Icon(
+                                  Icons.sort,
+                                  size: 16,
+                                  color: cs.onSurface.withValues(alpha: 0.6),
+                                ),
                                 const SizedBox(width: 6),
                                 Text(
                                   _getSortModeLabel(activeSortMode),
@@ -284,7 +370,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                Icon(Icons.arrow_drop_down, size: 14, color: cs.onSurface.withValues(alpha: 0.6)),
+                                Icon(
+                                  Icons.arrow_drop_down,
+                                  size: 14,
+                                  color: cs.onSurface.withValues(alpha: 0.6),
+                                ),
                               ],
                             ),
                           ),
@@ -308,16 +398,13 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 const SliverFillRemaining(child: _EmptyInbox())
               else
                 SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) {
-                      if (i == links.length) {
-                        final isWide = MediaQuery.of(context).size.width > 600;
-                        return SizedBox(height: isWide ? 40 : 200);
-                      }
-                      return LinkCard(key: ValueKey(links[i].id), link: links[i]);
-                    },
-                    childCount: links.length + 1,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, i) {
+                    if (i == links.length) {
+                      final isWide = MediaQuery.of(context).size.width > 600;
+                      return SizedBox(height: isWide ? 40 : 200);
+                    }
+                    return LinkCard(key: ValueKey(links[i].id), link: links[i]);
+                  }, childCount: links.length + 1),
                 ),
             ],
           ),

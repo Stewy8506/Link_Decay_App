@@ -30,7 +30,12 @@ class ArchiveScreen extends ConsumerWidget {
           // Redesigned padded compact search bar at top
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceMD, kSpaceMD, kSpaceSM),
+              padding: const EdgeInsets.fromLTRB(
+                kSpaceMD,
+                kSpaceMD,
+                kSpaceMD,
+                kSpaceSM,
+              ),
               child: TextField(
                 onChanged: (v) =>
                     ref.read(archiveSearchQueryProvider.notifier).state = v,
@@ -48,12 +53,17 @@ class ArchiveScreen extends ConsumerWidget {
                       ? IconButton(
                           icon: const Icon(Icons.clear, size: 16),
                           color: cs.onSurface.withValues(alpha: 0.35),
-                          onPressed: () => ref
-                              .read(archiveSearchQueryProvider.notifier)
-                              .state = '',
+                          onPressed: () =>
+                              ref
+                                      .read(archiveSearchQueryProvider.notifier)
+                                      .state =
+                                  '',
                         )
                       : null,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: kSpaceMD),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 0,
+                    horizontal: kSpaceMD,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide(color: cs.outline, width: 0.5),
@@ -64,7 +74,10 @@ class ArchiveScreen extends ConsumerWidget {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide(color: cs.onSurface.withValues(alpha: 0.25), width: 1.0),
+                    borderSide: BorderSide(
+                      color: cs.onSurface.withValues(alpha: 0.25),
+                      width: 1.0,
+                    ),
                   ),
                 ),
               ),
@@ -82,25 +95,25 @@ class ArchiveScreen extends ConsumerWidget {
                   _FilterChip(
                     label: 'All',
                     selected: statusFilter == null,
-                    onSelected: (_) => ref
-                        .read(archiveStatusFilterProvider.notifier)
-                        .state = null,
+                    onSelected: (_) =>
+                        ref.read(archiveStatusFilterProvider.notifier).state =
+                            null,
                   ),
                   const SizedBox(width: kSpaceSM),
                   _FilterChip(
                     label: 'Read',
                     selected: statusFilter == LinkStatus.read,
-                    onSelected: (_) => ref
-                        .read(archiveStatusFilterProvider.notifier)
-                        .state = LinkStatus.read,
+                    onSelected: (_) =>
+                        ref.read(archiveStatusFilterProvider.notifier).state =
+                            LinkStatus.read,
                   ),
                   const SizedBox(width: kSpaceSM),
                   _FilterChip(
                     label: 'Archived',
                     selected: statusFilter == LinkStatus.archived,
-                    onSelected: (_) => ref
-                        .read(archiveStatusFilterProvider.notifier)
-                        .state = LinkStatus.archived,
+                    onSelected: (_) =>
+                        ref.read(archiveStatusFilterProvider.notifier).state =
+                            LinkStatus.archived,
                   ),
                   if (allTags.isNotEmpty) ...[
                     const SizedBox(width: kSpaceMD),
@@ -119,10 +132,10 @@ class ArchiveScreen extends ConsumerWidget {
                           selected: tagFilter == tag,
                           isTag: true,
                           onSelected: (_) {
-                            final notifier =
-                                ref.read(archiveTagFilterProvider.notifier);
-                            notifier.state =
-                                notifier.state == tag ? null : tag;
+                            final notifier = ref.read(
+                              archiveTagFilterProvider.notifier,
+                            );
+                            notifier.state = notifier.state == tag ? null : tag;
                           },
                         ),
                       ),
@@ -138,7 +151,12 @@ class ArchiveScreen extends ConsumerWidget {
           // ── Results count ─────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceSM, kSpaceMD, kSpaceSM),
+              padding: const EdgeInsets.fromLTRB(
+                kSpaceMD,
+                kSpaceSM,
+                kSpaceMD,
+                kSpaceSM,
+              ),
               child: Text(
                 '${links.length} ${links.length == 1 ? 'link' : 'links'}',
                 style: GoogleFonts.inter(
@@ -153,16 +171,13 @@ class ArchiveScreen extends ConsumerWidget {
           links.isEmpty
               ? const SliverFillRemaining(child: _EmptyArchive())
               : SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) {
-                      if (i == links.length) {
-                        final isWide = MediaQuery.of(context).size.width > 600;
-                        return SizedBox(height: isWide ? 40 : 100);
-                      }
-                      return _ArchiveCard(link: links[i]);
-                    },
-                    childCount: links.length + 1,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, i) {
+                    if (i == links.length) {
+                      final isWide = MediaQuery.of(context).size.width > 600;
+                      return SizedBox(height: isWide ? 40 : 100);
+                    }
+                    return _ArchiveCard(link: links[i]);
+                  }, childCount: links.length + 1),
                 ),
         ],
       ),
@@ -225,8 +240,10 @@ class _ArchiveCard extends ConsumerWidget {
                     height: 6,
                     decoration: BoxDecoration(
                       color: isRead
-                          ? cs.onSurface.withValues(alpha: 0.5)   // dimmer = read
-                          : cs.onSurface.withValues(alpha: 0.25), // dimmest = archived
+                          ? cs.onSurface.withValues(alpha: 0.5) // dimmer = read
+                          : cs.onSurface.withValues(
+                              alpha: 0.25,
+                            ), // dimmest = archived
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -288,7 +305,10 @@ class _ArchiveCard extends ConsumerWidget {
                       if (link.tags.isNotEmpty) ...[
                         const SizedBox(height: kSpaceXS),
                         Text(
-                          link.tags.split(',').map((t) => '#${t.trim()}').join(' '),
+                          link.tags
+                              .split(',')
+                              .map((t) => '#${t.trim()}')
+                              .join(' '),
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             color: cs.onSurface.withValues(alpha: 0.3),
@@ -335,9 +355,7 @@ class _FilterChip extends StatelessWidget {
         // Unselected: transparent with border
         color: selected ? cs.onSurface : Colors.transparent,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: selected ? Colors.transparent : cs.outline,
-        ),
+        border: Border.all(color: selected ? Colors.transparent : cs.outline),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -350,7 +368,8 @@ class _FilterChip extends StatelessWidget {
               fontSize: 12,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               color: selected
-                  ? cs.surface       // Light text on dark chip
+                  ? cs
+                        .surface // Light text on dark chip
                   : cs.onSurface.withValues(alpha: 0.5),
             ),
           ),

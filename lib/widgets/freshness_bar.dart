@@ -23,7 +23,8 @@ class FreshnessBar extends StatefulWidget {
   State<FreshnessBar> createState() => _FreshnessBarState();
 }
 
-class _FreshnessBarState extends State<FreshnessBar> with SingleTickerProviderStateMixin {
+class _FreshnessBarState extends State<FreshnessBar>
+    with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 

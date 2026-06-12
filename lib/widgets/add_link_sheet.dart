@@ -52,7 +52,7 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
   Future<void> _checkClipboardAndAutoPaste() async {
     try {
       final svc = MetadataService.instance;
-      
+
       // 1. Check Extension active tab first
       final extUrl = await ExtensionService.instance.getCurrentTabUrl();
       if (extUrl != null && extUrl.isNotEmpty) {
@@ -107,10 +107,14 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
     });
 
     try {
-      await ref.read(linkActionsProvider.notifier).saveLink(
+      await ref
+          .read(linkActionsProvider.notifier)
+          .saveLink(
             url,
             collectionId: _selectedCollectionId,
-            title: _titleController.text.trim().isNotEmpty ? _titleController.text.trim() : null,
+            title: _titleController.text.trim().isNotEmpty
+                ? _titleController.text.trim()
+                : null,
           );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -163,16 +167,25 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: GoogleFonts.inter(color: cs.onSurface.withValues(alpha: 0.6))),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(
+                  color: cs.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
             ),
             TextButton(
               onPressed: () async {
                 final name = folderNameController.text.trim();
                 if (name.isNotEmpty) {
-                  final newId = await ref.read(linkActionsProvider.notifier).addCollection(
-                    name,
-                    folderEmojiController.text.trim().isNotEmpty ? folderEmojiController.text.trim() : '📁',
-                  );
+                  final newId = await ref
+                      .read(linkActionsProvider.notifier)
+                      .addCollection(
+                        name,
+                        folderEmojiController.text.trim().isNotEmpty
+                            ? folderEmojiController.text.trim()
+                            : '📁',
+                      );
                   if (!context.mounted) return;
                   setState(() {
                     _selectedCollectionId = newId;
@@ -180,7 +193,13 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
                   Navigator.pop(context);
                 }
               },
-              child: Text('Create', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: cs.onSurface)),
+              child: Text(
+                'Create',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
+              ),
             ),
           ],
         );
@@ -200,7 +219,12 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
       ),
       child: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(kSpaceMD, kSpaceLG, kSpaceMD, kSpaceMD + bottomInset),
+          padding: EdgeInsets.fromLTRB(
+            kSpaceMD,
+            kSpaceLG,
+            kSpaceMD,
+            kSpaceMD + bottomInset,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,7 +276,10 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
                     size: 20,
                   ),
                   errorText: _error,
-                  errorStyle: GoogleFonts.inter(color: kFreshnessLow, fontSize: 12),
+                  errorStyle: GoogleFonts.inter(
+                    color: kFreshnessLow,
+                    fontSize: 12,
+                  ),
                   suffixIcon: _controller.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear, size: 18),
@@ -263,7 +290,10 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
                           },
                         )
                       : IconButton(
-                          icon: const Icon(Icons.content_paste_outlined, size: 18),
+                          icon: const Icon(
+                            Icons.content_paste_outlined,
+                            size: 18,
+                          ),
                           color: cs.onSurface.withValues(alpha: 0.4),
                           onPressed: _pasteFromClipboard,
                         ),
@@ -302,7 +332,13 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
               SizedBox(
                 height: 38,
                 child: collectionsAsync.when(
-                  loading: () => const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 1))),
+                  loading: () => const Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 1),
+                    ),
+                  ),
                   error: (e, st) => const Text('Error loading folders'),
                   data: (folders) {
                     return ListView(
@@ -327,7 +363,9 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
                               isSelected: isSelected,
                               onTap: () {
                                 setState(() {
-                                  _selectedCollectionId = isSelected ? null : folder.id;
+                                  _selectedCollectionId = isSelected
+                                      ? null
+                                      : folder.id;
                                 });
                                 HapticFeedback.lightImpact();
                               },
@@ -427,7 +465,9 @@ class _CustomFolderChip extends StatelessWidget {
           color: isSelected ? cs.onSurface : Colors.transparent,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isSelected ? Colors.transparent : cs.outline.withValues(alpha: 0.5),
+            color: isSelected
+                ? Colors.transparent
+                : cs.outline.withValues(alpha: 0.5),
             width: 0.5,
           ),
         ),
@@ -441,7 +481,9 @@ class _CustomFolderChip extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? cs.surface : cs.onSurface.withValues(alpha: 0.7),
+                color: isSelected
+                    ? cs.surface
+                    : cs.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -474,7 +516,11 @@ class _CustomNewFolderChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: 14, color: cs.onSurface.withValues(alpha: 0.6)),
+            Icon(
+              Icons.add,
+              size: 14,
+              color: cs.onSurface.withValues(alpha: 0.6),
+            ),
             const SizedBox(width: 4),
             Text(
               'New Folder',

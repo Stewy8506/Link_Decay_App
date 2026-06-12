@@ -94,7 +94,9 @@ class Link {
       'domain': domain,
       'faviconUrl': faviconUrl,
       'createdAt': Timestamp.fromDate(createdAt),
-      'snoozedUntil': snoozedUntil != null ? Timestamp.fromDate(snoozedUntil!) : null,
+      'snoozedUntil': snoozedUntil != null
+          ? Timestamp.fromDate(snoozedUntil!)
+          : null,
       'status': status.name,
       'tags': tags,
       'snoozedSeconds': snoozedSeconds,

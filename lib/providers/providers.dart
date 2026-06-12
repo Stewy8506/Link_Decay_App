@@ -3,7 +3,6 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 import '../data/database.dart' as drift;
 import '../models/models.dart';
 import '../models/link_status.dart';
@@ -87,7 +86,8 @@ final tagHalfLifeOverridesProvider = Provider<Map<String, double>>((ref) {
 
 /// Helper to get the current base half-life, falling back to default.
 final halfLifeDaysProvider = Provider<double>((ref) {
-  return ref.watch(settingsProvider).valueOrNull?.halfLifeDays ?? kDefaultHalfLifeDays;
+  return ref.watch(settingsProvider).valueOrNull?.halfLifeDays ??
+      kDefaultHalfLifeDays;
 });
 
 /// Helper to get the notification threshold.
@@ -135,7 +135,8 @@ final customBgColorProvider = Provider<String?>((ref) {
 
 /// Decay curve type provider ('exponential' or 'linear')
 final decayCurveTypeProvider = Provider<String>((ref) {
-  return ref.watch(settingsProvider).valueOrNull?.decayCurveType ?? 'exponential';
+  return ref.watch(settingsProvider).valueOrNull?.decayCurveType ??
+      'exponential';
 });
 
 // ─── Collections Providers ───────────────────────────────────────────────
@@ -188,7 +189,9 @@ final selectedLinkIdsProvider = StateProvider<Set<String>>((ref) => const {});
 final inboxSearchQueryProvider = StateProvider<String>((ref) => '');
 final selectedCollectionIdProvider = StateProvider<String?>((ref) => null);
 final selectedFilterIdProvider = StateProvider<String?>((ref) => null);
-final inboxSortModeProvider = StateProvider<String>((ref) => 'stalest'); // 'stalest', 'newest', 'read_time', 'domain', 'freshness_desc'
+final inboxSortModeProvider = StateProvider<String>(
+  (ref) => 'stalest',
+); // 'stalest', 'newest', 'read_time', 'domain', 'freshness_desc'
 
 // ─── Smart Lists / Custom Filters Logic ────────────────────────────────────
 
@@ -267,43 +270,63 @@ final sortedFilteredInboxProvider = Provider<List<Link>>((ref) {
     // Apply Smart Custom Filter if active
     if (customFilter != null) {
       // Freshness range
-      if (customFilter.minFreshness != null && item.score < customFilter.minFreshness!) {
+      if (customFilter.minFreshness != null &&
+          item.score < customFilter.minFreshness!) {
         return false;
       }
-      if (customFilter.maxFreshness != null && item.score > customFilter.maxFreshness!) {
+      if (customFilter.maxFreshness != null &&
+          item.score > customFilter.maxFreshness!) {
         return false;
       }
 
       // Tag filter (at least one matching tag)
       if (customFilter.tags != null && customFilter.tags!.isNotEmpty) {
-        final filterTags = customFilter.tags!.split(',').map((t) => t.trim().toLowerCase()).toSet();
-        final linkTags = link.tags.split(',').map((t) => t.trim().toLowerCase()).toSet();
+        final filterTags = customFilter.tags!
+            .split(',')
+            .map((t) => t.trim().toLowerCase())
+            .toSet();
+        final linkTags = link.tags
+            .split(',')
+            .map((t) => t.trim().toLowerCase())
+            .toSet();
         if (linkTags.intersection(filterTags).isEmpty) return false;
       }
 
       // Collections filter
-      if (customFilter.collections != null && customFilter.collections!.isNotEmpty) {
-        final filterColls = customFilter.collections!.split(',').map((c) => c.trim()).toSet();
-        if (link.collectionId == null || !filterColls.contains(link.collectionId)) return false;
+      if (customFilter.collections != null &&
+          customFilter.collections!.isNotEmpty) {
+        final filterColls = customFilter.collections!
+            .split(',')
+            .map((c) => c.trim())
+            .toSet();
+        if (link.collectionId == null ||
+            !filterColls.contains(link.collectionId))
+          return false;
       }
 
       // Domains filter
       if (customFilter.domains != null && customFilter.domains!.isNotEmpty) {
-        final filterDomains = customFilter.domains!.split(',').map((d) => d.trim().toLowerCase()).toSet();
+        final filterDomains = customFilter.domains!
+            .split(',')
+            .map((d) => d.trim().toLowerCase())
+            .toSet();
         if (!filterDomains.contains(link.domain.toLowerCase())) return false;
       }
 
       // Read time boundaries
       final readTime = link.estimatedReadMinutes ?? 1;
-      if (customFilter.minReadTime != null && readTime < customFilter.minReadTime!) {
+      if (customFilter.minReadTime != null &&
+          readTime < customFilter.minReadTime!) {
         return false;
       }
-      if (customFilter.maxReadTime != null && readTime > customFilter.maxReadTime!) {
+      if (customFilter.maxReadTime != null &&
+          readTime > customFilter.maxReadTime!) {
         return false;
       }
 
       // Snooze filter
-      final isSnoozed = link.snoozedUntil != null && link.snoozedUntil!.isAfter(now);
+      final isSnoozed =
+          link.snoozedUntil != null && link.snoozedUntil!.isAfter(now);
       if (customFilter.snoozeFilter == 'exclude_snoozed' && isSnoozed) {
         return false;
       }
@@ -316,7 +339,9 @@ final sortedFilteredInboxProvider = Provider<List<Link>>((ref) {
   }).toList();
 
   // Determine effective sort mode (Custom Filter sort takes precedence if custom filter is active)
-  final activeSortMode = (customFilter != null) ? (customFilter.sortField) : sortMode;
+  final activeSortMode = (customFilter != null)
+      ? (customFilter.sortField)
+      : sortMode;
 
   // Apply sorting
   if (activeSortMode == 'stalest' || activeSortMode == 'freshness_asc') {
@@ -327,10 +352,19 @@ final sortedFilteredInboxProvider = Provider<List<Link>>((ref) {
     filtered.sort((a, b) => b.link.createdAt.compareTo(a.link.createdAt));
   } else if (activeSortMode == 'created_asc') {
     filtered.sort((a, b) => a.link.createdAt.compareTo(b.link.createdAt));
-  } else if (activeSortMode == 'read_time' || activeSortMode == 'read_time_asc') {
-    filtered.sort((a, b) => (a.link.estimatedReadMinutes ?? 1).compareTo(b.link.estimatedReadMinutes ?? 1));
+  } else if (activeSortMode == 'read_time' ||
+      activeSortMode == 'read_time_asc') {
+    filtered.sort(
+      (a, b) => (a.link.estimatedReadMinutes ?? 1).compareTo(
+        b.link.estimatedReadMinutes ?? 1,
+      ),
+    );
   } else if (activeSortMode == 'title_asc') {
-    filtered.sort((a, b) => (a.link.title ?? '').toLowerCase().compareTo((b.link.title ?? '').toLowerCase()));
+    filtered.sort(
+      (a, b) => (a.link.title ?? '').toLowerCase().compareTo(
+        (b.link.title ?? '').toLowerCase(),
+      ),
+    );
   } else if (activeSortMode == 'domain') {
     filtered.sort((a, b) => a.link.domain.compareTo(b.link.domain));
   }
@@ -358,7 +392,11 @@ class LinkActionsNotifier extends Notifier<void> {
   }
 
   /// Save a URL: immediately insert, then fetch rich metadata.
-  Future<String> saveLink(String rawUrl, {String? collectionId, String? title}) async {
+  Future<String> saveLink(
+    String rawUrl, {
+    String? collectionId,
+    String? title,
+  }) async {
     final svc = MetadataService.instance;
     final url = svc.normalizeUrl(rawUrl);
     final domain = svc.extractDomain(url);
@@ -425,12 +463,19 @@ class LinkActionsNotifier extends Notifier<void> {
   }
 
   Future<void> archive(String id) async {
-    await _fs.updateLinkStatus(id, LinkStatus.archived, archivedAt: DateTime.now());
+    await _fs.updateLinkStatus(
+      id,
+      LinkStatus.archived,
+      archivedAt: DateTime.now(),
+    );
   }
 
   Future<bool> restoreToInbox(String id, {bool force = false}) async {
     if (!force) {
-      final link = ref.read(allLinksProvider).valueOrNull?.firstWhere((l) => l.id == id);
+      final link = ref
+          .read(allLinksProvider)
+          .valueOrNull
+          ?.firstWhere((l) => l.id == id);
       if (link != null && link.status == LinkStatus.archived) {
         final settings = ref.read(settingsProvider).valueOrNull;
         final baseHalfLife = settings?.halfLifeDays ?? kDefaultHalfLifeDays;
@@ -452,7 +497,10 @@ class LinkActionsNotifier extends Notifier<void> {
   }
 
   Future<void> snooze(String id, Duration duration) async {
-    final link = ref.read(allLinksProvider).valueOrNull?.firstWhere((l) => l.id == id);
+    final link = ref
+        .read(allLinksProvider)
+        .valueOrNull
+        ?.firstWhere((l) => l.id == id);
     if (link == null) return;
     final until = DateTime.now().add(duration);
     final additionalSeconds = until.difference(DateTime.now()).inSeconds;
@@ -479,7 +527,10 @@ class LinkActionsNotifier extends Notifier<void> {
     await _fs.updateLinkCollection(id, collectionId);
   }
 
-  Future<void> updateCustomHalfLife(String id, double? customHalfLifeDays) async {
+  Future<void> updateCustomHalfLife(
+    String id,
+    double? customHalfLifeDays,
+  ) async {
     await _fs.updateCustomHalfLife(id, customHalfLifeDays);
   }
 
@@ -577,7 +628,11 @@ class LinkActionsNotifier extends Notifier<void> {
 
   Future<void> bulkArchive(Set<String> ids) async {
     for (final id in ids) {
-      await _fs.updateLinkStatus(id, LinkStatus.archived, archivedAt: DateTime.now());
+      await _fs.updateLinkStatus(
+        id,
+        LinkStatus.archived,
+        archivedAt: DateTime.now(),
+      );
     }
   }
 
@@ -593,7 +648,10 @@ class LinkActionsNotifier extends Notifier<void> {
     }
   }
 
-  Future<void> bulkMoveToCollection(Set<String> ids, String? collectionId) async {
+  Future<void> bulkMoveToCollection(
+    Set<String> ids,
+    String? collectionId,
+  ) async {
     for (final id in ids) {
       await _fs.updateLinkCollection(id, collectionId);
     }
@@ -601,9 +659,16 @@ class LinkActionsNotifier extends Notifier<void> {
 
   Future<void> bulkAddTag(Set<String> ids, String tag) async {
     for (final id in ids) {
-      final link = ref.read(allLinksProvider).valueOrNull?.firstWhere((l) => l.id == id);
+      final link = ref
+          .read(allLinksProvider)
+          .valueOrNull
+          ?.firstWhere((l) => l.id == id);
       if (link == null) continue;
-      final existingTags = link.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+      final existingTags = link.tags
+          .split(',')
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
       if (!existingTags.contains(tag)) {
         existingTags.add(tag);
         await _fs.updateTags(id, existingTags.join(', '));
@@ -631,22 +696,30 @@ class LinkActionsNotifier extends Notifier<void> {
     String? decayCurveType,
   }) async {
     final current = await _fs.getSettings() ?? AppSetting.defaults();
-    
+
     final updatedSetting = AppSetting(
       halfLifeDays: halfLifeDays ?? current.halfLifeDays,
-      notificationThreshold: notificationThreshold ?? current.notificationThreshold,
-      notificationsEnabled: notificationsEnabled ?? current.notificationsEnabled,
+      notificationThreshold:
+          notificationThreshold ?? current.notificationThreshold,
+      notificationsEnabled:
+          notificationsEnabled ?? current.notificationsEnabled,
       isDarkMode: isDarkMode ?? current.isDarkMode,
       themePalette: themePalette ?? current.themePalette,
       swipeLeftAction: swipeLeftAction ?? current.swipeLeftAction,
       swipeRightAction: swipeRightAction ?? current.swipeRightAction,
-      domainHalfLifeOverrides: domainHalfLifeOverrides ?? current.domainHalfLifeOverrides,
-      tagHalfLifeOverrides: tagHalfLifeOverrides ?? current.tagHalfLifeOverrides,
+      domainHalfLifeOverrides:
+          domainHalfLifeOverrides ?? current.domainHalfLifeOverrides,
+      tagHalfLifeOverrides:
+          tagHalfLifeOverrides ?? current.tagHalfLifeOverrides,
       dailyReadingGoal: dailyReadingGoal ?? current.dailyReadingGoal,
       snoozePresets: snoozePresets ?? current.snoozePresets,
       fontFamily: fontFamily ?? current.fontFamily,
-      customAccentColor: customAccentColor.present ? customAccentColor.value : current.customAccentColor,
-      customBgColor: customBgColor.present ? customBgColor.value : current.customBgColor,
+      customAccentColor: customAccentColor.present
+          ? customAccentColor.value
+          : current.customAccentColor,
+      customBgColor: customBgColor.present
+          ? customBgColor.value
+          : current.customBgColor,
       decayCurveType: decayCurveType ?? current.decayCurveType,
     );
 
@@ -779,23 +852,28 @@ final widgetSyncProvider = Provider<void>((ref) {
 Future<void> _syncTopStaleLinks(List<_LinkWithScoreForSync> scoredItems) async {
   try {
     final prefs = await SharedPreferences.getInstance();
-    final data = scoredItems.map((item) => {
-      'id': item.link.id,
-      'title': item.link.title ?? item.link.domain,
-      'url': item.link.url,
-      'domain': item.link.domain,
-      'createdAt': item.link.createdAt.toIso8601String(),
-      'freshnessScore': item.score,
-    }).toList();
+    final data = scoredItems
+        .map(
+          (item) => {
+            'id': item.link.id,
+            'title': item.link.title ?? item.link.domain,
+            'url': item.link.url,
+            'domain': item.link.domain,
+            'createdAt': item.link.createdAt.toIso8601String(),
+            'freshnessScore': item.score,
+          },
+        )
+        .toList();
     await prefs.setString('widget_stale_links', jsonEncode(data));
   } catch (_) {}
 }
 
 // ─── Onboarding Provider ───────────────────────────────────────────────────
 
-final onboardingCompletedProvider = StateNotifierProvider<OnboardingNotifier, AsyncValue<bool>>((ref) {
-  return OnboardingNotifier();
-});
+final onboardingCompletedProvider =
+    StateNotifierProvider<OnboardingNotifier, AsyncValue<bool>>((ref) {
+      return OnboardingNotifier();
+    });
 
 class OnboardingNotifier extends StateNotifier<AsyncValue<bool>> {
   OnboardingNotifier() : super(const AsyncValue.loading()) {
@@ -830,5 +908,3 @@ class OnboardingNotifier extends StateNotifier<AsyncValue<bool>> {
     } catch (_) {}
   }
 }
-
-

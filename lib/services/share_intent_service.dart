@@ -24,36 +24,38 @@ class ShareIntentService {
       return;
     }
     // Handle URLs shared when the app is already open.
-    _streamSub = ReceiveSharingIntent.instance
-        .getMediaStream()
-        .listen((List<SharedMediaFile> files) {
-      for (final file in files) {
-        final path = file.path;
-        final url = _extractUrl(path);
-        if (url != null) {
-          onUrl(url);
+    _streamSub = ReceiveSharingIntent.instance.getMediaStream().listen(
+      (List<SharedMediaFile> files) {
+        for (final file in files) {
+          final path = file.path;
+          final url = _extractUrl(path);
+          if (url != null) {
+            onUrl(url);
+          }
         }
-      }
-    }, onError: (Object err) {
-      // Catch platform stream errors silently
-    });
+      },
+      onError: (Object err) {
+        // Catch platform stream errors silently
+      },
+    );
 
     // Handle URL shared when app was closed and opened via share sheet.
     ReceiveSharingIntent.instance
         .getInitialMedia()
         .then((List<SharedMediaFile> files) {
-      for (final file in files) {
-        final path = file.path;
-        final url = _extractUrl(path);
-        if (url != null) {
-          onUrl(url);
-        }
-      }
-      // Reset so we don't process the initial share twice.
-      ReceiveSharingIntent.instance.reset();
-    }).catchError((Object _) {
-      // Catch initial load errors silently
-    });
+          for (final file in files) {
+            final path = file.path;
+            final url = _extractUrl(path);
+            if (url != null) {
+              onUrl(url);
+            }
+          }
+          // Reset so we don't process the initial share twice.
+          ReceiveSharingIntent.instance.reset();
+        })
+        .catchError((Object _) {
+          // Catch initial load errors silently
+        });
   }
 
   void dispose() {
