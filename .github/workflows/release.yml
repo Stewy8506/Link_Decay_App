@@ -122,6 +122,7 @@ jobs:
       - name: Package macOS Application
         run: |
           cd build/macos/Build/Products/Release
+          mv link_decay_app.app LinkShelf.app
           zip -r ../../../../../linkshelf-macos.zip LinkShelf.app
 
       - name: Upload macOS Application Artifact
