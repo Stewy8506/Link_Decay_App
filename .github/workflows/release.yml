@@ -18,6 +18,7 @@ jobs:
   build-android-web:
     name: Build Android & Web Extension
     runs-on: ubuntu-latest
+    environment: LinkShelf Environment
     env:
       HAS_ANDROID_SECRETS: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEY_PROPERTIES != '' }}
 
@@ -88,6 +89,7 @@ jobs:
   build-macos:
     name: Build macOS Desktop Application
     runs-on: macos-latest
+    environment: LinkShelf Environment
 
     steps:
       - name: Checkout Repository
