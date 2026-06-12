@@ -47,8 +47,8 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyClOgYiOV-Ik98ldNfnKwUBKobm14Unp5o',
-    appId: '1:510351600073:web:35cae0a8dcc35e8dada018',
+    apiKey: String.fromEnvironment('FIREBASE_WEB_API_KEY'),
+    appId: String.fromEnvironment('FIREBASE_WEB_APP_ID'),
     messagingSenderId: '510351600073',
     projectId: 'linkshelf-app-2026',
     authDomain: 'linkshelf-app-2026.firebaseapp.com',
@@ -56,16 +56,16 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCAX48jl63K2AheHAwU738rdgqneHiGj_0',
-    appId: '1:510351600073:android:8ac93782311577b5ada018',
+    apiKey: String.fromEnvironment('FIREBASE_ANDROID_API_KEY'),
+    appId: String.fromEnvironment('FIREBASE_ANDROID_APP_ID'),
     messagingSenderId: '510351600073',
     projectId: 'linkshelf-app-2026',
     storageBucket: 'linkshelf-app-2026.firebasestorage.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAnmYbT62uDRBbW7ibfVfIYEnhN3XHaeiE',
-    appId: '1:510351600073:ios:857b6b830de47b79ada018',
+    apiKey: String.fromEnvironment('FIREBASE_MACOS_API_KEY'),
+    appId: String.fromEnvironment('FIREBASE_MACOS_APP_ID'),
     messagingSenderId: '510351600073',
     projectId: 'linkshelf-app-2026',
     storageBucket: 'linkshelf-app-2026.firebasestorage.app',

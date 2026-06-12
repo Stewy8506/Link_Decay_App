@@ -1,0 +1,182 @@
+name: Release Compilation
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Release tag name (e.g., v1.0.1)'
+        required: true
+        default: 'v1.0.0-draft'
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-web:
+    name: Build Android & Web Extension
+    runs-on: ubuntu-latest
+    env:
+      HAS_ANDROID_SECRETS: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEY_PROPERTIES != '' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Prepare Firebase Configurations (Android/Web)
+        run: |
+          if [ "${{ secrets.FIREBASE_ENV_JSON }}" != "" ]; then
+            echo "${{ secrets.FIREBASE_ENV_JSON }}" | base64 --decode > .env.json
+          else
+            cp .env.json.example .env.json
+          fi
+          
+          if [ "${{ secrets.GOOGLE_SERVICES_JSON }}" != "" ]; then
+            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > android/app/google-services.json
+          else
+            cp android/app/google-services.json.example android/app/google-services.json
+          fi
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Decode Android Keystore
+        if: env.HAS_ANDROID_SECRETS == 'true'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.p12
+          echo "${{ secrets.ANDROID_KEY_PROPERTIES }}" > android/key.properties
+
+      - name: Compile Android App Bundle
+        run: flutter build appbundle --release --dart-define-from-file=.env.json
+
+      - name: Compile Web Extension
+        run: flutter build web --web-renderer html --csp --dart-define-from-file=.env.json
+
+      - name: Package Web Extension
+        run: |
+          cd build/web
+          zip -r ../../linkshelf-chrome-extension.zip .
+
+      - name: Upload Android Bundle Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-bundle
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload Web Extension Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-extension
+          path: linkshelf-chrome-extension.zip
+          if-no-files-found: error
+
+  build-macos:
+    name: Build macOS Desktop Application
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Prepare Firebase Configurations (macOS)
+        run: |
+          if [ "${{ secrets.FIREBASE_ENV_JSON }}" != "" ]; then
+            echo "${{ secrets.FIREBASE_ENV_JSON }}" | base64 --decode > .env.json
+          else
+            cp .env.json.example .env.json
+          fi
+          
+          if [ "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" != "" ]; then
+            echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > macos/Runner/GoogleService-Info.plist
+          else
+            cp macos/Runner/GoogleService-Info.plist.example macos/Runner/GoogleService-Info.plist
+          fi
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Compile macOS Application
+        run: flutter build macos --release --dart-define-from-file=.env.json
+
+      - name: Package macOS Application
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../../linkshelf-macos.zip LinkShelf.app
+
+      - name: Upload macOS Application Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-desktop
+          path: linkshelf-macos.zip
+          if-no-files-found: error
+
+  create-release:
+    name: Publish Draft Release
+    needs: [build-android-web, build-macos]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-bundle
+          path: release-assets
+
+      - name: Download Web Extension Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-extension
+          path: release-assets
+
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-desktop
+          path: release-assets
+
+      - name: Resolve Release Tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG_NAME=${{ github.event.inputs.version_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish Draft GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.TAG_NAME }}
+          name: Release ${{ steps.get_version.outputs.TAG_NAME }}
+          draft: true
+          prerelease: false
+          files: |
+            release-assets/app-release.aab
+            release-assets/linkshelf-chrome-extension.zip
+            release-assets/linkshelf-macos.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

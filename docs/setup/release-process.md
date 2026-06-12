@@ -48,3 +48,39 @@ Before submitting for review, compile the required visual assets:
 3. Under the **Testers** tab, create a list of email addresses or associate a Google Group containing your testers.
 4. Distribute the provided testing link (Web/Android URL) to your testers.
 5. **Monitor Engagement**: Testers must keep the application installed on their devices for 14 consecutive days. Ensure you track the progress dashboard in the console before applying for production promotion.
+
+---
+
+## ✦ 5. CI/CD Release Automation & Secrets
+
+LinkShelf includes a automated release pipeline configured in [release.yml](file:///Users/anv./AndroidStudioProjects/Link_Decay_App/.github/workflows/release.yml). The pipeline automatically builds **Android App Bundles**, **macOS Desktop binaries**, and **Chrome Extension ZIPs**, and uploads them to a **Draft GitHub Release**.
+
+### Repository Secrets Setup
+To sign Android builds during compilation, configure the following secrets under your GitHub repository:
+1. Go to **Settings > Secrets and variables > Actions** in your GitHub repository.
+2. Add a new repository secret:
+   - **Name**: `ANDROID_KEYSTORE_BASE64`
+   - **Value**: The base64-encoded string of your `upload-keystore.p12` file.
+     * To generate this on macOS/Linux, run:
+       ```bash
+       base64 -i android/app/upload-keystore.p12 | pbcopy
+       ```
+     * On Windows:
+       ```powershell
+       [Convert]::ToBase64String([IO.File]::ReadAllBytes("android/app/upload-keystore.p12")) | clip
+       ```
+3. Add another repository secret:
+   - **Name**: `ANDROID_KEY_PROPERTIES`
+   - **Value**: The exact text of your secure `android/key.properties` file:
+     ```properties
+     storePassword=your_keystore_password_here
+     keyPassword=your_keystore_password_here
+     keyAlias=upload
+     storeFile=upload-keystore.p12
+     ```
+
+### Execution Strategy
+- **Automatic Tag Trigger**: Pushing any tag starting with `v` (e.g. `git tag v1.0.1` and `git push origin v1.0.1`) triggers the build pipeline.
+- **Manual Trigger**: Under the **Actions** tab of your GitHub repository, select **Release Compilation**, click **Run workflow**, and specify your release tag name.
+- **Keystore Fallback**: If the signing secrets are missing in the repository, the compiler automatically falls back to debug signing configs, allowing the build step to succeed.
+
