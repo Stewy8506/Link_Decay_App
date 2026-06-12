@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
@@ -18,6 +20,9 @@ class ShareIntentService {
 
   /// Start listening for shared URLs. [onUrl] is called with each URL received.
   void startListening({required void Function(String url) onUrl}) {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      return;
+    }
     // Handle URLs shared when the app is already open.
     _streamSub = ReceiveSharingIntent.instance
         .getMediaStream()

@@ -13,6 +13,7 @@ import 'utils/constants.dart';
 import 'utils/google_fonts.dart';
 import 'widgets/add_link_sheet.dart';
 import 'widgets/custom_loading_screen.dart';
+import 'widgets/multi_select_bar.dart';
 
 class LinkShelfApp extends ConsumerWidget {
   const LinkShelfApp({super.key});
@@ -82,6 +83,41 @@ class _AppShellState extends ConsumerState<_AppShell> {
     final selectedIds = ref.watch(selectedLinkIdsProvider);
 
     final isMultiSelect = selectedIds.isNotEmpty;
+    final isWide = MediaQuery.of(context).size.width > 600;
+
+    if (isWide) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Row(
+          children: [
+            // Desktop Left Sidebar
+            _DesktopSidebar(
+              selectedIndex: _selectedIndex,
+              onTap: (i) {
+                setState(() => _selectedIndex = i);
+              },
+            ),
+            VerticalDivider(
+              width: 1,
+              thickness: 0.5,
+              color: theme.colorScheme.outline,
+            ),
+            // Right Content Area
+            Expanded(
+              child: Stack(
+                children: [
+                  KeyedSubtree(
+                    key: ValueKey(_selectedIndex),
+                    child: _screens[_selectedIndex],
+                  ),
+                  const MultiSelectBar(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -432,4 +468,165 @@ class _NavItem {
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+}
+
+class _DesktopSidebar extends StatelessWidget {
+  const _DesktopSidebar({required this.selectedIndex, required this.onTap});
+
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
+
+  static const _items = [
+    _NavItem(
+      icon: Icons.inbox_outlined,
+      selectedIcon: Icons.inbox,
+      label: 'Inbox',
+    ),
+    _NavItem(
+      icon: Icons.folder_copy_outlined,
+      selectedIcon: Icons.folder_copy,
+      label: 'Folders',
+    ),
+    _NavItem(
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings,
+      label: 'Settings',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Container(
+      width: 240,
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.25),
+      child: SafeArea(
+        right: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Branding/Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: cs.onSurface,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.bookmark_rounded,
+                      color: cs.surface,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'LinkShelf',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Navigation Options
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                children: List.generate(_items.length, (i) {
+                  final item = _items[i];
+                  final isSelected = i == selectedIndex;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6.0),
+                    child: InkWell(
+                      onTap: () => onTap(i),
+                      borderRadius: BorderRadius.circular(12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected 
+                              ? cs.onSurface.withValues(alpha: 0.08) 
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isSelected ? item.selectedIcon : item.icon,
+                              color: isSelected ? cs.onSurface : cs.onSurface.withValues(alpha: 0.55),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 14),
+                            Text(
+                              item.label,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                color: isSelected ? cs.onSurface : cs.onSurface.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+            // Add Link Shortcut at the bottom of the sidebar
+            if (selectedIndex == 0)
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (_) => Dialog(
+                          backgroundColor: Colors.transparent,
+                          surfaceTintColor: Colors.transparent,
+                          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 460),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: const AddLinkSheet(),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(
+                      'Add link',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: cs.onSurface,
+                      foregroundColor: cs.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

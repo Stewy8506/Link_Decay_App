@@ -29,12 +29,31 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   }
 
   void _showAddSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (_) => const AddLinkSheet(),
-      isScrollControlled: true,
-      useSafeArea: true,
-    );
+    final isWide = MediaQuery.of(context).size.width > 600;
+    if (isWide) {
+      showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: const AddLinkSheet(),
+            ),
+          ),
+        ),
+      );
+    } else {
+      showModalBottomSheet<void>(
+        context: context,
+        builder: (_) => const AddLinkSheet(),
+        isScrollControlled: true,
+        useSafeArea: true,
+      );
+    }
   }
 
   String _getSortModeLabel(String mode) {
@@ -292,7 +311,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, i) {
                       if (i == links.length) {
-                        return const SizedBox(height: 200); // Pad for FAB/navbar
+                        final isWide = MediaQuery.of(context).size.width > 600;
+                        return SizedBox(height: isWide ? 40 : 200);
                       }
                       return LinkCard(key: ValueKey(links[i].id), link: links[i]);
                     },

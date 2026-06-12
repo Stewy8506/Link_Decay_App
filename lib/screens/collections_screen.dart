@@ -175,6 +175,7 @@ class _FoldersTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final collectionsAsync = ref.watch(collectionsProvider);
     final allLinksAsync = ref.watch(allLinksProvider);
+    final isWide = MediaQuery.of(context).size.width > 600;
 
     return collectionsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
@@ -239,11 +240,13 @@ class _FoldersTab extends ConsumerWidget {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(kSpaceMD, kSpaceMD, kSpaceMD, kSpaceMD),
               sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: isWide 
+                      ? ((MediaQuery.of(context).size.width - 240) / 220).floor().clamp(2, 6) 
+                      : 2,
                   crossAxisSpacing: kSpaceMD,
                   mainAxisSpacing: kSpaceMD,
-                  childAspectRatio: 1.15,
+                  childAspectRatio: isWide ? 1.25 : 1.15,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -286,8 +289,8 @@ class _FoldersTab extends ConsumerWidget {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 120), // Padding for Floating Navbar
+            SliverToBoxAdapter(
+              child: SizedBox(height: isWide ? 40 : 120),
             ),
           ],
         );
@@ -1082,7 +1085,8 @@ class CollectionDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(top: kSpaceSM),
             itemBuilder: (context, i) {
               if (i == folderLinks.length) {
-                return const SizedBox(height: 100);
+                final isWide = MediaQuery.of(context).size.width > 600;
+                return SizedBox(height: isWide ? 40 : 100);
               }
               return LinkCard(key: ValueKey(folderLinks[i].id), link: folderLinks[i]);
             },
@@ -1091,12 +1095,31 @@ class CollectionDetailScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          showModalBottomSheet<void>(
-            context: context,
-            builder: (_) => AddLinkSheet(preSelectedCollectionId: collection.id),
-            isScrollControlled: true,
-            useSafeArea: true,
-          );
+          final isWide = MediaQuery.of(context).size.width > 600;
+          if (isWide) {
+            showDialog<void>(
+              context: context,
+              builder: (_) => Dialog(
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: AddLinkSheet(preSelectedCollectionId: collection.id),
+                  ),
+                ),
+              ),
+            );
+          } else {
+            showModalBottomSheet<void>(
+              context: context,
+              builder: (_) => AddLinkSheet(preSelectedCollectionId: collection.id),
+              isScrollControlled: true,
+              useSafeArea: true,
+            );
+          }
         },
         backgroundColor: cs.onSurface,
         foregroundColor: cs.surface,

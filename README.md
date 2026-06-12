@@ -20,11 +20,13 @@
 [![Drift](https://img.shields.io/badge/Drift-ORM-4A90E2?style=flat-square)](https://drift.simonbinder.eu)
 [![Riverpod](https://img.shields.io/badge/Riverpod-2.x-00BCD4?style=flat-square)](https://riverpod.dev)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android)](https://android.com)
+[![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20macOS%20%7C%20Windows%20%7C%20Web%20Extension-3DDC84?style=flat-square)](https://flutter.dev)
 
 <br/>
 
 > **LinkShelf** is a local-first reading list manager with a twist — every link you save has a **freshness score** that exponentially decays over time. The longer you wait, the staler it gets. Links you haven't read sort to the top, glowing red, demanding your attention. Read them, snooze them, organize them, or watch them fade.
+> 
+> Now available as a **native Mobile App (Android)**, **native Desktop Apps (macOS & Windows)**, and a **Browser Extension (Chrome & Safari)**!
 
 <br/>
 
@@ -49,6 +51,18 @@ It's gamified procrastination therapy.
 ---
 
 ## ✦ Implemented Features
+
+### 🖥️ Desktop Widescreen Layout (Widescreen Mode)
+- **Left Sidebar Navigation (`_DesktopSidebar`)** — When window width is >600px, LinkShelf automatically transforms from mobile bottom nav to a widescreen layout featuring a persistent left sidebar with bold branding and interactive highlights.
+- **Widescreen Centered Dialogs** — Pushes `AddLinkSheet` inside a beautifully bounded, rounded widescreen Dialog (450px) instead of sliding up from the bottom of the screen.
+- **Dynamic Columns Grid Math** — Calculates grid dimensions dynamically on the Folders screen to lay out folders appropriately depending on display size.
+- **Dynamic Spacings** — Adjusts bottom scroll list spacing to automatically shrink from mobile pill padding (100–200px) down to standard desktop padding (40px) when the bottom floating navbar collapses.
+- **Fluid Layout Resizing** — Narrowing the desktop app below 600px automatically transitions the UI seamlessly back into the compact phone layout.
+
+### 🌐 Browser Extension Popup (Extension Mode)
+- **Manifest V3 Compliant** — Extension architecture compiles to comply with Manifest V3 and strict Content Security Policies (CSP).
+- **Tab Auto-Detection** — Harnesses a custom JS Interop service (`chrome.tabs.query`) to parse the active browser tab's URL automatically and populate the ingestion field instantly when the popup opens.
+- **Fixed Extension Viewport** — Configured viewport dimensions (400x600px) to render the app's phone layout natively inside Chrome and Safari toolbar dropdown panels.
 
 ### 📥 Inbox
 - **Automatic metadata fetching** — Saves a URL and immediately fetches the page title, description, cover image, reading time estimation, and favicon in the background (using Open Graph parser + Google S2 favicon fallback).
@@ -149,7 +163,7 @@ It's gamified procrastination therapy.
 │                     UI Layer                            │
 │  InboxScreen       CollectionsScreen  SettingsScreen    │
 │  LinkDetailScreen  CustomFilterCreatorScreen            │
-│  LinkCard  MultiSelectBar  SmartListBar  AddLinkSheet   │
+│  LinkCard          _DesktopSidebar    _FloatingPillNavBar│
 └─────────────────────┬───────────────────────────────────┘
                       │ watches / reads providers
 ┌─────────────────────▼───────────────────────────────────┐
@@ -170,6 +184,7 @@ It's gamified procrastination therapy.
 │    AppSettings table                                    │
 │  MetadataService       ExportService                    │
 │  NotificationService   ShareIntentService               │
+│  ExtensionService (Conditional Stub / Web JS Interop)   │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -197,87 +212,17 @@ score = pow(0.5, effectiveAgeDays / halfLifeDays)
 | Layer | Technology |
 |---|---|
 | **Framework** | Flutter 3.41.2 · Dart 3.11.0 |
+| **Platforms** | Android, macOS (native Cocoa), Windows (native Win32), Web (Chrome & Safari extensions) |
 | **Database** | [Drift](https://drift.simonbinder.eu) (type-safe SQLite ORM) |
 | **State** | [Riverpod](https://riverpod.dev) 2.x |
 | **Fonts** | [Inter](https://rsms.me/inter/) via `google_fonts` |
 | **Networking** | `http` · `html` (HTML scraping) |
+| **JS Interop** | `dart:js_interop` & `dart:js_interop_unsafe` (Chrome tab query interfaces) |
 | **Notifications** | `flutter_local_notifications` v18 + `timezone` |
 | **Share** | `receive_sharing_intent` · `share_plus` |
 | **File Picker** | `file_picker` (JSON / HTML imports) |
 | **URL Launcher** | `url_launcher` |
 | **Favicon** | Google S2 Favicon API (`s2.favicons?domain=...&sz=64`) |
-
-### Database Schema (Version 2)
-
-```sql
--- Links table
-CREATE TABLE links (
-  id                      TEXT PRIMARY KEY,
-  url                     TEXT NOT NULL,
-  title                   TEXT,
-  domain                  TEXT NOT NULL,
-  favicon_url             TEXT,
-  created_at              INTEGER NOT NULL,
-  snoozed_until           INTEGER,
-  status                  TEXT NOT NULL, -- 'inbox' | 'read' | 'archived'
-  tags                    TEXT DEFAULT '',
-  snoozed_seconds         INTEGER DEFAULT 0,
-  collection_id           TEXT, -- FK references collections(id)
-  notes                   TEXT,
-  og_image_url            TEXT,
-  estimated_read_minutes  INTEGER,
-  read_at                 INTEGER,
-  archived_at             INTEGER,
-  custom_half_life_days   REAL
-);
-
--- Collections table
-CREATE TABLE collections (
-  id          TEXT PRIMARY KEY,
-  name        TEXT NOT NULL,
-  emoji       TEXT,
-  created_at  INTEGER NOT NULL,
-  sort_order  INTEGER DEFAULT 0
-);
-
--- Custom Filters (Smart Lists) table
-CREATE TABLE custom_filters (
-  id              TEXT PRIMARY KEY,
-  name            TEXT NOT NULL,
-  icon            TEXT NOT NULL,
-  min_freshness   REAL,
-  max_freshness   REAL,
-  tags            TEXT,
-  collections     TEXT,
-  domains         TEXT,
-  min_read_time   INTEGER,
-  max_read_time   INTEGER,
-  snooze_filter   TEXT,
-  sort_field      TEXT NOT NULL
-);
-
--- Highlights table
-CREATE TABLE link_highlights (
-  id          TEXT PRIMARY KEY,
-  link_id     TEXT NOT NULL, -- FK references links(id)
-  content     TEXT NOT NULL,
-  created_at  INTEGER NOT NULL
-);
-
--- App settings (single-row, id = 1)
-CREATE TABLE app_settings (
-  id                          INTEGER PRIMARY KEY DEFAULT 1,
-  half_life_days              REAL DEFAULT 7.0,
-  notification_threshold      REAL DEFAULT 0.25,
-  notifications_enabled       INTEGER DEFAULT 1,
-  is_dark_mode                INTEGER DEFAULT 1,
-  theme_palette               TEXT DEFAULT 'warm_stone',
-  swipe_left_action           TEXT DEFAULT 'archive',
-  swipe_right_action          TEXT DEFAULT 'read',
-  domain_half_life_overrides  TEXT, -- Serialized JSON Map
-  tag_half_life_overrides     TEXT  -- Serialized JSON Map
-);
-```
 
 ---
 
@@ -287,7 +232,7 @@ CREATE TABLE app_settings (
 link_decay_app/
 ├── lib/
 │   ├── main.dart                    # Entry point — init + ProviderScope
-│   ├── app.dart                     # MaterialApp + bottom nav shell
+│   ├── app.dart                     # MaterialApp + bottom nav / desktop shell
 │   ├── app_theme.dart               # Theme palettes configuration
 │   │
 │   ├── data/
@@ -304,7 +249,10 @@ link_decay_app/
 │   │   ├── metadata_service.dart    # Fetch title, description, images & favicon
 │   │   ├── export_service.dart      # JSON & Netscape HTML import/export
 │   │   ├── notification_service.dart # Daily staleness notifications
-│   │   └── share_intent_service.dart # Android share sheet listener
+│   │   ├── share_intent_service.dart # Android share sheet listener
+│   │   ├── extension_service.dart   # Main conditional exporter for interop
+│   │   ├── extension_service_stub.dart # Native targets stub fallback
+│   │   └── extension_service_web.dart # Web-specific JS interop implementation
 │   │
 │   ├── screens/
 │   │   ├── inbox_screen.dart        # Main reading list with stats panel
@@ -314,25 +262,22 @@ link_decay_app/
 │   │   ├── link_detail_screen.dart  # Rich details, notes & quotes
 │   │   └── custom_filter_creator.dart # Smart lists builder
 │   │
-│   ├── widgets/
-│   │   ├── link_card.dart           # Dismissible card with customized gestures
-│   │   ├── freshness_bar.dart       # Animated color-coded bar
-│   │   ├── add_link_sheet.dart      # URL input & folder tag selection
-│   │   ├── snooze_sheet.dart        # Snooze duration picker
-│   │   ├── multi_select_bar.dart    # Selection action panel
-│   │   ├── smart_list_bar.dart      # Custom filter preset chips
-│   │   ├── stats_dashboard_panel.dart # Pull-down stats visual dashboard
-│   │   └── collection_picker_sheet.dart # Move folder picker sheet
-│   │
-│   └── utils/
-│       ├── constants.dart           # Colors, spacing, defaults
-│       └── freshness.dart           # Decay math + helpers
+│   └── widgets/
+│       ├── link_card.dart           # Dismissible card with customized gestures
+│       ├── freshness_bar.dart       # Animated color-coded bar
+│       ├── add_link_sheet.dart      # URL input & folder tag selection
+│       ├── snooze_sheet.dart        # Snooze duration picker
+│       ├── multi_select_bar.dart    # Selection action panel
+│       ├── smart_list_bar.dart      # Custom filter preset chips
+│       ├── stats_dashboard_panel.dart # Pull-down stats visual dashboard
+│       └── collection_picker_sheet.dart # Move folder picker sheet
 │
-├── android/
-│   └── app/
-│       ├── build.gradle.kts         # Core library desugaring enabled
-│       └── src/main/
-│           └── AndroidManifest.xml  # Share intent + notification perms
+├── android/                         # Android native runner
+├── macos/                           # macOS native runner (customized window size)
+├── windows/                         # Windows native runner (customized size & title)
+├── web/                             # Web target & Chrome/Safari extension configurations
+│   ├── manifest.json                # Extension Manifest V3 configuration
+│   └── index.html                   # Extension viewport and layout configs
 │
 ├── pubspec.yaml                     # All dependencies
 └── README.md                        # This file
@@ -365,31 +310,40 @@ Drift requires code generation:
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-### Run
+### Run on Platforms
 
 ```bash
-# Run on connected device/emulator
+# Run on connected Android device/emulator
 flutter run
+
+# Run on macOS native desktop
+flutter run -d macos
+
+# Run on Windows native desktop
+flutter run -d windows
 ```
 
----
+### Build Browser Extension (Web)
 
-## ✦ Android Share Sheet Setup
+To build the Chrome / Safari extension bundle:
 
-LinkShelf registers itself as a handler for `text/plain` share intents. Once installed, you'll see **"LinkShelf"** appear in the Android share sheet from any app (Chrome, Firefox, Twitter, etc.).
+```bash
+flutter build web --web-renderer html --csp
+```
 
-The app handles two scenarios:
-1. **App is open** — the shared URL is saved immediately
-2. **App is closed** — the URL is captured when the app launches
+Load the compiled `build/web` folder into Chrome as an **unpacked extension**:
+1. Open Chrome and navigate to `chrome://extensions/`.
+2. Enable **Developer mode** toggle in the top-right.
+3. Click **Load unpacked** in the top-left and select the `build/web` directory.
 
 ---
 
 ## ✦ Notification Setup
 
-On first launch, LinkShelf requests notification permission. If granted:
+On first launch, LinkShelf requests notification permission on supported platforms. If granted:
 - A daily check runs at **9:00 AM local time**
 - If any inbox links are below the freshness threshold, a notification is sent
-- The notification survives device reboots via the `BOOT_COMPLETED` receiver
+- The notification survives device reboots via the `BOOT_COMPLETED` receiver (on Android)
 
 To adjust thresholds, go to **Settings → Notifications**.
 
@@ -407,52 +361,6 @@ The UI is **clean, minimal, typographic** — inspired by neutral, high-quality,
 | **Pitch Charcoal** | `#080808` | `#E0E0E0` | Deep monochrome contrast charcoal |
 
 All custom components use uniform 16.0 margin alignment grids, 0.5px thin borders, and custom micro-animations (e.g. sliding navbar in selection mode, overscroll dashboard reveal).
-
----
-
-## ✦ Development Notes
-
-### Re-running Code Generation
-
-Any change to table definitions in `lib/data/database.dart` requires a codegen re-run:
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
-### Riverpod Architecture
-
-All business logic lives in **providers**, not in widgets:
-
-```
-UI → ref.watch(provider)     # read reactive state
-UI → ref.read(notifier)      # trigger actions
-```
-
-`LinkActionsNotifier` (accessed via `linkActionsProvider`) is the single point of truth for all mutations — insert, read, archive, snooze, delete, settings changes, folder management, and smart filters.
-
-### Freshness is Never Stored
-
-The freshness score is **computed at render time**, not persisted. This means:
-- No migration headaches if the formula changes.
-- Changing the half-life in settings retroactively re-scores all links.
-- Snooze is stored as `snoozed_until` + cumulative `snoozed_seconds`.
-
-### Debugging
-
-```bash
-# Static analysis
-flutter analyze
-
-# Run tests
-flutter test
-```
-
----
-
-## ✦ Production & Publishing
-
-For details on generating release keys, configuring credentials, generating custom launcher icons, and compiling release-ready bundles, refer to the step-by-step [Google Play Store Publishing Guide](PUBLISHING.md).
 
 ---
 

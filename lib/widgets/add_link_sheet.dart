@@ -5,6 +5,7 @@ import '../utils/google_fonts.dart';
 
 import '../providers/providers.dart';
 import '../services/metadata_service.dart';
+import '../services/extension_service.dart';
 import '../utils/constants.dart';
 
 /// Bottom sheet for adding a new link manually, with optional folder placement.
@@ -50,10 +51,25 @@ class _AddLinkSheetState extends ConsumerState<AddLinkSheet> {
 
   Future<void> _checkClipboardAndAutoPaste() async {
     try {
+      final svc = MetadataService.instance;
+      
+      // 1. Check Extension active tab first
+      final extUrl = await ExtensionService.instance.getCurrentTabUrl();
+      if (extUrl != null && extUrl.isNotEmpty) {
+        final url = svc.normalizeUrl(extUrl);
+        if (svc.isValidUrl(url)) {
+          setState(() {
+            _controller.text = extUrl;
+            _error = null;
+          });
+          return; // Skip clipboard if we found an extension tab URL
+        }
+      }
+
+      // 2. Fallback to Clipboard
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text?.trim();
       if (text != null && text.isNotEmpty) {
-        final svc = MetadataService.instance;
         final url = svc.normalizeUrl(text);
         if (svc.isValidUrl(url)) {
           setState(() {

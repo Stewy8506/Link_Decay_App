@@ -2,7 +2,7 @@
 
 Last Updated: June 11, 2026
 
-LinkShelf ("we", "our", or "us") built the LinkShelf mobile application as a local-first utility. This Service is provided at no cost and is intended for use as is.
+LinkShelf ("we", "our", or "us") built the LinkShelf multi-platform application as a local-first utility. This Service is provided at no cost and is intended for use as is.
 
 This page is used to inform users regarding our policies with the collection, use, and disclosure of Personal Information if anyone decides to use our Service.
 

@@ -403,6 +403,7 @@ class _CardContentState extends State<_CardContent> {
             onTapCancel: () => setState(() => _scale = 1.0),
             onTap: widget.onTap,
             onLongPress: widget.onLongPress,
+            onSecondaryTap: widget.onLongPress, // Right-click support for desktop/web
             borderRadius: BorderRadius.circular(kRadiusMD),
             splashColor: cs.onSurface.withValues(alpha: 0.05),
             highlightColor: cs.onSurface.withValues(alpha: 0.03),
