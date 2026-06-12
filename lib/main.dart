@@ -1,15 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'app.dart';
+import 'firebase_options.dart';
 import 'providers/providers.dart';
+import 'services/auth_service.dart';
+import 'services/migration_service.dart';
 import 'services/notification_service.dart';
 import 'services/share_intent_service.dart';
 import 'utils/constants.dart';
+import 'data/database.dart' as drift;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    // Silent anonymous login on boot
+    final authService = AuthService.instance;
+    var user = authService.currentUser;
+    if (user == null) {
+      final credential = await authService.signInAnonymously();
+      user = credential.user;
+    }
+
+    if (user != null) {
+      // Run SQLite migration in the background
+      final legacyDb = drift.AppDatabase();
+      MigrationService.instance.checkAndMigrate(legacyDb, user.uid).then((_) {
+        legacyDb.close();
+      });
+    }
+  } catch (e, stack) {
+    debugPrint('Firebase initialization / migration failed: $e\n$stack');
+  }
 
   // Lock to portrait
   await SystemChrome.setPreferredOrientations([
@@ -18,7 +48,6 @@ Future<void> main() async {
   ]);
 
   // Set initial system UI overlay style (dark mode default).
-  // Per-screen overrides are handled by AppBarTheme.systemOverlayStyle.
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -92,8 +121,8 @@ class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
       final granted = await NotificationService.instance.requestPermissions();
       if (!granted) return;
 
-      final db = ref.read(databaseProvider);
-      final settings = await db.getSettings();
+      // We read settings from settingsProvider
+      final settings = ref.read(settingsProvider).valueOrNull;
       final halfLife = settings?.halfLifeDays ?? 7.0;
       final threshold = settings?.notificationThreshold ?? 0.25;
       final enabled = settings?.notificationsEnabled ?? true;
@@ -101,13 +130,11 @@ class _ShareIntentWrapperState extends ConsumerState<_ShareIntentWrapper> {
 
       if (enabled) {
         await NotificationService.instance.scheduleDailyCheck(
-          db: db,
           halfLifeDays: halfLife,
           threshold: threshold,
           decayCurveType: decayCurve,
         );
         await NotificationService.instance.scheduleWeeklyDigest(
-          db: db,
           halfLifeDays: halfLife,
           decayCurveType: decayCurve,
         );

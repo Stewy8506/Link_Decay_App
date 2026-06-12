@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import '../data/database.dart';
+import '../models/models.dart';
+import '../services/firestore_service.dart';
 
 class HealthCheckProgressDialog extends StatefulWidget {
-  const HealthCheckProgressDialog({super.key, required this.links, required this.db});
+  const HealthCheckProgressDialog({super.key, required this.links});
   final List<Link> links;
-  final AppDatabase db;
 
   @override
   State<HealthCheckProgressDialog> createState() =>
@@ -61,9 +61,9 @@ class _HealthCheckProgressDialogState
 
       if (isDead) {
         _deadCount++;
-        await widget.db.updateLinkDeadStatus(link.id, true);
+        await FirestoreService.instance.updateLinkDeadStatus(link.id, true);
       } else {
-        await widget.db.updateLinkDeadStatus(link.id, false);
+        await FirestoreService.instance.updateLinkDeadStatus(link.id, false);
       }
     }
     client.close();

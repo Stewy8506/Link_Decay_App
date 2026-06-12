@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../data/database.dart';
+import '../models/models.dart';
 import '../models/link_status.dart';
 import '../providers/providers.dart';
 import '../utils/constants.dart';
@@ -175,7 +175,7 @@ class _LinkDetailScreenState extends ConsumerState<LinkDetailScreen> {
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final highlightsStream = ref.watch(databaseProvider).watchHighlightsForLink(link.id);
+    final highlightsStream = ref.watch(firestoreServiceProvider).watchHighlightsForLink(link.id);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/google_fonts.dart';
 
-import '../data/database.dart';
+import '../models/models.dart';
 import '../models/link_status.dart';
 import '../providers/providers.dart';
 import '../services/export_service.dart';

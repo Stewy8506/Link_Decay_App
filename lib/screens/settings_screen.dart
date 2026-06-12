@@ -8,10 +8,10 @@ import '../utils/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_theme.dart' show parseHexColor, getTitleStyle, getFontTextStyle;
-import '../models/link_status.dart';
 import '../providers/providers.dart';
 import '../services/export_service.dart';
 import '../utils/constants.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 
 import 'settings_section_widgets.dart';
 import 'settings_dialogs.dart';
@@ -25,6 +25,116 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _isSyncing = false;
+
+  Future<void> _linkGoogleAccount() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+
+    try {
+      final authSvc = ref.read(authServiceProvider);
+      final currentAnonUser = authSvc.currentUser;
+      final anonUid = currentAnonUser?.uid;
+
+      try {
+        await authSvc.linkWithGoogle();
+        _showSnackBar('Successfully linked Google account!');
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'credential-already-in-use' || e.code == 'email-already-in-use') {
+          final conflictCredential = e.credential;
+          if (conflictCredential == null) {
+            _showSnackBar('Linking failed: Account already in use.');
+            return;
+          }
+
+          if (!mounted) return;
+          final proceed = await showDialog<bool>(
+            context: context,
+            builder: (context) {
+              final cs = Theme.of(context).colorScheme;
+              return AlertDialog(
+                backgroundColor: Theme.of(context).cardColor,
+                title: Text(
+                  'Account Sync Conflict',
+                  style: getFontTextStyle(
+                    ref.watch(fontFamilyProvider),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                content: Text(
+                  'This Google account is already linked to another sync profile. '
+                  'Would you like to switch to that account? Any links you saved in '
+                  'this offline session will be merged into your synced database.',
+                  style: getFontTextStyle(ref.watch(fontFamilyProvider)),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(
+                      'Switch & Merge',
+                      style: TextStyle(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          if (proceed == true) {
+            // Read offline links into memory BEFORE switching accounts
+            final fs = ref.read(firestoreServiceProvider);
+            final anonLinks = await fs.getAllLinksFuture();
+
+            final userCred = await authSvc.signInWithCredential(conflictCredential);
+            final googleUid = userCred.user?.uid;
+            
+            if (googleUid != null && anonUid != null && googleUid != anonUid && anonLinks.isNotEmpty) {
+              for (final link in anonLinks) {
+                await fs.insertLink(link);
+              }
+            }
+            _showSnackBar('Successfully switched account and merged offline links!');
+          }
+        } else if (e.code == 'sign-in-canceled') {
+          // Silently handle cancellation
+        } else {
+          _showSnackBar('Linking failed: ${e.message ?? e.code}');
+        }
+      }
+    } catch (e) {
+      _showSnackBar('An error occurred during sync: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
+    }
+  }
+
+  Future<void> _signOut() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    try {
+      await ref.read(authServiceProvider).signOut();
+      _showSnackBar('Signed out successfully. Starting new offline session.');
+    } catch (e) {
+      _showSnackBar('Sign out failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
+    }
+  }
+
   void _showSnackBar(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), duration: const Duration(seconds: 3)),
@@ -48,10 +158,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _runHealthCheck() async {
-    final db = ref.read(databaseProvider);
-    final links = await (db.select(
-      db.links,
-    )..where((l) => l.status.equalsValue(LinkStatus.inbox))).get();
+    final links = ref.read(inboxLinksProvider).valueOrNull ?? [];
 
     if (links.isEmpty) {
       _showSnackBar('No active links to scan.');
@@ -64,7 +171,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return HealthCheckProgressDialog(links: links, db: db);
+        return HealthCheckProgressDialog(links: links);
       },
     ).then((_) {
       if (mounted) setState(() {});
@@ -75,8 +182,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _backupJson() async {
     try {
-      final db = ref.read(databaseProvider);
-      await ExportService.instance.shareJsonExport(db);
+      await ExportService.instance.shareJsonExport();
       HapticFeedback.lightImpact();
     } catch (e) {
       _showSnackBar('Backup failed: $e');
@@ -85,8 +191,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _backupHtml() async {
     try {
-      final db = ref.read(databaseProvider);
-      await ExportService.instance.shareHtmlExport(db);
+      await ExportService.instance.shareHtmlExport();
       HapticFeedback.lightImpact();
     } catch (e) {
       _showSnackBar('Bookmarks export failed: $e');
@@ -166,9 +271,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String jsonContent, {
     required bool merge,
   }) async {
-    final db = ref.read(databaseProvider);
     final count = await ExportService.instance.importFromJson(
-      db,
       jsonContent,
       merge: merge,
     );
@@ -186,8 +289,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final file = File(result.files.single.path!);
       final content = await file.readAsString();
 
-      final db = ref.read(databaseProvider);
-      final count = await ExportService.instance.importFromHtml(db, content);
+      final count = await ExportService.instance.importFromHtml(content);
       _showSnackBar('Successfully imported $count bookmarks!');
       HapticFeedback.heavyImpact();
     } catch (e) {
@@ -198,6 +300,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
+    final userAsync = ref.watch(userProvider);
+    final user = userAsync.valueOrNull;
+    final isAnonymous = user == null || user.isAnonymous;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
@@ -258,6 +363,190 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               return SliverList(
                 delegate: SliverChildListDelegate([
+                  const SizedBox(height: kSpaceSM),
+
+                  // ── Account & Synchronization ──────────────────────────
+                  const SectionHeader(label: 'Account & Synchronization'),
+                  SettingCard(
+                    children: [
+                      if (isAnonymous) ...[
+                        Padding(
+                          padding: const EdgeInsets.all(kSpaceMD),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: cs.primary.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.cloud_off_outlined,
+                                  color: cs.primary,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: kSpaceMD),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Cloud Sync Offline',
+                                      style: getFontTextStyle(
+                                        ref.watch(fontFamilyProvider),
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: cs.onSurface,
+                                    ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Save and sync your reading list across multiple devices securely.',
+                                      style: getFontTextStyle(
+                                        ref.watch(fontFamilyProvider),
+                                        fontSize: 12,
+                                        color: cs.onSurface.withValues(alpha: 0.45),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(height: 0),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: kSpaceMD,
+                            vertical: kSpaceSM + 4,
+                          ),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: _isSyncing
+                                ? const Center(
+                                    child: SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1.5,
+                                      ),
+                                    ),
+                                  )
+                                : FilledButton.icon(
+                                    icon: const Icon(Icons.sync_outlined, size: 18),
+                                    label: const Text('Link Google Account'),
+                                    onPressed: _linkGoogleAccount,
+                                  ),
+                          ),
+                        ),
+                      ] else ...[
+                        Padding(
+                          padding: const EdgeInsets.all(kSpaceMD),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundColor: cs.primary.withValues(alpha: 0.1),
+                                backgroundImage: user.photoURL != null
+                                    ? NetworkImage(user.photoURL!)
+                                    : null,
+                                child: user.photoURL == null
+                                    ? Icon(
+                                        Icons.person_outline,
+                                        color: cs.primary,
+                                        size: 24,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: kSpaceMD),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          user.displayName ?? 'Google User',
+                                          style: getFontTextStyle(
+                                            ref.watch(fontFamilyProvider),
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                            color: cs.onSurface,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: kFreshnessHigh.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            'Synced',
+                                            style: getFontTextStyle(
+                                              ref.watch(fontFamilyProvider),
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: kFreshnessHigh,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      user.email ?? '',
+                                      style: getFontTextStyle(
+                                        ref.watch(fontFamilyProvider),
+                                        fontSize: 12,
+                                        color: cs.onSurface.withValues(alpha: 0.45),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(height: 0),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: kSpaceMD,
+                            vertical: kSpaceSM + 4,
+                          ),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: _isSyncing
+                                ? const Center(
+                                    child: SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1.5,
+                                      ),
+                                    ),
+                                  )
+                                : TextButton.icon(
+                                    icon: Icon(
+                                      Icons.logout_outlined,
+                                      size: 18,
+                                      color: kFreshnessLow,
+                                    ),
+                                    label: Text(
+                                      'Sign Out',
+                                      style: TextStyle(color: kFreshnessLow),
+                                    ),
+                                    onPressed: _signOut,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: kSpaceSM),
 
                   // ── Lifespan & Snooze Presets ──────────────────────────
@@ -897,7 +1186,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const Divider(height: 0),
                       const InfoRow(label: 'Version', value: kAppVersion),
                       const Divider(height: 0),
-                      const InfoRow(label: 'Storage', value: 'Local SQLite (Drift)'),
+                      InfoRow(
+                        label: 'Storage',
+                        value: isAnonymous ? 'Cloud Firestore (Anonymous)' : 'Cloud Firestore (Synced)',
+                      ),
                       const Divider(height: 0),
                       const InfoRow(label: 'License', value: 'MIT (Open Source)'),
                       const Divider(height: 0),

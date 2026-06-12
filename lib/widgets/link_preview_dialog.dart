@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../data/database.dart';
+import '../models/models.dart';
 import '../utils/constants.dart';
 import '../utils/freshness.dart';
 import '../utils/google_fonts.dart';

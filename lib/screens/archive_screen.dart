@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/google_fonts.dart';
-import '../data/database.dart';
+import '../models/models.dart';
 import '../models/link_status.dart';
 import '../providers/providers.dart';
 import '../utils/constants.dart';

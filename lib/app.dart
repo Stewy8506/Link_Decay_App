@@ -33,6 +33,21 @@ class LinkShelfApp extends ConsumerWidget {
     final customBgColor = parseHexColor(customBgHex);
 
     final onboardingCompleted = ref.watch(onboardingCompletedProvider);
+    final userAsync = ref.watch(userProvider);
+
+    // Wait for auth initialization
+    if (userAsync.isLoading) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: buildDarkTheme(
+          activePalette,
+          customAccent: customAccentColor,
+          customBg: customBgColor,
+          fontFamily: fontFamily,
+        ),
+        home: const CustomLoadingScreen(),
+      );
+    }
 
     return MaterialApp(
       title: kAppName,

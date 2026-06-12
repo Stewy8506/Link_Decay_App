@@ -4,9 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:drift/drift.dart' show Value;
-
-import '../data/database.dart';
+import '../models/models.dart';
 import '../providers/providers.dart';
 import '../utils/constants.dart';
 import '../utils/freshness.dart';
@@ -100,25 +98,7 @@ class _LinkCardState extends ConsumerState<LinkCard> {
       final linkData = widget.link;
       actions.delete(widget.link.id);
       _showUndoSnackBar('Link deleted', () {
-        ref.read(databaseProvider).insertLink(
-          LinksCompanion.insert(
-            id: linkData.id,
-            url: linkData.url,
-            domain: linkData.domain,
-            title: Value(linkData.title),
-            faviconUrl: Value(linkData.faviconUrl),
-            createdAt: linkData.createdAt,
-            snoozedUntil: Value(linkData.snoozedUntil),
-            status: linkData.status,
-            tags: Value(linkData.tags),
-            snoozedSeconds: Value(linkData.snoozedSeconds),
-            collectionId: Value(linkData.collectionId),
-            notes: Value(linkData.notes),
-            ogImageUrl: Value(linkData.ogImageUrl),
-            estimatedReadMinutes: Value(linkData.estimatedReadMinutes),
-            customHalfLifeDays: Value(linkData.customHalfLifeDays),
-          ),
-        );
+        ref.read(linkActionsProvider.notifier).restoreLink(linkData);
       });
     }
   }

@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../data/database.dart';
+import '../models/models.dart';
 import '../models/link_status.dart';
 import '../utils/constants.dart';
+import 'firestore_service.dart';
 import 'notification_service.dart';
 
 class ExportService {
@@ -14,11 +14,12 @@ class ExportService {
   static final ExportService instance = ExportService._internal();
 
   /// Compiles all database data into a single JSON Map
-  Future<Map<String, dynamic>> _compileBackupData(AppDatabase db) async {
-    final links = await db.select(db.links).get();
-    final collections = await db.select(db.collections).get();
-    final customFilters = await db.select(db.customFilters).get();
-    final settings = await db.getSettings();
+  Future<Map<String, dynamic>> _compileBackupData() async {
+    final fs = FirestoreService.instance;
+    final links = await fs.getAllLinksFuture();
+    final collections = await fs.getCollectionsFuture();
+    final customFilters = await fs.getFiltersFuture();
+    final settings = await fs.getSettings();
 
     return {
       'version': 2,
@@ -71,13 +72,19 @@ class ExportService {
         'swipeRightAction': settings.swipeRightAction,
         'domainHalfLifeOverrides': settings.domainHalfLifeOverrides,
         'tagHalfLifeOverrides': settings.tagHalfLifeOverrides,
+        'dailyReadingGoal': settings.dailyReadingGoal,
+        'snoozePresets': settings.snoozePresets,
+        'fontFamily': settings.fontFamily,
+        'customAccentColor': settings.customAccentColor,
+        'customBgColor': settings.customBgColor,
+        'decayCurveType': settings.decayCurveType,
       },
     };
   }
 
   /// Exports data to JSON file and triggers native sharing share sheet
-  Future<void> shareJsonExport(AppDatabase db) async {
-    final data = await _compileBackupData(db);
+  Future<void> shareJsonExport() async {
+    final data = await _compileBackupData();
     final jsonString = const JsonEncoder.withIndent('  ').convert(data);
 
     final dir = await getTemporaryDirectory();
@@ -88,8 +95,9 @@ class ExportService {
   }
 
   /// Exports data as Netscape HTML Bookmarks
-  Future<void> shareHtmlExport(AppDatabase db) async {
-    final links = await db.select(db.links).get();
+  Future<void> shareHtmlExport() async {
+    final fs = FirestoreService.instance;
+    final links = await fs.getAllLinksFuture();
     
     final buffer = StringBuffer()
       ..writeln('<!DOCTYPE NETSCAPE-Bookmark-file-1>')
@@ -116,29 +124,45 @@ class ExportService {
   }
 
   /// Imports from JSON string
-  Future<int> importFromJson(AppDatabase db, String jsonContent, {required bool merge}) async {
+  Future<int> importFromJson(String jsonContent, {required bool merge}) async {
     final Map<String, dynamic> data = jsonDecode(jsonContent);
     int importCount = 0;
+    final fs = FirestoreService.instance;
 
-    await db.transaction(() async {
+    // Save current state for rollback on error
+    final backupLinks = await fs.getAllLinksFuture();
+    final backupColls = await fs.getCollectionsFuture();
+    final backupFilters = await fs.getFiltersFuture();
+    final backupSettings = await fs.getSettings();
+
+    try {
       if (!merge) {
         // Clear current data
-        await db.delete(db.links).go();
-        await db.delete(db.collections).go();
-        await db.delete(db.customFilters).go();
+        final links = await fs.getAllLinksFuture();
+        for (final l in links) {
+          await fs.deleteLink(l.id);
+        }
+        final colls = await fs.getCollectionsFuture();
+        for (final c in colls) {
+          await fs.deleteCollection(c.id);
+        }
+        final filters = await fs.getFiltersFuture();
+        for (final f in filters) {
+          await fs.deleteCustomFilter(f.id);
+        }
       }
 
       // Import Collections
       if (data.containsKey('collections')) {
         final List<dynamic> colls = data['collections'];
         for (final c in colls) {
-          await db.into(db.collections).insertOnConflictUpdate(
-            CollectionsCompanion.insert(
+          await fs.insertCollection(
+            Collection(
               id: c['id'],
               name: c['name'],
-              emoji: Value(c['emoji']),
-              createdAt: DateTime.parse(c['createdAt']),
-              sortOrder: Value(c['sortOrder'] ?? 0),
+              emoji: c['emoji'],
+              createdAt: DateTime.tryParse(c['createdAt']) ?? DateTime.now(),
+              sortOrder: c['sortOrder'] ?? 0,
             ),
           );
         }
@@ -148,20 +172,20 @@ class ExportService {
       if (data.containsKey('customFilters')) {
         final List<dynamic> filts = data['customFilters'];
         for (final f in filts) {
-          await db.into(db.customFilters).insertOnConflictUpdate(
-            CustomFiltersCompanion.insert(
+          await fs.insertCustomFilter(
+            CustomFilter(
               id: f['id'],
               name: f['name'],
-              icon: Value(f['icon'] ?? 'list'),
-              minFreshness: Value(f['minFreshness']),
-              maxFreshness: Value(f['maxFreshness']),
-              tags: Value(f['tags']),
-              collections: Value(f['collections']),
-              domains: Value(f['domains']),
-              minReadTime: Value(f['minReadTime']),
-              maxReadTime: Value(f['maxReadTime']),
-              snoozeFilter: Value(f['snoozeFilter']),
-              sortField: Value(f['sortField'] ?? 'freshness_asc'),
+              icon: f['icon'] ?? 'list',
+              minFreshness: f['minFreshness']?.toDouble(),
+              maxFreshness: f['maxFreshness']?.toDouble(),
+              tags: f['tags'],
+              collections: f['collections'],
+              domains: f['domains'],
+              minReadTime: f['minReadTime'],
+              maxReadTime: f['maxReadTime'],
+              snoozeFilter: f['snoozeFilter'],
+              sortField: f['sortField'] ?? 'freshness_asc',
             ),
           );
         }
@@ -176,23 +200,43 @@ class ExportService {
             orElse: () => LinkStatus.inbox,
           );
 
-          await db.into(db.links).insertOnConflictUpdate(
-            LinksCompanion.insert(
+          // Force format validation so we fail early for malformed inputs
+          final createdAtStr = l['createdAt'];
+          DateTime? parsedCreated;
+          if (createdAtStr != null) {
+            parsedCreated = DateTime.tryParse(createdAtStr);
+            if (parsedCreated == null && createdAtStr is String && createdAtStr.isNotEmpty) {
+              throw FormatException('Invalid date format: $createdAtStr');
+            }
+          }
+
+          final snoozedUntilStr = l['snoozedUntil'];
+          DateTime? parsedSnoozed;
+          if (snoozedUntilStr != null) {
+            parsedSnoozed = DateTime.tryParse(snoozedUntilStr);
+            if (parsedSnoozed == null && snoozedUntilStr is String && snoozedUntilStr.isNotEmpty) {
+              throw FormatException('Invalid date format: $snoozedUntilStr');
+            }
+          }
+
+          await fs.insertLink(
+            Link(
               id: l['id'],
               url: l['url'],
-              title: Value(l['title']),
+              title: l['title'],
               domain: l['domain'],
-              faviconUrl: Value(l['faviconUrl']),
-              createdAt: DateTime.parse(l['createdAt']),
-              snoozedUntil: Value(l['snoozedUntil'] != null ? DateTime.parse(l['snoozedUntil']) : null),
+              faviconUrl: l['faviconUrl'],
+              createdAt: parsedCreated ?? DateTime.now(),
+              snoozedUntil: parsedSnoozed,
               status: status,
-              tags: Value(l['tags'] ?? ''),
-              snoozedSeconds: Value(l['snoozedSeconds'] ?? 0),
-              collectionId: Value(l['collectionId']),
-              notes: Value(l['notes']),
-              ogImageUrl: Value(l['ogImageUrl']),
-              estimatedReadMinutes: Value(l['estimatedReadMinutes']),
-              customHalfLifeDays: Value(l['customHalfLifeDays']),
+              tags: l['tags'] ?? '',
+              snoozedSeconds: l['snoozedSeconds'] ?? 0,
+              collectionId: l['collectionId'],
+              notes: l['notes'],
+              ogImageUrl: l['ogImageUrl'],
+              estimatedReadMinutes: l['estimatedReadMinutes'],
+              customHalfLifeDays: l['customHalfLifeDays']?.toDouble(),
+              isDead: l['isDead'] ?? false,
             ),
           );
           importCount++;
@@ -202,88 +246,118 @@ class ExportService {
       // Import Settings (Optional override)
       if (data.containsKey('settings') && data['settings'] != null) {
         final s = data['settings'];
-        await db.upsertSettings(
-          AppSettingsCompanion.insert(
-            id: const Value(1),
-            halfLifeDays: Value(s['halfLifeDays'] ?? kDefaultHalfLifeDays),
-            notificationThreshold: Value(s['notificationThreshold'] ?? kDefaultNotificationThreshold),
-            notificationsEnabled: Value(s['notificationsEnabled'] ?? kDefaultNotificationsEnabled),
-            isDarkMode: Value(s['isDarkMode'] ?? true),
-            themePalette: Value(s['themePalette'] ?? 'warm_stone'),
-            swipeLeftAction: Value(s['swipeLeftAction'] ?? 'archive'),
-            swipeRightAction: Value(s['swipeRightAction'] ?? 'read'),
-            domainHalfLifeOverrides: Value(s['domainHalfLifeOverrides']),
-            tagHalfLifeOverrides: Value(s['tagHalfLifeOverrides']),
+        await fs.upsertSettings(
+          AppSetting(
+            halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
+            notificationThreshold: (s['notificationThreshold'] ?? kDefaultNotificationThreshold).toDouble(),
+            notificationsEnabled: s['notificationsEnabled'] ?? kDefaultNotificationsEnabled,
+            isDarkMode: s['isDarkMode'] ?? true,
+            themePalette: s['themePalette'] ?? 'warm_stone',
+            swipeLeftAction: s['swipeLeftAction'] ?? 'archive',
+            swipeRightAction: s['swipeRightAction'] ?? 'read',
+            domainHalfLifeOverrides: s['domainHalfLifeOverrides'],
+            tagHalfLifeOverrides: s['tagHalfLifeOverrides'],
+            dailyReadingGoal: s['dailyReadingGoal'] ?? 2,
+            snoozePresets: s['snoozePresets'] ?? '[1, 3, 7]',
+            fontFamily: s['fontFamily'] ?? 'inter',
+            customAccentColor: s['customAccentColor'],
+            customBgColor: s['customBgColor'],
+            decayCurveType: s['decayCurveType'] ?? 'exponential',
           ),
         );
-      }
-    });
 
-    // Reschedule notifications outside transaction if settings were imported
-    if (data.containsKey('settings') && data['settings'] != null) {
-      try {
-        final s = data['settings'];
-        final enabled = s['notificationsEnabled'] ?? kDefaultNotificationsEnabled;
-        if (enabled) {
-          await NotificationService.instance.scheduleDailyCheck(
-            db: db,
-            halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
-            threshold: (s['notificationThreshold'] ?? kDefaultNotificationThreshold).toDouble(),
-            decayCurveType: s['decayCurveType'] ?? 'exponential',
-          );
-          await NotificationService.instance.scheduleWeeklyDigest(
-            db: db,
-            halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
-            decayCurveType: s['decayCurveType'] ?? 'exponential',
-          );
-        } else {
-          await NotificationService.instance.cancelAll();
-        }
-      } catch (_) {}
+        // Reschedule notifications outside transaction if settings were imported
+        try {
+          final enabled = s['notificationsEnabled'] ?? kDefaultNotificationsEnabled;
+          if (enabled) {
+            await NotificationService.instance.scheduleDailyCheck(
+              halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
+              threshold: (s['notificationThreshold'] ?? kDefaultNotificationThreshold).toDouble(),
+              decayCurveType: s['decayCurveType'] ?? 'exponential',
+            );
+            await NotificationService.instance.scheduleWeeklyDigest(
+              halfLifeDays: (s['halfLifeDays'] ?? kDefaultHalfLifeDays).toDouble(),
+              decayCurveType: s['decayCurveType'] ?? 'exponential',
+            );
+          } else {
+            await NotificationService.instance.cancelAll();
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      // Rollback current additions/updates
+      final linksToClear = await fs.getAllLinksFuture();
+      for (final l in linksToClear) {
+        await fs.deleteLink(l.id);
+      }
+      final collsToClear = await fs.getCollectionsFuture();
+      for (final c in collsToClear) {
+        await fs.deleteCollection(c.id);
+      }
+      final filtersToClear = await fs.getFiltersFuture();
+      for (final f in filtersToClear) {
+        await fs.deleteCustomFilter(f.id);
+      }
+
+      // Restore backup state
+      for (final l in backupLinks) {
+        await fs.insertLink(l);
+      }
+      for (final c in backupColls) {
+        await fs.insertCollection(c);
+      }
+      for (final f in backupFilters) {
+        await fs.insertCustomFilter(f);
+      }
+      if (backupSettings != null) {
+        await fs.upsertSettings(backupSettings);
+      }
+      rethrow;
     }
 
     return importCount;
   }
 
   /// Simple Netscape HTML Bookmarks parser
-  Future<int> importFromHtml(AppDatabase db, String htmlContent) async {
+  Future<int> importFromHtml(String htmlContent) async {
     final hrefRegex = RegExp(r'HREF="([^"]+)"', caseSensitive: false);
     final titleRegex = RegExp(r'<A[^>]*>([^<]+)</A>', caseSensitive: false);
     final tagsRegex = RegExp(r'TAGS="([^"]*)"', caseSensitive: false);
 
     final lines = htmlContent.split('\n');
     int importCount = 0;
+    final fs = FirestoreService.instance;
 
-    await db.transaction(() async {
-      for (final line in lines) {
-        final hrefMatch = hrefRegex.firstMatch(line);
-        if (hrefMatch == null) continue;
+    for (final line in lines) {
+      final hrefMatch = hrefRegex.firstMatch(line);
+      if (hrefMatch == null) continue;
 
-        final url = hrefMatch.group(1)!;
-        final titleMatch = titleRegex.firstMatch(line);
-        final title = titleMatch?.group(1);
-        
-        final tagsMatch = tagsRegex.firstMatch(line);
-        final tags = tagsMatch != null ? tagsMatch.group(1) ?? '' : '';
+      final url = hrefMatch.group(1)!;
+      final titleMatch = titleRegex.firstMatch(line);
+      final title = titleMatch?.group(1);
+      
+      final tagsMatch = tagsRegex.firstMatch(line);
+      final tags = tagsMatch != null ? tagsMatch.group(1) ?? '' : '';
 
-        final domain = _extractDomain(url);
-        final id = '${DateTime.now().millisecondsSinceEpoch}_${importCount}_html';
+      final domain = _extractDomain(url);
+      final id = '${DateTime.now().millisecondsSinceEpoch}_${importCount}_html';
 
-        await db.into(db.links).insert(
-          LinksCompanion.insert(
-            id: id,
-            url: url,
-            domain: domain,
-            title: Value(title),
-            faviconUrl: Value('https://www.google.com/s2/favicons?domain=$domain&sz=64'),
-            createdAt: DateTime.now(),
-            status: LinkStatus.inbox,
-            tags: Value(tags),
-          ),
-        );
-        importCount++;
-      }
-    });
+      await fs.insertLink(
+        Link(
+          id: id,
+          url: url,
+          domain: domain,
+          title: title,
+          faviconUrl: 'https://www.google.com/s2/favicons?domain=$domain&sz=64',
+          createdAt: DateTime.now(),
+          status: LinkStatus.inbox,
+          tags: tags,
+          snoozedSeconds: 0,
+          isDead: false,
+        ),
+      );
+      importCount++;
+    }
 
     return importCount;
   }
@@ -376,4 +450,3 @@ class ExportService {
     await Share.shareXFiles([XFile(file.path)], text: '${collection.emoji ?? "📁"} ${collection.name} Read List');
   }
 }
-

@@ -4,26 +4,46 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
-import '../data/database.dart';
+import '../data/database.dart' as drift;
+import '../models/models.dart';
 import '../models/link_status.dart';
+import '../services/firestore_service.dart';
+import '../services/auth_service.dart';
 import '../services/metadata_service.dart';
 import '../services/notification_service.dart';
 import '../utils/constants.dart';
 import '../utils/freshness.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User;
 
-// ─── Database Provider ─────────────────────────────────────────────────────
+// ─── Database Provider (Legacy SQLite/Drift - For Migration Only) ──────────
 
-final databaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase();
+final databaseProvider = Provider<drift.AppDatabase>((ref) {
+  final db = drift.AppDatabase();
   ref.onDispose(db.close);
   return db;
+});
+
+// ─── Firebase Services Providers ──────────────────────────────────────────
+
+final firestoreServiceProvider = Provider<FirestoreService>((ref) {
+  return FirestoreService.instance;
+});
+
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService.instance;
+});
+
+final userProvider = StreamProvider<User?>((ref) {
+  return ref.watch(authServiceProvider).authStateChanges;
 });
 
 // ─── Settings Provider ─────────────────────────────────────────────────────
 
 final settingsProvider = StreamProvider<AppSetting?>((ref) {
-  final db = ref.watch(databaseProvider);
-  return db.watchSettings();
+  final user = ref.watch(userProvider).valueOrNull;
+  if (user == null) return Stream.value(null);
+  final fs = ref.watch(firestoreServiceProvider);
+  return fs.watchSettings();
 });
 
 /// Theme settings provider
@@ -121,32 +141,42 @@ final decayCurveTypeProvider = Provider<String>((ref) {
 // ─── Collections Providers ───────────────────────────────────────────────
 
 final collectionsProvider = StreamProvider<List<Collection>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return db.watchCollections();
+  final user = ref.watch(userProvider).valueOrNull;
+  if (user == null) return Stream.value([]);
+  final fs = ref.watch(firestoreServiceProvider);
+  return fs.watchCollections();
 });
 
 // ─── CustomFilters (Smart Lists) Providers ───────────────────────────────
 
 final customFiltersProvider = StreamProvider<List<CustomFilter>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return db.watchCustomFilters();
+  final user = ref.watch(userProvider).valueOrNull;
+  if (user == null) return Stream.value([]);
+  final fs = ref.watch(firestoreServiceProvider);
+  return fs.watchCustomFilters();
 });
 
 // ─── Links Providers ────────────────────────────────────────────────────────
 
 final allLinksProvider = StreamProvider<List<Link>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return db.watchAllLinks();
+  final user = ref.watch(userProvider).valueOrNull;
+  if (user == null) return Stream.value([]);
+  final fs = ref.watch(firestoreServiceProvider);
+  return fs.watchAllLinks();
 });
 
 final inboxLinksProvider = StreamProvider<List<Link>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return db.watchInboxLinks();
+  final user = ref.watch(userProvider).valueOrNull;
+  if (user == null) return Stream.value([]);
+  final fs = ref.watch(firestoreServiceProvider);
+  return fs.watchInboxLinks();
 });
 
 final archiveLinksProvider = StreamProvider<List<Link>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return db.watchArchiveLinks();
+  final user = ref.watch(userProvider).valueOrNull;
+  if (user == null) return Stream.value([]);
+  final fs = ref.watch(firestoreServiceProvider);
+  return fs.watchArchiveLinks();
 });
 
 // ─── Selection State Providers ─────────────────────────────────────────────
@@ -320,7 +350,12 @@ class LinkActionsNotifier extends Notifier<void> {
   @override
   void build() {}
 
-  AppDatabase get _db => ref.read(databaseProvider);
+  FirestoreService get _fs => ref.read(firestoreServiceProvider);
+
+  /// Helper to insert a full Link object (used by widgets e.g. SnackBar undo)
+  Future<void> restoreLink(Link link) async {
+    await _fs.insertLink(link);
+  }
 
   /// Save a URL: immediately insert, then fetch rich metadata.
   Future<String> saveLink(String rawUrl, {String? collectionId, String? title}) async {
@@ -356,22 +391,24 @@ class LinkActionsNotifier extends Notifier<void> {
       autoTag = 'Dev';
     }
 
-    await _db.insertLink(
-      LinksCompanion.insert(
+    await _fs.insertLink(
+      Link(
         id: id,
         url: url,
         domain: domain,
-        title: title != null && title.isNotEmpty ? Value(title) : const Value.absent(),
+        title: title != null && title.isNotEmpty ? title : null,
         createdAt: DateTime.now(),
         status: LinkStatus.inbox,
-        collectionId: Value(collectionId),
-        tags: Value(autoTag),
+        collectionId: collectionId,
+        tags: autoTag,
+        snoozedSeconds: 0,
+        isDead: false,
       ),
     );
 
     // Fetch metadata asynchronously in the background.
     svc.fetch(url).then((meta) {
-      _db.updateMetadata(
+      _fs.updateMetadata(
         id,
         title: title != null && title.isNotEmpty ? null : meta.title,
         faviconUrl: meta.faviconUrl,
@@ -384,18 +421,18 @@ class LinkActionsNotifier extends Notifier<void> {
   }
 
   Future<void> markAsRead(String id) async {
-    await _db.updateLinkStatus(id, LinkStatus.read);
+    await _fs.updateLinkStatus(id, LinkStatus.read, readAt: DateTime.now());
   }
 
   Future<void> archive(String id) async {
-    await _db.updateLinkStatus(id, LinkStatus.archived);
+    await _fs.updateLinkStatus(id, LinkStatus.archived, archivedAt: DateTime.now());
   }
 
   Future<bool> restoreToInbox(String id, {bool force = false}) async {
     if (!force) {
-      final link = await (_db.select(_db.links)..where((l) => l.id.equals(id))).getSingleOrNull();
+      final link = ref.read(allLinksProvider).valueOrNull?.firstWhere((l) => l.id == id);
       if (link != null && link.status == LinkStatus.archived) {
-        final settings = await (_db.select(_db.appSettings)..where((s) => s.id.equals(1))).getSingleOrNull();
+        final settings = ref.read(settingsProvider).valueOrNull;
         final baseHalfLife = settings?.halfLifeDays ?? kDefaultHalfLifeDays;
         final currentHalfLife = link.customHalfLifeDays ?? baseHalfLife;
         final score = computeFreshness(
@@ -410,68 +447,74 @@ class LinkActionsNotifier extends Notifier<void> {
         }
       }
     }
-    await _db.updateLinkStatus(id, LinkStatus.inbox);
+    await _fs.updateLinkStatus(id, LinkStatus.inbox);
     return true;
   }
 
   Future<void> snooze(String id, Duration duration) async {
+    final link = ref.read(allLinksProvider).valueOrNull?.firstWhere((l) => l.id == id);
+    if (link == null) return;
     final until = DateTime.now().add(duration);
-    await _db.snoozeLink(id, until);
+    final additionalSeconds = until.difference(DateTime.now()).inSeconds;
+    await _fs.snoozeLink(id, until, link.snoozedSeconds + additionalSeconds);
   }
 
   Future<void> delete(String id) async {
-    await _db.deleteLink(id);
+    await _fs.deleteLink(id);
   }
 
   Future<void> updateTags(String id, String tags) async {
-    await _db.updateTags(id, tags);
+    await _fs.updateTags(id, tags);
   }
 
   Future<void> updateNotes(String id, String notes) async {
-    await _db.updateNotes(id, notes);
+    await _fs.updateNotes(id, notes);
   }
 
   Future<void> updateTitle(String id, String title) async {
-    await (_db.update(_db.links)..where((l) => l.id.equals(id))).write(
-      LinksCompanion(title: Value(title)),
-    );
+    await _fs.updateMetadata(id, title: title);
   }
 
   Future<void> updateLinkCollection(String id, String? collectionId) async {
-    await _db.updateLinkCollection(id, collectionId);
+    await _fs.updateLinkCollection(id, collectionId);
   }
 
   Future<void> updateCustomHalfLife(String id, double? customHalfLifeDays) async {
-    await _db.updateCustomHalfLife(id, customHalfLifeDays);
+    await _fs.updateCustomHalfLife(id, customHalfLifeDays);
   }
 
   // ── Collection Actions ──────────────────────────────────────────────────
 
   Future<String> addCollection(String name, String? emoji) async {
     final id = _generateId();
-    await _db.insertCollection(
-      CollectionsCompanion.insert(
+    await _fs.insertCollection(
+      Collection(
         id: id,
         name: name,
-        emoji: Value(emoji),
+        emoji: emoji,
         createdAt: DateTime.now(),
+        sortOrder: 0,
       ),
     );
     return id;
   }
 
   Future<void> updateCollection(String id, String name, String? emoji) async {
-    await _db.updateCollection(
-      CollectionsCompanion(
-        id: Value(id),
-        name: Value(name),
-        emoji: Value(emoji),
+    final list = ref.read(collectionsProvider).valueOrNull ?? [];
+    final existing = list.firstWhere((c) => c.id == id);
+    await _fs.updateCollection(
+      Collection(
+        id: id,
+        name: name,
+        emoji: emoji,
+        createdAt: existing.createdAt,
+        sortOrder: existing.sortOrder,
       ),
     );
   }
 
   Future<void> deleteCollection(String id) async {
-    await _db.deleteCollection(id);
+    await _fs.deleteCollection(id);
   }
 
   // ── Custom Filter / Smart List Actions ──────────────────────────────────
@@ -490,34 +533,34 @@ class LinkActionsNotifier extends Notifier<void> {
     String? sortField,
   }) async {
     final id = _generateId();
-    await _db.insertCustomFilter(
-      CustomFiltersCompanion.insert(
+    await _fs.insertCustomFilter(
+      CustomFilter(
         id: id,
         name: name,
-        icon: Value(icon),
-        minFreshness: Value(minFreshness),
-        maxFreshness: Value(maxFreshness),
-        tags: Value(tags),
-        collections: Value(collections),
-        domains: Value(domains),
-        minReadTime: Value(minReadTime),
-        maxReadTime: Value(maxReadTime),
-        snoozeFilter: Value(snoozeFilter),
-        sortField: Value(sortField ?? 'freshness_asc'),
+        icon: icon,
+        minFreshness: minFreshness,
+        maxFreshness: maxFreshness,
+        tags: tags,
+        collections: collections,
+        domains: domains,
+        minReadTime: minReadTime,
+        maxReadTime: maxReadTime,
+        snoozeFilter: snoozeFilter,
+        sortField: sortField ?? 'freshness_asc',
       ),
     );
   }
 
   Future<void> deleteCustomFilter(String id) async {
-    await _db.deleteCustomFilter(id);
+    await _fs.deleteCustomFilter(id);
   }
 
   // ── Highlights ──────────────────────────────────────────────────────────
 
   Future<void> addHighlight(String linkId, String textContent) async {
     final id = _generateId();
-    await _db.insertHighlight(
-      LinkHighlightsCompanion.insert(
+    await _fs.insertHighlight(
+      LinkHighlight(
         id: id,
         linkId: linkId,
         content: textContent,
@@ -527,55 +570,45 @@ class LinkActionsNotifier extends Notifier<void> {
   }
 
   Future<void> deleteHighlight(String id) async {
-    await _db.deleteHighlight(id);
+    await _fs.deleteHighlight(id);
   }
 
   // ── Bulk Actions ────────────────────────────────────────────────────────
 
   Future<void> bulkArchive(Set<String> ids) async {
-    await _db.transaction(() async {
-      for (final id in ids) {
-        await _db.updateLinkStatus(id, LinkStatus.archived);
-      }
-    });
+    for (final id in ids) {
+      await _fs.updateLinkStatus(id, LinkStatus.archived, archivedAt: DateTime.now());
+    }
   }
 
   Future<void> bulkMarkRead(Set<String> ids) async {
-    await _db.transaction(() async {
-      for (final id in ids) {
-        await _db.updateLinkStatus(id, LinkStatus.read);
-      }
-    });
+    for (final id in ids) {
+      await _fs.updateLinkStatus(id, LinkStatus.read, readAt: DateTime.now());
+    }
   }
 
   Future<void> bulkDelete(Set<String> ids) async {
-    await _db.transaction(() async {
-      for (final id in ids) {
-        await _db.deleteLink(id);
-      }
-    });
+    for (final id in ids) {
+      await _fs.deleteLink(id);
+    }
   }
 
   Future<void> bulkMoveToCollection(Set<String> ids, String? collectionId) async {
-    await _db.transaction(() async {
-      for (final id in ids) {
-        await _db.updateLinkCollection(id, collectionId);
-      }
-    });
+    for (final id in ids) {
+      await _fs.updateLinkCollection(id, collectionId);
+    }
   }
 
   Future<void> bulkAddTag(Set<String> ids, String tag) async {
-    await _db.transaction(() async {
-      for (final id in ids) {
-        final link = await (_db.select(_db.links)..where((l) => l.id.equals(id))).getSingleOrNull();
-        if (link == null) continue;
-        final existingTags = link.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
-        if (!existingTags.contains(tag)) {
-          existingTags.add(tag);
-          await _db.updateTags(id, existingTags.join(', '));
-        }
+    for (final id in ids) {
+      final link = ref.read(allLinksProvider).valueOrNull?.firstWhere((l) => l.id == id);
+      if (link == null) continue;
+      final existingTags = link.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+      if (!existingTags.contains(tag)) {
+        existingTags.add(tag);
+        await _fs.updateTags(id, existingTags.join(', '));
       }
-    });
+    }
   }
 
   // ── Settings ──────────────────────────────────────────────────────────
@@ -597,48 +630,43 @@ class LinkActionsNotifier extends Notifier<void> {
     Value<String?> customBgColor = const Value.absent(),
     String? decayCurveType,
   }) async {
-    final current = await _db.getSettings();
-    await _db.upsertSettings(
-      AppSettingsCompanion.insert(
-        id: const Value(1),
-        halfLifeDays: Value(halfLifeDays ?? current?.halfLifeDays ?? kDefaultHalfLifeDays),
-        notificationThreshold: Value(notificationThreshold ?? current?.notificationThreshold ?? kDefaultNotificationThreshold),
-        notificationsEnabled: Value(notificationsEnabled ?? current?.notificationsEnabled ?? kDefaultNotificationsEnabled),
-        isDarkMode: Value(isDarkMode ?? current?.isDarkMode ?? true),
-        themePalette: Value(themePalette ?? current?.themePalette ?? 'warm_stone'),
-        swipeLeftAction: Value(swipeLeftAction ?? current?.swipeLeftAction ?? 'archive'),
-        swipeRightAction: Value(swipeRightAction ?? current?.swipeRightAction ?? 'read'),
-        domainHalfLifeOverrides: Value(domainHalfLifeOverrides ?? current?.domainHalfLifeOverrides),
-        tagHalfLifeOverrides: Value(tagHalfLifeOverrides ?? current?.tagHalfLifeOverrides),
-        dailyReadingGoal: Value(dailyReadingGoal ?? current?.dailyReadingGoal ?? 2),
-        snoozePresets: Value(snoozePresets ?? current?.snoozePresets ?? '[1, 3, 7]'),
-        fontFamily: Value(fontFamily ?? current?.fontFamily ?? 'inter'),
-        customAccentColor: customAccentColor.present ? customAccentColor : Value(current?.customAccentColor),
-        customBgColor: customBgColor.present ? customBgColor : Value(current?.customBgColor),
-        decayCurveType: Value(decayCurveType ?? current?.decayCurveType ?? 'exponential'),
-      ),
+    final current = await _fs.getSettings() ?? AppSetting.defaults();
+    
+    final updatedSetting = AppSetting(
+      halfLifeDays: halfLifeDays ?? current.halfLifeDays,
+      notificationThreshold: notificationThreshold ?? current.notificationThreshold,
+      notificationsEnabled: notificationsEnabled ?? current.notificationsEnabled,
+      isDarkMode: isDarkMode ?? current.isDarkMode,
+      themePalette: themePalette ?? current.themePalette,
+      swipeLeftAction: swipeLeftAction ?? current.swipeLeftAction,
+      swipeRightAction: swipeRightAction ?? current.swipeRightAction,
+      domainHalfLifeOverrides: domainHalfLifeOverrides ?? current.domainHalfLifeOverrides,
+      tagHalfLifeOverrides: tagHalfLifeOverrides ?? current.tagHalfLifeOverrides,
+      dailyReadingGoal: dailyReadingGoal ?? current.dailyReadingGoal,
+      snoozePresets: snoozePresets ?? current.snoozePresets,
+      fontFamily: fontFamily ?? current.fontFamily,
+      customAccentColor: customAccentColor.present ? customAccentColor.value : current.customAccentColor,
+      customBgColor: customBgColor.present ? customBgColor.value : current.customBgColor,
+      decayCurveType: decayCurveType ?? current.decayCurveType,
     );
+
+    await _fs.upsertSettings(updatedSetting);
 
     // Reschedule notifications post-save
     try {
-      final updated = await _db.getSettings();
-      if (updated != null) {
-        final enabled = updated.notificationsEnabled;
-        if (enabled) {
-          await NotificationService.instance.scheduleDailyCheck(
-            db: _db,
-            halfLifeDays: updated.halfLifeDays,
-            threshold: updated.notificationThreshold,
-            decayCurveType: updated.decayCurveType,
-          );
-          await NotificationService.instance.scheduleWeeklyDigest(
-            db: _db,
-            halfLifeDays: updated.halfLifeDays,
-            decayCurveType: updated.decayCurveType,
-          );
-        } else {
-          await NotificationService.instance.cancelAll();
-        }
+      final enabled = updatedSetting.notificationsEnabled;
+      if (enabled) {
+        await NotificationService.instance.scheduleDailyCheck(
+          halfLifeDays: updatedSetting.halfLifeDays,
+          threshold: updatedSetting.notificationThreshold,
+          decayCurveType: updatedSetting.decayCurveType,
+        );
+        await NotificationService.instance.scheduleWeeklyDigest(
+          halfLifeDays: updatedSetting.halfLifeDays,
+          decayCurveType: updatedSetting.decayCurveType,
+        );
+      } else {
+        await NotificationService.instance.cancelAll();
       }
     } catch (_) {}
   }

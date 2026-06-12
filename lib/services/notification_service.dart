@@ -7,9 +7,9 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../data/database.dart';
 import '../models/link_status.dart';
 import '../utils/freshness.dart';
+import 'firestore_service.dart';
 
 
 class NotificationService {
@@ -84,7 +84,6 @@ class NotificationService {
 
   /// Schedule a daily notification at 9 AM local time if there are stale links.
   Future<void> scheduleDailyCheck({
-    required AppDatabase db,
     required double halfLifeDays,
     required double threshold,
     String decayCurveType = 'exponential',
@@ -93,11 +92,53 @@ class NotificationService {
 
     await _plugin.cancelAll();
 
-    final staleLinks = await db.getStaleLinks(
-      halfLifeDays: halfLifeDays,
-      threshold: threshold,
-      decayCurveType: decayCurveType,
-    );
+    final links = await FirestoreService.instance.getAllLinksFuture();
+    final settings = await FirestoreService.instance.getSettings();
+    Map<String, double> domainOverrides = const {};
+    Map<String, double> tagOverrides = const {};
+
+    if (settings != null) {
+      if (settings.domainHalfLifeOverrides != null && settings.domainHalfLifeOverrides!.isNotEmpty) {
+        try {
+          final Map<String, dynamic> decoded = jsonDecode(settings.domainHalfLifeOverrides!);
+          domainOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+        } catch (_) {}
+      }
+      if (settings.tagHalfLifeOverrides != null && settings.tagHalfLifeOverrides!.isNotEmpty) {
+        try {
+          final Map<String, dynamic> decoded = jsonDecode(settings.tagHalfLifeOverrides!);
+          tagOverrides = decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+        } catch (_) {}
+      }
+    }
+
+    final nowTime = DateTime.now();
+    final staleLinks = links.where((l) {
+      if (l.status != LinkStatus.inbox) return false;
+      double halfLife = halfLifeDays;
+      if (l.customHalfLifeDays != null) {
+        halfLife = l.customHalfLifeDays!;
+      } else if (domainOverrides.containsKey(l.domain.toLowerCase())) {
+        halfLife = domainOverrides[l.domain.toLowerCase()]!;
+      } else {
+        final tags = l.tags.split(',').map((t) => t.trim().toLowerCase());
+        for (final tag in tags) {
+          if (tagOverrides.containsKey(tag)) {
+            halfLife = tagOverrides[tag]!;
+            break;
+          }
+        }
+      }
+
+      final score = computeFreshness(
+        createdAt: l.createdAt,
+        now: nowTime,
+        halfLifeDays: halfLife,
+        snoozedUntil: l.snoozedUntil,
+        decayCurveType: decayCurveType,
+      );
+      return score < threshold;
+    }).toList();
 
     if (staleLinks.isEmpty) return;
 
@@ -158,14 +199,13 @@ class NotificationService {
 
   /// Schedule a weekly digest notification on Sunday at 6 PM.
   Future<void> scheduleWeeklyDigest({
-    required AppDatabase db,
     required double halfLifeDays,
     String decayCurveType = 'exponential',
   }) async {
     if (kIsWeb) return;
 
-    final links = await db.select(db.links).get();
-    final settings = await db.getSettings();
+    final links = await FirestoreService.instance.getAllLinksFuture();
+    final settings = await FirestoreService.instance.getSettings();
     Map<String, double> domainOverrides = const {};
     Map<String, double> tagOverrides = const {};
 
